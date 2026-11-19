@@ -1,0 +1,413 @@
+# IC-7300MK2 CI-V command catalog extracted from IC-7300MK2_ENG_CI-V_0.pdf. Format CMD|SUB|DATA|NAME|NOTES
+# Default address B6h, controller E0h. Frame FE FE <to> <from> Cn [Sc] [data] FD ; PASS(OK)=FB, FAIL(NG)=FA. Single receiver (VFO A/B): NO 29 receiver prefix, no Main/Sub, no dualwatch. Commands marked * in the manual can be set or read (read = send command without sub/data, or with channel/setting number only where needed).
+# Baud rate setting only needed for the [REMOTE] jack (USB: no baud setting). Power ON (18 01) via [REMOTE] needs repeated FE before the frame: 19200:25, 9600:13, 4800:7.
+# Note: when 'Cancel CI-V Remote Set Levels' = All Volume Levels, turning AF/RF/SQL knobs overrides CI-V AF/RF/SQL levels.
+# FREQ = BCD 5 bytes LSB first: [10Hz 1Hz][1kHz 100Hz][100kHz 10kHz][10MHz 1MHz][1GHz 100MHz]
+00||FREQ BCD 5 bytes (see p.16)|Set and output the current operating frequency (transceive)|
+01||MODE bytes mode[,filter] (see p.16)|Set and output the current operating mode (transceive)|mode 00 LSB,01 USB,02 AM,03 CW,04 RTTY,05 FM,07 CW-R,08 RTTY-R; filter 01 FIL1,02 FIL2,03 FIL3; filter may be skipped (FIL1 with cmd 01)
+02||BAND EDGE (see p.16): lower 5B + 2D + upper 5B|Read the current upper and lower edge frequencies|
+03||FREQ BCD 5 bytes|Read the current operating frequency|
+04||MODE 2 bytes mode,filter|Read the current operating mode|
+05||FREQ BCD 5 bytes|Set the current operating frequency|
+06||MODE bytes mode[,filter]|Set the operating mode|filter skipped: default filter of the mode
+07||(none)|Switch to the VFO mode|
+07|00||Switch to the VFO mode and select VFO A|
+07|01||Switch to the VFO mode and select VFO B|
+07|A0||Equalize VFO A and VFO B|
+07|B0||Exchange VFO A with VFO B|
+08||(none)|Switch to the Memory mode|
+08||BCD 2 bytes 00 01 ~ 00 99|Select the Memory channel|00 01=M-CH01, 00 99=M-CH99
+08||BCD 2 bytes 01 00|Select the Programmed Scan Edge channel P1|
+08||BCD 2 bytes 01 01|Select the Programmed Scan Edge channel P2|
+09||(none)|Store displayed contents into the selected Memory channel|
+0A||(none)|Copy the selected Memory channel contents to the VFO|
+0B||(none)|Clear the selected Memory channel (blank)|P1 and P2 cannot be cleared
+0E|00||Stop the current scan|
+0E|01||Start a Programmed or Memory scan|VFO mode: programmed scan; Memory mode: memory scan
+0E|02||Start a Programmed scan|
+0E|03||Start a F scan|
+0E|12||Start a Fine Programmed scan|
+0E|13||Start a Fine F scan|
+0E|22||Start a Memory scan|
+0E|23||Start a Select Memory scan|
+0E|A1~A7|see p.16|Set the frequency span for F scan|A1 +-5 kHz,A2 +-10 kHz,A3 +-20 kHz,A4 +-50 kHz,A5 +-100 kHz,A6 +-500 kHz,A7 +-1 MHz
+0E|B0||Release the Select Memory channel|
+0E|B1||Set the channel as a Select Memory channel|
+0E|B1|01 ~ 03|Set the channel as a specific Select Memory channel|01=SEL1 02=SEL2 03=SEL3
+0E|B2|00 ~ 03|Set whether all or one Select Memory channel is scanned|00=ALL 01=SEL1 02=SEL2 03=SEL3
+0E|D0||Turn Scan Resume OFF|
+0E|D3||Turn Scan Resume (Close&Delay) ON|
+0F||(none) request / reply 00/01|Read the ON/OFF status of the Split function|00=OFF 01=ON
+0F|00||Turn the Split function OFF|
+0F|01||Turn the Split function ON|
+10||00 ~ 08|Set or read the tuning step|send/read (*); 00=OFF (10 Hz or 1 Hz),01=0.1 kHz,02=1 kHz,03=5 kHz,04=9 kHz,05=10 kHz,06=12.5 kHz,07=20 kHz,08=25 kHz; automatically 1 Hz for Fine Tuning
+11||00/20|Set or read the 20 dB attenuator|send/read (*); 00=OFF 20=ON (BCD)
+12|00|00/01|Set or read the receiving antenna (RX ANT) ON/OFF|send/read (*); 00=OFF 01=ON
+13|00||Announce S-meter level, operating frequency and mode|S-meter not announced when S-Level SPEECH OFF (1A 05 00 44 00)
+13|01||Announce S-meter level and operating frequency|
+13|02||Announce the current operating mode|announced after the frequency announcement
+14|01|BCD 2 bytes 00 00 ~ 02 55|Set or read the AF gain|send/read (*); 00 00=min 02 55=max
+14|02|BCD 2 bytes 00 00 ~ 02 55|Set or read the RF gain|00 00=min 02 55=max
+14|03|BCD 2 bytes 00 00 ~ 02 55|Set or read the squelch level|00 00=min 02 55=max
+14|05|BCD 2 bytes 00 00 ~ 02 55|Set or read the peak frequency of the Audio Peak Filter|10 Hz steps; 00 00=Pitch-550 Hz 01 28=Pitch 02 55=Pitch+550 Hz
+14|06|BCD 2 bytes 00 00 ~ 02 55|Set or read the Noise Reduction level|00 00=0% 02 55=100%
+14|07|BCD 2 bytes 00 00 ~ 02 55|Set or read Digital Twin PBT shift (inner: PBT1)|00 00=narrows upper freq, 01 28=center, 02 55=narrows lower freq
+14|08|BCD 2 bytes 00 00 ~ 02 55|Set or read Digital Twin PBT shift (outer: PBT2)|00 00=narrows upper freq, 01 28=center, 02 55=narrows lower freq
+14|09|BCD 2 bytes 00 00 ~ 02 55|Set or read the CW pitch frequency|5 Hz steps; 00 00=300 Hz 01 28=600 Hz 02 55=900 Hz
+14|0A|BCD 2 bytes 00 00 ~ 02 55|Set or read the RF power|00 00=min 02 55=max
+14|0B|BCD 2 bytes 00 00 ~ 02 55|Set or read the microphone gain|00 00=min 02 55=max
+14|0C|BCD 2 bytes 00 00 ~ 02 55|Set or read the keying speed|00 00=6 WPM 02 55=48 WPM
+14|0D|BCD 2 bytes 00 00 ~ 02 55|Set or read the Notch filter setting|00 00=higher freq, 01 28=middle, 02 55=lower freq
+14|0E|BCD 2 bytes 00 00 ~ 02 55|Set or read the Speech Compressor level|00 00=0 02 55=10
+14|0F|BCD 2 bytes 00 00 ~ 02 55|Set or read the Break-in delay|00 00=2.0d 02 55=13.0d
+14|12|BCD 2 bytes 00 00 ~ 02 55|Set or read the Noise Blanker level|00 00=0% 02 55=100%
+14|15|BCD 2 bytes 00 00 ~ 02 55|Set or read the gain of the monitored audio (Monitor level)|00 00=0% 02 55=100%; NOTE this model has no 14 14 DRIVE and no 14 13 DIGI-SEL in the table
+14|16|BCD 2 bytes 00 00 ~ 02 55|Set or read the VOX sensitivity (VOX gain)|00 00=0% 02 55=100%
+14|17|BCD 2 bytes 00 00 ~ 02 55|Set or read the ANTI VOX sensitivity|00 00=0% 02 55=100%; higher = VOX less sensitive
+14|19|BCD 2 bytes 00 00 ~ 02 55|Set or read the LCD backlight brightness|00 00=0% 02 55=100%
+15|01|00/01|Read Open/Closed status of Noise or S-meter squelch|00=Closed 01=Open
+15|02|BCD 2 bytes 00 00 ~ 02 55|Read the S-meter level|00 00=S0 01 20=S9 02 41=S9+60 dB
+15|05|00/01|Read Open/Closed status of the squelch (various squelch functions)|00=Closed 01=Open
+15|07|00/01|Read the status of the OVF indicator|00=Not displayed 01=Displayed
+15|11|BCD 2 bytes 00 00 ~ 02 55|Read the Po meter level|00 00=0% 01 43=50% 02 13=100%; 00 00 returned while receiving
+15|12|BCD 2 bytes 00 00 ~ 02 55|Read the SWR meter level|00 00=SWR1.0 00 48=1.5 00 80=2.0 01 20=3.0; 00 00 while receiving
+15|13|BCD 2 bytes 00 00 ~ 02 55|Read the ALC meter level|00 00=min 01 20=max; 00 00 while receiving
+15|14|BCD 2 bytes 00 00 ~ 02 55|Read the COMP meter level|00 00=0 dB 01 30=15 dB 02 10=30 dB; 00 00 while receiving
+15|15|BCD 2 bytes 00 00 ~ 02 55|Read the Vd meter level|00 00=0 V 00 13=10 V 02 41=16 V (as printed; 00 13 for 10 V looks like a manual typo, UNSURE)
+15|16|BCD 2 bytes 00 00 ~ 02 55|Read the Id meter level|00 00=0 00 97=10 01 46=15 02 41=25
+16|02|00 ~ 02|Set or read the preamp|send/read (*); 00=OFF 01=P.AMP1 ON 02=P.AMP2 ON
+16|12|01 ~ 03|Set or read the AGC time constant|01=FAST 02=MID 03=SLOW
+16|22|00/01|Set or read the Noise Blanker ON/OFF|00=OFF 01=ON
+16|32|00,01,02,03|Audio peak filter (APF)|00=OFF 01=WIDE ON (320 Hz if APF type SHARP) 02=MID (160 Hz) 03=NAR (80 Hz)
+16|40|00/01|Set or read the Noise Reduction ON/OFF|00=OFF 01=ON
+16|41|00/01|Set or read the Auto Notch ON/OFF|00=OFF 01=ON
+16|42|00/01|Set or read the Repeater tone ON/OFF|00=OFF 01=ON
+16|43|00/01|Set or read the Tone squelch ON/OFF|00=OFF 01=ON
+16|44|00/01|Set or read the Speech Compressor ON/OFF|00=OFF 01=ON
+16|45|00/01|Set or read the Monitor ON/OFF|00=OFF 01=ON
+16|46|00/01|Set or read the VOX function ON/OFF|00=OFF 01=ON
+16|47|00 ~ 02|Set or read the Break-in function in CW mode|00=OFF 01=Semi 02=Full
+16|48|00/01|Set or read the Manual Notch ON/OFF|00=OFF 01=ON
+16|4F|00/01|Set or read the Twin Peak Filter ON/OFF|00=OFF 01=ON; ON only when Mark=2125 Hz and Shift=170 Hz
+16|50|00/01|Set or read the Lock function ON/OFF|00=OFF 01=ON; MAIN DIAL or panel locked depending on 1A 05 00 48
+16|56|00/01|Set or read the IF filter shape|00=SHARP 01=SOFT
+16|57|00 ~ 02|Set or read the filter width of the Manual Notch|00=WIDE 01=MID 02=NAR
+16|58|00 ~ 02|Set or read the SSB transmit filter bandwidth|00=WIDE 01=MID 02=NAR; applied TBW depends on speech compressor ON/OFF (16 44): WIDE=1A 05 00 14, MID=1A 05 00 15, NAR=1A 05 00 16
+16|65|00/01|Set or read the IP Plus function|00=OFF 01=ON
+16|66|00/01|Set or read the TX Inhibit function|00=OFF 01=ON
+17||ASCII text up to 30 chars (see p.16)|Send CW messages|sent as CW when transmitting or break-in ON in CW mode; FF stops; ^ = no inter-character space
+18|00||Turn the transceiver OFF|
+18|01||Turn the transceiver ON|see p.16 (FE preamble needed via REMOTE jack)
+19|00||Read the transceiver ID|
+1A|00|see p.17|Set or read a specific Memory channel content|send/read (*)
+1A|01|see p.19|Set or read a specific band stacking register content|
+1A|02|see p.19|Set or read a specific Keyer Memory content|several contest numbers allowed
+1A|03|see p.19|Set or read the IF filter width|
+1A|04|see p.20|Set or read the AGC time constant|
+1A|05 00 01|See p. 20.|[SET > Tone Control/TBW > RX / SSB] Sets or reads the RX HPF/LPF settings.|
+1A|05 00 02|BCD 1 byte 00 ~ 10|[SET > Tone Control/TBW > RX] Sets or reads the RX Tone (Bass) level.|(00=-5 ~ 10=+5)
+1A|05 00 03|BCD 1 byte 00 ~ 10|[SET > Tone Control/TBW > RX] Sets or reads the RX Tone (Treble) level.|(00=-5 ~ 10=+5)
+1A|05 00 04|See p. 20.|[SET > Tone Control/TBW > RX / AM] Sets or reads the RX HPF/LPF settings.|
+1A|05 00 05|BCD 1 byte 00 ~ 10|[SET > Tone Control/TBW > RX] Sets or reads the RX Tone (Bass) level.|(00=-5 ~ 10=+5)
+1A|05 00 06|BCD 1 byte 00 ~ 10|[SET > Tone Control/TBW > RX] Sets or reads the RX Tone (Treble) level.|(00=-5 ~ 10=+5)
+1A|05 00 07|See p. 20.|[SET > Tone Control/TBW > RX / FM] Sets or reads the RX HPF/LPF settings.|
+1A|05 00 08|BCD 1 byte 00 ~ 10|[SET > Tone Control/TBW > RX] Sets or reads the RX Tone (Bass) level.|(00=-5 ~ 10=+5)
+1A|05 00 09|BCD 1 byte 00 ~ 10|[SET > Tone Control/TBW > RX] Sets or reads the RX Tone (Treble) level.|(00=-5 ~ 10=+5)
+1A|05 00 10|See p. 20.|[SET > Tone Control/TBW > RX / CW] Sets or reads the RX HPF/LPF settings.|
+1A|05 00 11|See p. 20.|[SET > Tone Control/TBW > RX / RTTY] Sets or reads the RX HPF/LPF settings.|
+1A|05 00 12|BCD 1 byte 00 ~ 10|[SET > Tone Control/TBW > TX / SSB] Sets or reads the TX Tone (Bass) level.|(00=-5 ~ 10=+5)
+1A|05 00 13|BCD 1 byte 00 ~ 10|[SET > Tone Control/TBW > TX] Sets or reads the TX Tone (Treble) level.|(00=-5 ~ 10=+5)
+1A|05 00 14|See p. 20.|[SET > Tone Control/TBW > TX] Sets or reads the TBW (WIDE) setting.|
+1A|05 00 15|See p. 20.|[SET > Tone Control/TBW > TX] Sets or reads the TBW (MID) setting.|
+1A|05 00 16|See p. 20.|[SET > Tone Control/TBW > TX] Sets or reads the TBW (NAR) setting.|
+1A|05 00 17|See p. 20.|[SET > Tone Control/TBW > TX / SSB-D] Sets or reads the TBW setting.|
+1A|05 00 18|BCD 1 byte 00 ~ 10|[SET > Tone Control/TBW > TX / AM] Sets or reads the TX Tone (Bass) level.|(00=-5 ~ 10=+5)
+1A|05 00 19|BCD 1 byte 00 ~ 10|[SET > Tone Control/TBW > TX] Sets or reads the TX Tone (Treble) level.|(00=-5 ~ 10=+5)
+1A|05 00 20|BCD 1 byte 00 ~ 10|[SET > Tone Control/TBW > TX / FM] Sets or reads the TX Tone (Bass) level.|(00=-5 ~ 10=+5)
+1A|05 00 21|BCD 1 byte 00 ~ 10|[SET > Tone Control/TBW > TX] Sets or reads the TX Tone (Treble) level.|(00=-5 ~ 10=+5) 8
+1A|05 00 22|BCD 2 bytes 00 00 ~ 02 55|[SET > Function] Sets or reads the Beep Level.|(00 00=Minimum ~ 02 55=Maximum)
+1A|05 00 23|BCD 1 byte 00/01|[SET > Function] Sets or reads the Beep Level Limit setting.|(00=OFF, 01=ON)
+1A|05 00 24|BCD 1 byte 00/01|[SET > Function] Sets or reads the Beep|(Confirmation) setting. (00=OFF, 01=ON)
+1A|05 00 25|BCD 1 byte 00 ~ 03|[SET > Function] Sets or reads the Band Edge Beep setting.|(00=OFF 01=ON (Default) 02=ON (User) 03=ON (User) & TX Limit)
+1A|05 00 26|BCD 1 byte 00 ~ 02|[SET > Function] Sets or reads the RF/SQL Control setting.|(00=Auto, 01=SQL, 02=RF+SQL)
+1A|05 00 27|BCD 1 byte 00/01|[SET > Function] Sets or reads the Cancel CI-V Remote Set Levels setting.|( 00=All Volume Levels, 01=Operated Volume Level)
+1A|05 00 28|BCD 1 byte 00/01|[SET > Function] Sets or reads the MF Band ATT setting.|(00=OFF, 01=ON)
+1A|05 00 29|BCD 1 byte 00 ~ 05|[SET > Function > TX Delay / HF] Sets or reads the TX Delay setting.|( 00=OFF, 01=10 ms, 02=15 ms, 03=20 ms, 04=25 ms, 05=30 ms)
+1A|05 00 30|BCD 1 byte 00 ~ 05|[SET > Function > TX Delay / 50M] Sets or reads the TX Delay setting.|( 00=OFF, 01=10 ms, 02=15 ms, 03=20 ms, 04=25 ms, 05=30 ms)
+1A|05 00 31|BCD 1 byte 00 ~ 05|[SET > Function > TX Delay / 70M] Sets or reads the TX Delay setting.|(00=OFF, 01=10 ms, 02=15 ms, 03=20 ms, 04=25 ms, 05=30 ms)
+1A|05 00 32|BCD 1 byte 00 ~ 05|[SET > Function] Sets or reads the Time-Out Timer|(CI-V) setting. ( 00=OFF, 01=3 min, 02=5 min, 03=10 min, 04=20 min, 05=30 min) L Valid only for transmission initiated by a CI-V command or by pushing TRANSMIT on the transceiver.
+1A|05 00 33|BCD 1 byte 00/01|[SET > Function > SPLIT] Sets or reads the Quick SPLIT setting.|(00=OFF, 01=ON)
+1A|05 00 34|See p. 20.|[SET > Function > SPLIT] Sets or reads the FM SPLIT Offset|(HF) setting.
+1A|05 00 35|See p. 20.|[SET > Function > SPLIT] Sets or reads the FM SPLIT Offset|(50M) setting.
+1A|05 00 36|BCD 1 byte 00/01|[SET > Function > SPLIT] Sets or reads the SPLIT LOCK setting.|(00=OFF, 01=ON)
+1A|05 00 37|BCD 1 byte 00/01|[SET > Function > Tuner] Sets or reads the [TUNER] Switch setting.|(00=Manual, 01=Auto)
+1A|05 00 38|BCD 1 byte 00/01|[SET > Function > Tuner] Sets or reads the PTT Start setting.|(00=OFF, 01=ON)
+1A|05 00 39|BCD 1 byte 00 ~ 02|[SET > Function] Sets or reads the RTTY Mark Frequency setting.|( 00=1275 Hz, 01=1615 Hz, 02=2125 Hz)
+1A|05 00 40|BCD 1 byte 00 ~ 02|[SET > Function] Sets or reads the RTTY Shift Width setting.|(00=170 Hz, 01=200 Hz, 02=425 Hz)
+1A|05 00 41|BCD 1 byte 00/01|[SET > Function] Sets or reads the RTTY Keying Polarity setting.|(00=Normal, 01=Reverse)
+1A|05 00 42|BCD 1 byte 00/01|[SET > Function > SPEECH] Sets or reads the SPEECH Language setting.|(00=English, 01=Japanese)
+1A|05 00 43|BCD 1 byte 00/01|[SET > Function > SPEECH] Sets or reads the SPEECH Speed setting.|(0=Slow, 01=Fast)
+1A|05 00 44|BCD 1 byte 00/01|[SET > Function > SPEECH] Sets or reads the S-Level SPEECH setting.|(00=OFF, 01=ON)
+1A|05 00 45|BCD 1 byte 00/01|[SET > Function > SPEECH] Sets or reads the MODE SPEECH setting.|(00=OFF, 01=ON)
+1A|05 00 46|BCD 2 bytes 00 00 ~ 02 55|[SET > Function > SPEECH] Sets or reads the SPEECH Level setting.|(00 00=0% ~ 02 55=100%)
+1A|05 00 47|BCD 1 byte 00/01|[SET > Function] Sets or reads the [SPEECH/LOCK] Switch setting.|(00=SPEECH/LOCK, 01=LOCK/SPEECH)
+1A|05 00 48|BCD 1 byte 00/01|[SET > Function] Sets or reads the Lock Function setting.|( 00=MAIN DIAL, 01=PANEL) L When PANEL is selected, keys and dials are also locked except for AF RF/SQL , AF RF/SQL , POWER , and SPEECH .
+1A|05 00 49|BCD 1 byte 00/01|[SET > Function] Sets or reads the Memo Pad Quantity setting.|(00=5 ch, 01=10 ch)
+1A|05 00 50|BCD 1 byte 00 ~ 02|[SET > Function] Sets or reads the MAIN DIAL Auto TS setting.|(00=OFF, 01=Low, 02=High)
+1A|05 00 51|BCD 1 byte 00/01|[SET > Function] Sets or reads the MIC Up/Down Speed setting.|(00=Slow, 01=Fast)
+1A|05 00 52|BCD 1 byte 00/01|[SET > Function] Sets or reads the Quick RIT/TX Clear setting.|(00=OFF, 01=ON)
+1A|05 00 53|BCD 1 byte 00 ~ 02|[SET > Function] Sets or reads the [NOTCH] Switch|(SSB) setting. ( 00=Auto, 01=Manual, 02=Auto/Manual)
+1A|05 00 54|BCD 1 byte 00 ~ 02|[SET > Function] Sets or reads the [NOTCH] Switch|(AM) setting. ( 00=Auto, 01=Manual, 02=Auto/Manual)
+1A|05 00 55|BCD 1 byte 00/01|[SET > Function] Sets or reads the SSB/CW Synchronous Tuning setting.|(00=OFF, 01=ON)
+1A|05 00 56|BCD 1 byte 00/01|[SET > Function] Sets or reads the CW Normal Side setting.|(00=LSB, 01=USB)
+1A|05 00 57|See p. 21.|[SET > Function > Front Key Customize] Sets or reads the [VOX/BK-IN] setting.|
+1A|05 00 58|See p. 23.|[SET > Function > Front Key Customize] Sets or reads the [AUTOTUNE] setting.|
+1A|05 00 59|See p. 21.|[SET > Function > Front Key Customize] Sets or reads the [] setting.|
+1A|05 00 60|See p. 21.|[SET > Function > Front Key Customize] Sets or reads the [] setting.|
+1A|05 00 61|See p. 21.|[SET > Function > MIC Key Customize] Sets or reads the [UP] setting.|
+1A|05 00 62|See p. 21.|[SET > Function > MIC Key Customize] Sets or reads the [DN] setting.|
+1A|05 00 63|BCD 1 byte 00/01|[SET > Function] Sets or reads the Screen Capture [POWER] SW setting.|(00=OFF, 01=ON)
+1A|05 00 64|BCD 1 byte 00/01|[SET > Function] Sets or reads the Screen Capture File Type setting.|(00=PNG, 01=BMP)
+1A|05 00 65|BCD 1 byte 00/01|[SET > Function] Sets or reads the Keyboard Type setting.|(00=Ten-key, 01=Full Keyboard)
+1A|05 00 66|BCD 1 byte 00 ~ 02|[SET > Function] Sets or reads the Full Keyboard Layout setting.|(00=English, 01=German, 02=French)
+1A|05 00 67|BCD 1 byte 00/01|[SET > Function] Sets or reads the Calibration Marker setting.|(00=OFF, 01=ON)
+1A|05 00 68|BCD 2 bytes 00 00 ~ 02 55|[SET > Function] Sets or reads the REF Adjust setting.|(00 00=0%, 02 55=100%)
+1A|05 00 69|BCD 1 byte 00/01|[SET > Connectors > USB AF/IF Output] Sets or reads the Output Select setting.|(00=AF, 01=IF)
+1A|05 00 70|BCD 2 bytes 00 00 ~ 02 55|[SET > Connectors > USB AF/IF Output] Sets or reads the AF Output Level setting.|(00 00=0% ~ 02 55=100%)
+1A|05 00 71|BCD 1 byte 00/01|[SET > Connectors > USB AF/IF Output] Sets or reads the AF SQL setting.|(00=OFF (Open), 01=ON)
+1A|05 00 72|BCD 1 byte 00/01|[SET > Connectors > USB AF/IF Output] Sets or reads the AF Beep/Speech... Output setting.|(00=OFF, 01=ON)
+1A|05 00 73|BCD 2 bytes 00 00 ~ 02 55|[SET > Connectors > USB AF/IF Output] Sets or reads the IF Output Level setting.|(00 00=0% ~ 02 55=100%) 9
+1A|05 00 74|BCD 1 byte 00/01|[SET > Connectors > ACC AF/IF Output] Sets or reads the Output Select setting.|(00=AF, 01=IF)
+1A|05 00 75|BCD 2 bytes 00 00 ~ 02 55|[SET > Connectors > ACC AF/IF Output] Sets or reads the AF Output Level setting.|(00 00=0% ~ 02 55=100%)
+1A|05 00 76|BCD 1 byte 00/01|[SET > Connectors > ACC AF/IF Output] Sets or reads the AF SQL setting.|(00=OFF (Open), 01=ON)
+1A|05 00 77|BCD 1 byte 00/01|[SET > Connectors > ACC AF/IF Output] Sets or reads the AF Beep/Speech... Output setting.|(00=OFF, 01=ON)
+1A|05 00 78|BCD 2 bytes 00 00 ~ 02 55|[SET > Connectors > ACC AF/IF Output] Sets or reads the IF Output Level setting.|(00 00=0% ~ 02 55=100%)
+1A|05 00 79|BCD 1 byte 00/01|[SET > Connectors > LAN AF/IF Output] Sets or reads the Output Select setting.|(00=AF, 01=IF)
+1A|05 00 80|BCD 1 byte 00/01|[SET > Connectors > LAN AF/IF Output] Sets or reads the AF SQL setting.|(00=OFF (Open), 01=ON)
+1A|05 00 81|BCD 2 bytes 00 00 ~ 02 55|[SET > Connectors > MOD Input] Sets or reads the USB MOD Level setting.|(00 00=0% ~ 02 55=100%)
+1A|05 00 82|BCD 2 bytes 00 00 ~ 02 55|[SET > Connectors > MOD Input] Sets or reads the ACC MOD Level setting.|(00 00=0% ~ 02 55=100%)
+1A|05 00 83|BCD 2 bytes 00 00 ~ 02 55|[SET > Connectors > MOD Input] Sets or reads the LAN MOD Level setting.|(00 00=0% ~ 02 55=100%)
+1A|05 00 84|BCD 1 byte 00 ~ 05|[SET > Connectors > MOD Input] Sets or reads the DATA OFF MOD setting.|( 00=MIC, 01=USB, 02=ACC, 03=MIC, USB, 04=MIC, ACC 05=LAN)
+1A|05 00 85|BCD 1 byte 00 ~ 05|[SET > Connectors > MOD Input] Sets or reads the DATA MOD setting.|( 00=MIC, 01=USB, 02=ACC, 03=MIC, USB, 04=MIC, ACC 05=LAN)
+1A|05 00 86|BCD 1 byte 00/01|[SET > Connectors > External Keypad] Sets or reads the VOICE setting.|(00=OFF, 01=ON)
+1A|05 00 87|BCD 1 byte 00/01|[SET > Connectors > External Keypad] Sets or reads the KEYER setting.|(00=OFF, 01=ON)
+1A|05 00 88|BCD 1 byte 00/01|[SET > Connectors > External Keypad] Sets or reads the RTTY setting.|(00=OFF, 01=ON)
+1A|05 00 89|BCD 1 byte 00/01|[SET > Connectors > CI-V] Sets or reads the CI-V Transceive setting.|(00=OFF, 01=ON)
+1A|05 00 90|BCD 2 bytes 00 00 ~ 02 23|[SET > Connectors > CI-V] Sets or reads the USB/LANREMOTE Transceive Address setting.|(00 00=00h ~ 02 23=DFh)
+1A|05 00 91|BCD 1 byte 00/01|[SET > Connectors > CI-V] Sets or reads the CI-V Output (for ANT) setting.|(00=OFF, 01=ON)
+1A|05 00 92|BCD 1 byte 00/01|[SET > Connectors > CI-V] Sets or reads the CI-V USB (A) Echo Back setting.|(00=OFF, 01=ON)
+1A|05 00 93|BCD 1 byte 00/01|[SET > Connectors > CI-V] Sets or reads the CI-V USB (B) Echo Back setting.|(00=OFF, 01=ON)
+1A|05 00 94|BCD 1 byte 00/01|[SET > Connectors] Sets or reads the USB (B) Function setting.|(00=RTTY Decode, 01=CI-V)
+1A|05 00 95|BCD 1 byte 00/01|[SET > Connectors] Sets or reads the SEND Relay Output setting.|(00=OFF, 01=ON)
+1A|05 00 96|BCD 1 byte 00 ~ 04|[SET > Connectors > USB SEND/Keying] Sets or reads the the USB SEND setting.|(00=OFF, 01=USB (A) DTR, 02=USB (A) RTS, 03=USB (B) DTR 04=USB (B) RTS) L USB (A) and USB (B) are the 2 virtual COM ports on the [USB] port on the rear panel. L You cannot select the same terminal used for USB Keying (CW) or USB Keying (RTTY) setting.
+1A|05 00 97|BCD 1 byte 00 ~ 04|[SET > Connectors > USB SEND/Keying] Sets or reads the USB Keying (CW) setting.|(00=OFF, 01=USB (A) DTR, 02=USB (A) RTS, 03=USB (B) DTR 04=USB (B) RTS) L USB (A) and USB (B) are the 2 virtual COM ports on the [USB] port on the rear panel. L You cannot select the same terminal used for the USB SEND setting.
+1A|05 00 98|BCD 1 byte 00 ~ 04|[SET > Connectors > USB SEND/Keying] Sets or reads the USB Keying|(RTTY) setting. (00=OFF, 01=USB (A) DTR, 02=USB (A) RTS, 03=USB (B) DTR 04=USB (B) RTS) L USB (A) and USB (B) are the 2 virtual COM ports on the [USB] port on the rear panel. L You cannot select the same terminal used for the USB SEND setting. 10
+1A|05 00 99|BCD 1 byte 00/01|[SET > Connector] Sets or reads the PTT Port Function setting.|(00=PTT Input, 01=PTT Input + SEND Output)
+1A|05 01 00|BCD 1 byte 00/01|[SET > Network] Sets or reads the DHCP (valid after restart) setting.|(00=OFF, 01=ON)
+1A|05 01 01|See p. 21.|[SET > Network] Sets or reads the IP Address (valid after restart) setting. L Valid when DHCP is set to OFF|(1A 05 01 00 00). L You cannot set the same address as "Default Gateway."
+1A|05 01 02|See p. 21.|[SET > Network] Reads the IP address obtained by DHCP (valid after restart). L When DHCP is set to OFF|(1A 05 01 00 00), the manually set IP address will be returned.
+1A|05 01 03|BCD 1 byte 01 ~ 30|[SET > Network] Sets or reads the Subnet Mask (valid after restart) setting.|( 01=128.0.0.0 (1 bit) ~ 30=255.255.255.252 (30 bit)) L Valid when DHCP is set to OFF (1A 05 01 00 00).
+1A|05 01 04|See p. 21.|[SET > Network] Sets or reads the Default Gateway|(valid after restart) setting. L Valid when DHCP is set to OFF (1A 05 01 00 00). L You cannot set the same address as "IP Address."
+1A|05 01 05|See p. 21.|[SET > Network] Sets or reads the Primary DNS Server (valid after restart) setting. L Valid when DHCP is set to OFF|(1A 05 01 00 00).
+1A|05 01 06|See p. 21.|[SET > Network] Sets or reads the Secondary DNS Server (valid after restart) setting. L Valid when DHCP is set to OFF|(1A 05 01 00 00).
+1A|05 01 07|See p. 18.|[SET > Network] Sets or reads the Network Name setting.|(Up to 15 characters)
+1A|05 01 08|BCD 1 byte 00/01|[SET > Network > Remote Settings] Sets or reads the Network Control|(valid after restart) setting. (00=OFF, 01=ON)
+1A|05 01 09|BCD 1 byte 00/01|[SET > Network > Remote Settings] Sets or reads the Power OFF Setting|(for Remote Control) setting. ( 00=Only Shutdown, 01=Standby/Shutdown)
+1A|05 01 10|BCD 3 bytes 00 00 01 ~ 06 55 35|[SET > Network > Remote Settings] Control Port (UDP) (valid after restart)|00 00 01=1 ~ 06 55 35=65535
+1A|05 01 11|BCD 3 bytes 00 00 01 ~ 06 55 35|[SET > Network > Remote Settings] Serial Port (UDP) (valid after restart)|00 00 01=1 ~ 06 55 35=65535
+1A|05 01 12|BCD 3 bytes 00 00 01 ~ 06 55 35|[SET > Network > Remote Settings] Audio Port (UDP) (valid after restart)|00 00 01=1 ~ 06 55 35=65535
+1A|05 01 13|BCD 1 byte 00/01|[SET > Network > Remote Settings] Sets or reads the Internet Access Line (valid after restart) setting.|( 00=FTTH (Fiber To The Home), 01=ADSL/CATV)
+1A|05 01 14|See p. 18.|[SET > Network > Remote Settings] Sets or reads the the Network Radio Name setting.|(Up to 16 characters)
+1A|05 01 15|BCD 2 bytes 00 00 ~ 02 55|[SET > Display] Sets or reads the LCD Backlight setting.|(00 00=0% ~ 02 55=100%)
+1A|05 01 16|BCD 1 byte 00/01|[SET > Display] Sets or reads the Display Type setting.|( 00=A (Black backgound), 01=B (Blue background))
+1A|05 01 17|BCD 1 byte 00/01|[SET > Display] Sets or reads the Display Font setting.|(00=Square, 01=Round)
+1A|05 01 18|BCD 1 byte 00/01|[SET > Display] Sets or reads the Meter Peak Hold setting.|(00=OFF, 01=ON)
+1A|05 01 19|BCD 1 byte 00/01|[SET > Display] Sets or reads the Memory Name setting.|(00=OFF, 01=ON)
+1A|05 01 20|BCD 1 byte 00/01|[SET > Display] Sets or reads the MN-Q Popup (MN OFFON) setting.|(00=OFF, 01=ON)
+1A|05 01 21|BCD 1 byte 00/01|[SET > Display] Sets or reads the BW Popup (PBT) setting.|(00=OFF, 01=ON)
+1A|05 01 22|BCD 1 byte 00/01|[SET > Display] Sets or reads the BW Popup (FIL) setting.|(00=OFF, 01=ON)
+1A|05 01 23|BCD 1 byte 00 ~ 03|[SET > Display] Sets or reads the Screen Saver setting.|( 00=OFF, 01=15 minutes, 02=30 minutes, 03=60 minutes) 11
+1A|05 01 24|BCD 1 byte 00/01|[SET > Display > External Display] Sets or reads the External Display setting.|(00=OFF, 01=ON)
+1A|05 01 25|BCD 1 byte 00 ~ 02|[SET > Display > External Display] Sets or reads the Resolution setting.|(00=640x480, 01=1024x768, 02=1280x720)
+1A|05 01 26|BCD 1 byte 00/01|[SET > Display > External Display] Sets or reads the Audio Output setting.|(00=OFF, 01=ON)
+1A|05 01 27|BCD 1 byte 00/01|[SET > Display] Sets or reads the Opening Message setting.|(00=OFF, 01=ON)
+1A|05 01 28|See p. 18.|[SET > Display] Sets or reads the My Call setting.|(Up to 10 characters)
+1A|05 01 29|BCD 1 byte 00/01|[SET > Display] Sets or reads the Power ON Check setting.|(00=OFF, 01=ON)
+1A|05 01 30|BCD 1 byte 00/01|[SET > Display] Sets or reads the Display Language setting.|(00=English, 01=Japanese)
+1A|05 01 31|BCD 1 byte 00/01|[SET > Display] Sets or reads the System Language setting.|(00=English, 01=Japanese)
+1A|05 01 32|BCD 4 bytes 20 20 01 01 ~ 20 99 12 31|[SET > Time Set > Date/Time] Date setting|20 20 01 01=2020/01/01 ~ 20 99 12 31=2099/12/31 (YYYY MM DD)
+1A|05 01 33|BCD 2 bytes 00 00 ~ 23 59|[SET > Time Set > Date/Time] Sets or reads the Time setting.|(00 00=00:00 ~ 23 59=23:59)
+1A|05 01 34|BCD 1 byte 00/01|[SET > Time Set > Date/Time] Sets or reads the NTP Function setting.|(00=OFF, 01=ON)
+1A|05 01 35|See p. 18.|[SET > Time Set > Date/Time] Sets or reads the NTP Server Address setting.|(Up to 64 characters)
+1A|05 01 36|See p. 22.|[SET > Time Set] Sets or reads the UTC Offset setting.|
+1A|05 01 37|BCD 1 byte 00/01|[SCOPE SET: SCOPE > EXPD/SET (Touch for 1 second)] Sets or reads the Scope during Tx|(CENTER Type) setting. (00=OFF, 01=ON)
+1A|05 01 38|BCD 1 byte 00 ~ 02|[SCOPE SET: SCOPE > EXPD/SET (Touch for 1 second)] Sets or reads the the Max Hold setting.|( 00=OFF, 01=10s Hold, 02=ON)
+1A|05 01 39|BCD 1 byte 00 ~ 02|[SCOPE SET: SCOPE > EXPD/SET (Touch for 1 second)] Sets or reads the CENTER Type Display setting.|(00=Filter Center, 01=Carrier Point center, 02=Carrier Point center (Abs. Freq.))
+1A|05 01 40|BCD 1 byte 00/01|[SCOPE SET: SCOPE > EXPD/SET (Touch for 1 second)] Sets or reads the Marker Position|(Fix Type/SCROLL Type) setting. (00=Filter Center, 01=Carrier Point)
+1A|05 01 41|BCD 1 byte 00/01|[SCOPE SET: SCOPE > EXPD/SET (Touch for 1 second)] Sets or reads the VBW setting.|(00=Narrow, 01=Wide)
+1A|05 01 42|BCD 1 byte 00 ~ 03|[SCOPE SET: SCOPE > EXPD/SET (Touch for 1 second)] Sets or reads the Averaging setting.|( 00=OFF, 01=2, 02=3, 03=4)
+1A|05 01 43|BCD 1 byte 00/01|[SCOPE SET: SCOPE > EXPD/SET (Touch for 1 second)] Sets or reads the Waveform Type setting.|(00=Fill, 01=Fill+Line)
+1A|05 01 44|See p. 22.|[SCOPE SET: SCOPE > EXPD/SET (Touch for 1 second)] Sets or reads the Waveform Color|(Current) setting.
+1A|05 01 45|See p. 22.|[SCOPE SET: SCOPE > EXPD/SET (Touch for 1 second)] Sets or reads the Waveform Color|(Line) setting.
+1A|05 01 46|See p. 22.|[SCOPE SET: SCOPE > EXPD/SET (Touch for 1 second)] Sets or reads the Waveform Color|(Max Hold) setting.
+1A|05 01 47|BCD 1 byte 00/01|[SCOPE SET: SCOPE > EXPD/SET (Touch for 1 second)] Sets or reads the Waterfall Display setting.|(00=OFF, 01=ON)
+1A|05 01 48|BCD 1 byte 00 ~ 02|[SCOPE SET: SCOPE > EXPD/SET (Touch for 1 second)] Sets or reads the Waterfall Speed setting.|(00=Slow, 01=Mid, 02=Fast)
+1A|05 01 49|BCD 1 byte 00 ~ 02|[SCOPE SET: SCOPE > EXPD/SET (Touch for 1 second)] Sets or reads the Waterfall Size|(Expand Screen) setting. (00=Small, 01=Mid, 02=Large)
+1A|05 01 50|BCD 1 byte 00 ~ 07|[SCOPE SET: SCOPE > EXPD/SET (Touch for 1 second)] Sets or reads the Waterfall Peak Color Level setting.|(00=Grid 1 ~ 07=Grid 8)
+1A|05 01 51|BCD 1 byte 00/01|[SCOPE SET: SCOPE > EXPD/SET (Touch for 1 second)] Sets or reads the Waterfall Marker Auto-hide setting.|(00=OFF, 01=ON)
+1A|05 01 52|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 0.03 ~ 1.60 MHz] Scope Fixed Edge No.1 setting|send/read
+1A|05 01 53|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 0.03 ~ 1.60 MHz] Scope Fixed Edge No.2 setting|send/read
+1A|05 01 54|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 0.03 ~ 1.60 MHz] Scope Fixed Edge No.3 setting|send/read
+1A|05 01 55|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 0.03 ~ 1.60 MHz] Scope Fixed Edge No.4 setting|send/read
+1A|05 01 56|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 1.60 ~ 2.00 MHz] Scope Fixed Edge No.1 setting|send/read
+1A|05 01 57|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 1.60 ~ 2.00 MHz] Scope Fixed Edge No.2 setting|send/read
+1A|05 01 58|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 1.60 ~ 2.00 MHz] Scope Fixed Edge No.3 setting|send/read
+1A|05 01 59|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 1.60 ~ 2.00 MHz] Scope Fixed Edge No.4 setting|send/read
+1A|05 01 60|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 2.00 ~ 6.00 MHz] Scope Fixed Edge No.1 setting|send/read
+1A|05 01 61|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 2.00 ~ 6.00 MHz] Scope Fixed Edge No.2 setting|send/read
+1A|05 01 62|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 2.00 ~ 6.00 MHz] Scope Fixed Edge No.3 setting|send/read
+1A|05 01 63|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 2.00 ~ 6.00 MHz] Scope Fixed Edge No.4 setting|send/read
+1A|05 01 64|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 6.00 ~ 8.00 MHz] Scope Fixed Edge No.1 setting|send/read
+1A|05 01 65|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 6.00 ~ 8.00 MHz] Scope Fixed Edge No.2 setting|send/read
+1A|05 01 66|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 6.00 ~ 8.00 MHz] Scope Fixed Edge No.3 setting|send/read
+1A|05 01 67|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 6.00 ~ 8.00 MHz] Scope Fixed Edge No.4 setting|send/read
+1A|05 01 68|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 8.00 ~ 11.00 MHz] Scope Fixed Edge No.1 setting|send/read
+1A|05 01 69|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 8.00 ~ 11.00 MHz] Scope Fixed Edge No.2 setting|send/read
+1A|05 01 70|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 8.00 ~ 11.00 MHz] Scope Fixed Edge No.3 setting|send/read
+1A|05 01 71|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 8.00 ~ 11.00 MHz] Scope Fixed Edge No.4 setting|send/read
+1A|05 01 72|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 11.00 ~ 15.00 MHz] Scope Fixed Edge No.1 setting|send/read
+1A|05 01 73|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 11.00 ~ 15.00 MHz] Scope Fixed Edge No.2 setting|send/read
+1A|05 01 74|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 11.00 ~ 15.00 MHz] Scope Fixed Edge No.3 setting|send/read
+1A|05 01 75|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 11.00 ~ 15.00 MHz] Scope Fixed Edge No.4 setting|send/read
+1A|05 01 76|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 15.00 ~ 20.00 MHz] Scope Fixed Edge No.1 setting|send/read
+1A|05 01 77|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 15.00 ~ 20.00 MHz] Scope Fixed Edge No.2 setting|send/read
+1A|05 01 78|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 15.00 ~ 20.00 MHz] Scope Fixed Edge No.3 setting|send/read
+1A|05 01 79|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 15.00 ~ 20.00 MHz] Scope Fixed Edge No.4 setting|send/read
+1A|05 01 80|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 20.00 ~ 22.00 MHz] Scope Fixed Edge No.1 setting|send/read
+1A|05 01 81|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 20.00 ~ 22.00 MHz] Scope Fixed Edge No.2 setting|send/read
+1A|05 01 82|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 20.00 ~ 22.00 MHz] Scope Fixed Edge No.3 setting|send/read
+1A|05 01 83|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 20.00 ~ 22.00 MHz] Scope Fixed Edge No.4 setting|send/read
+1A|05 01 84|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 22.00 ~ 26.00 MHz] Scope Fixed Edge No.1 setting|send/read
+1A|05 01 85|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 22.00 ~ 26.00 MHz] Scope Fixed Edge No.2 setting|send/read
+1A|05 01 86|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 22.00 ~ 26.00 MHz] Scope Fixed Edge No.3 setting|send/read
+1A|05 01 87|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 22.00 ~ 26.00 MHz] Scope Fixed Edge No.4 setting|send/read
+1A|05 01 88|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 26.00 ~ 30.00 MHz] Scope Fixed Edge No.1 setting|send/read
+1A|05 01 89|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 26.00 ~ 30.00 MHz] Scope Fixed Edge No.2 setting|send/read
+1A|05 01 90|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 26.00 ~ 30.00 MHz] Scope Fixed Edge No.3 setting|send/read
+1A|05 01 91|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 26.00 ~ 30.00 MHz] Scope Fixed Edge No.4 setting|send/read
+1A|05 01 92|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 30.00 ~ 45.00 MHz] Scope Fixed Edge No.1 setting|send/read
+1A|05 01 93|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 30.00 ~ 45.00 MHz] Scope Fixed Edge No.2 setting|send/read
+1A|05 01 94|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 30.00 ~ 45.00 MHz] Scope Fixed Edge No.3 setting|send/read
+1A|05 01 95|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 30.00 ~ 45.00 MHz] Scope Fixed Edge No.4 setting|send/read
+1A|05 01 96|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 45.00 ~ 60.00 MHz] Scope Fixed Edge No.1 setting|send/read
+1A|05 01 97|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 45.00 ~ 60.00 MHz] Scope Fixed Edge No.2 setting|send/read
+1A|05 01 98|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 45.00 ~ 60.00 MHz] Scope Fixed Edge No.3 setting|send/read
+1A|05 01 99|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 45.00 ~ 60.00 MHz] Scope Fixed Edge No.4 setting|send/read
+1A|05 02 00|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 60.00 ~ 74.80 MHz] Scope Fixed Edge No.1 setting|send/read
+1A|05 02 01|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 60.00 ~ 74.80 MHz] Scope Fixed Edge No.2 setting|send/read
+1A|05 02 02|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 60.00 ~ 74.80 MHz] Scope Fixed Edge No.3 setting|send/read
+1A|05 02 03|see p.22 (Fixed edge freq: lower+higher edge, 5 bytes each)|[SCOPE > EXPD/SET > Fixed Edges 60.00 ~ 74.80 MHz] Scope Fixed Edge No.4 setting|send/read
+1A|05 02 04|BCD 1 byte 00/01|[AUDIO SCOPE SET: AUDIO > EXPD/SET (Touch for 1 second)] Sets or reads the FFT Scope Waveform Type setting.|(00=Line, 01=Fill)
+1A|05 02 05|See p. 22.|[AUDIO SCOPE SET: AUDIO > EXPD/SET (Touch for 1 second)] Sets or reads the FFT Scope Waveform Color setting.|
+1A|05 02 06|BCD 1 byte 00/01|[AUDIO SCOPE SET: AUDIO > EXPD/SET (Touch for 1 second)] Sets or reads the FFT Scope Waterfall Display setting.|(00=OFF, 01=ON)
+1A|05 02 07|See p. 22.|[AUDIO SCOPE SET: AUDIO > EXPD/SET (Touch for 1 second)] Sets or reads the Oscilloscope Waveform Color setting.|
+1A|05 02 08|BCD 1 byte 00 ~ 04|[KEYER 001:  KEYER/DECODE > KEYER > EDIT/SET > 001 SET] Sets or reads the Number Style setting.|(00=Normal, 01=190ANO, 02=190ANT, 03=90NO, 04=90NT)
+1A|05 02 09|BCD 1 byte 00/01|[KEYER 001:  KEYER/DECODE > KEYER > EDIT/SET > 001 SET] Sets or reads the Count Up Trigger|(M1) setting. (00=OFF, 01=ON)
+1A|05 02 10|BCD 1 byte 00/01|[KEYER 001:  KEYER/DECODE > KEYER > EDIT/SET > 001 SET] Sets or reads the Count Up Trigger|(M2) setting. (00=OFF, 01=ON)
+1A|05 02 11|BCD 1 byte 00/01|[KEYER 001:  KEYER/DECODE > KEYER > EDIT/SET > 001 SET] Sets or reads the Count Up Trigger|(M3) setting. (00=OFF, 01=ON)
+1A|05 02 12|BCD 1 byte 00/01|[KEYER 001:  KEYER/DECODE > KEYER > EDIT/SET > 001 SET] Sets or reads the Count Up Trigger|(M4) setting. (00=OFF, 01=ON)
+1A|05 02 13|BCD 1 byte 00/01|[KEYER 001:  KEYER/DECODE > KEYER > EDIT/SET > 001 SET] Sets or reads the Count Up Trigger|(M5) setting. (00=OFF, 01=ON)
+1A|05 02 14|BCD 1 byte 00/01|[KEYER 001:  KEYER/DECODE > KEYER > EDIT/SET > 001 SET] Sets or reads the Count Up Trigger|(M6) setting. (00=OFF, 01=ON)
+1A|05 02 15|BCD 1 byte 00/01|[KEYER 001:  KEYER/DECODE > KEYER > EDIT/SET > 001 SET] Sets or reads the Count Up Trigger|(M7) setting. (00=OFF, 01=ON)
+1A|05 02 16|BCD 1 byte 00/01|[KEYER 001:  KEYER/DECODE > KEYER > EDIT/SET > 001 SET] Sets or reads the Count Up Trigger|(M8) setting. (00=OFF, 01=ON)
+1A|05 02 17|BCD 2 bytes 00 01 ~ 99 99|[KEYER 001:  KEYER/DECODE > KEYER > EDIT/SET > 001 SET] Sets or reads the Present Number setting.|(00 01=1 ~ 99 99=9999) 13
+1A|05 02 18|BCD 2 bytes 00 00 ~ 02 25|[SET > CW-KEY Set] Sets or reads the Side Tone Level setting.|(00 00=0% ~ 02 55=100%)
+1A|05 02 19|BCD 1 byte 00/01|[SET > CW-KEY Set] Sets or reads the Side Tone Level Limit setting.|(00=OFF, 01=ON)
+1A|05 02 20|BCD 1 byte 01 ~ 60|[SET > CW-KEY Set] Sets or reads the Keyer Repeat time setting.|(01=1 sec. ~ 60=60 sec.)
+1A|05 02 21|BCD 1 byte 28 ~ 45|[SET > CW-KEY Set] Sets or reads the Dot/Dash Ratio setting.|(28=1:1:2.8 ~ 45=1:1:4.5; 0.1 steps)
+1A|05 02 22|BCD 1 byte 00 ~ 03|[SET > CW-KEY Set] Sets or reads the Rise Time setting.|( 00=2 ms, 01=4 ms, 02=6 ms, 03=8 ms)
+1A|05 02 23|BCD 1 byte 00/01|[SET > CW-KEY Set] Sets or reads the Paddle Polarity setting.|(00=Normal, 01=Reverse)
+1A|05 02 24|BCD 1 byte 00 ~ 02|[SET > CW-KEY Set] Sets or reads the Key Type setting.|(00=Straight, 01=Bug, 02=Paddle)
+1A|05 02 25|BCD 1 byte 00/01|[SET > CW-KEY Set] Sets or reads the MIC Up/Down Keyer setting.|(00=OFF, 01=ON)
+1A|05 02 26|BCD 1 byte 00/01|[KEYER DECODE SET:  KEYER/DECODE > KEYER > EDIT/SET] Sets or reads the Decode Display setting.|(00=OFF, 01=ON)
+1A|05 02 27|BCD 1 byte 00/01|[KEYER DECODE SET:  KEYER/DECODE > KEYER > EDIT/SET] Sets or reads the Japanese Morse Decode setting.|(00=OFF, 01=ON) L System language must be set to Japanese (1A 05 01 31 01).
+1A|05 02 28|BCD 1 byte 00 ~ 03|[RTTY DECODE > EXPD/SET (Touch for 1 second)] Sets or reads the FFT Scope Averaging setting.|(00=OFF, 01=2, 02=3, 03=4)
+1A|05 02 29|See p. 22.|[RTTY DECODE > EXPD/SET (Touch for 1 second)] Sets or reads the FFT Scope Waveform Color setting.|
+1A|05 02 30|BCD 1 byte 00/01|[RTTY DECODE > EXPD/SET (Touch for 1 second)] Sets or reads the Decode USOS setting.|(00=OFF, 01=ON)
+1A|05 02 31|BCD 1 byte 00/01|[RTTY DECODE > EXPD/SET (Touch for 1 second)] Sets or reads the Decode New Line Code setting.|(00=CR, LF, CR+LF, 01=CR+LF)
+1A|05 02 32|BCD 1 byte 00/01|[RTTY DECODE > EXPD/SET (Touch for 1 second)] Sets or reads the TX USOS setting.|(00=OFF, 01=ON)
+1A|05 02 33|See p. 22.|[RTTY DECODE > EXPD/SET (Touch for 1 second)] Sets or reads the Font Color|(Receive) setting.
+1A|05 02 34|See p. 22.|[RTTY DECODE > EXPD/SET (Touch for 1 second)] Sets or reads the Font Color|(Transmit) setting.
+1A|05 02 35|BCD 1 byte 00/01|[RTTY DECODE > TX MEM > EDIT/SET > 001 SET] Sets or reads the Count Up Trigger|(RT1) setting. (00=OFF, 01=ON)
+1A|05 02 36|BCD 1 byte 00/01|[RTTY DECODE > TX MEM > EDIT/SET > 001 SET] Sets or reads the Count Up Trigger|(RT2) setting. (00=OFF, 01=ON)
+1A|05 02 37|BCD 1 byte 00/01|[RTTY DECODE > TX MEM > EDIT/SET > 001 SET] Sets or reads the Count Up Trigger|(RT3) setting. (00=OFF, 01=ON)
+1A|05 02 38|BCD 1 byte 00/01|[RTTY DECODE > TX MEM > EDIT/SET > 001 SET] Sets or reads the Count Up Trigger|(RT4) setting. (00=OFF, 01=ON)
+1A|05 02 39|BCD 1 byte 00/01|[RTTY DECODE > TX MEM > EDIT/SET > 001 SET] Sets or reads the Count Up Trigger|(RT5) setting. (00=OFF, 01=ON)
+1A|05 02 40|BCD 1 byte 00/01|[RTTY DECODE > TX MEM > EDIT/SET > 001 SET] Sets or reads the Count Up Trigger|(RT6) setting. (00=OFF, 01=ON)
+1A|05 02 41|BCD 1 byte 00/01|[RTTY DECODE > TX MEM > EDIT/SET > 001 SET] Sets or reads the Count Up Trigger|(RT7) setting. (00=OFF, 01=ON)
+1A|05 02 42|BCD 1 byte 00/01|[RTTY DECODE > TX MEM > EDIT/SET > 001 SET] Sets or reads the Count Up Trigger|(RT8) setting. (00=OFF, 01=ON)
+1A|05 02 43|BCD 2 bytes 00 01 ~ 99 99|[RTTY DECODE > TX MEM > EDIT/SET > 001 SET] Sets or reads the Present Number setting.|(00 01=1 ~ 99 99=9999)
+1A|05 02 44|BCD 1 byte 00/01|[RTTY DECODE > < 1 > > LOG] Sets or reads the Decode Log setting.|(00=OFF, 01=ON)
+1A|05 02 45|BCD 1 byte 00/01|[RTTY DECODE > < 1 > > LOG > Log Set] Sets or reads the File Type setting.|(00=Text, 01=HTML)
+1A|05 02 46|BCD 1 byte 00/01|[RTTY DECODE > < 1 > > LOG > Log Set] Sets or reads the Time Stamp setting.|(00=OFF, 01=ON)
+1A|05 02 47|BCD 1 byte 00/01|[RTTY DECODE > < 1 > > LOG > Log Set] Sets or reads the Time Stamp (Time) setting.|(00=Local, 01=UTC)
+1A|05 02 48|BCD 1 byte 00/01|[RTTY DECODE > < 1 > > LOG > Log Set] Sets or reads the Time Stamp|(Frequency) setting. (00=OFF, 01=ON)
+1A|05 02 49|See p. 22.|[CW DECODE SET:  KEYER/DECODE > CW DECODE > SET] Sets or reads the FFT Scope Waveform Color setting.|
+1A|05 02 50|See p. 22.|[CW DECODE SET:  KEYER/DECODE > CW DECODE > SET] Sets or reads the Signal Level Waveform Color setting.|
+1A|05 02 51|See p. 22.|[CW DECODE SET:  KEYER/DECODE > CW DECODE > SET] Sets or reads the Font Color|(Receive) setting.
+1A|05 02 52|See p. 22.|[CW DECODE SET:  KEYER/DECODE > CW DECODE > SET] Sets or reads the Font Color|(Transmit) setting.
+1A|05 02 53|BCD 1 byte 00/01|[SCAN SET: SCAN > SET] Sets or read the SCAN Speed setting.|(00=Slow, 01=Fast)
+1A|05 02 54|BCD 1 byte 00/01|[SCAN SET: SCAN > SET] Sets or reads the SCAN Resume setting.|(00=OFF, 01=ON) 14
+1A|05 02 55|BCD 2 bytes 00 00 ~ 02 25|[VOICE TX: VOICE > TX LEVEL] Sets or reads the TX LEVEL setting.|(00 00=0% ~ 02 55=100%)
+1A|05 02 56|BCD 1 byte 00/01|[VOICE TX SET: VOICE > REC/SET > SET] Sets or reads the Auto Monitor setting.|(00=OFF, 01=ON)
+1A|05 02 57|BCD 1 byte 01 ~ 15|[VOICE TX SET: VOICE > REC/SET > SET] Sets or reads the Repeat Time setting.|(01=1 sec. ~ 15=15 sec.)
+1A|05 02 58|BCD 1 byte 00/01|[RECORD > Recorder Set] Sets or reads the TX REC Audio setting.|(00=Direct, 01=Monitor)
+1A|05 02 59|BCD 1 byte 00/01|[RECORD > Recorder Set] Sets or reads the RX REC Condition setting.|(00=Always, 01=Squelch Auto)
+1A|05 02 60|BCD 1 byte 00/01|[RECORD > Recorder Set] Sets or reads the File Split setting.|(00=OFF, 01=ON)
+1A|05 02 61|BCD 1 byte 00/01|[RECORD > Recorder Set] Sets or reads the PTT Auto REC setting.|(00=OFF, 01=ON)
+1A|05 02 62|BCD 1 byte 00 ~ 03|[RECORD > Recorder Set] Sets or reads the PRE-REC for PTT Auto REC setting.|( 00=OFF, 01=5 sec, 02=10 sec, 03=15 sec)
+1A|05 02 63|BCD 1 byte 00 ~ 03|[RECORD > Player Set] Sets or reads the Skip Time setting.|( 00=3 sec, 01=5 sec, 02=10 sec, 03=30 sec)
+1A|05 02 64|See p. 22.|[MENU SET:] Sets or reads the CW [KEYER/DECODE] Key setting.|(00=Select screen, 01=KEYER (Hold down: Select screen), 02=DECODE (Hold down: Select screen))
+1A|05 02 65|BCD 1 byte 00 ~ 09|[NB: FUNCTION > NB (Touch for 1 second)] Sets or reads the DEPTH setting.|(00=1 ~ 09=10)
+1A|05 02 66|BCD 2 bytes 00 00 ~ 02 25|[NB: FUNCTION > NB (Touch for 1 second)] Sets or reads the WIDTH setting.|(00 00=1 ~ 02 55=100)
+1A|05 02 67|BCD 1 byte 00 ~ 20|[VOX: FUNCTION > VOX (Touch for 1 second)] Sets or reads the Delay setting.|( 00=0.0 sec. ~ 20=2.0 sec. in 0.1 sec. steps)
+1A|05 02 68|BCD 1 byte 00 ~ 03|[VOX: FUNCTION > VOX (Touch for 1 second)] Sets or reads the Voice delay setting.|( 00=OFF, 01=Short, 02=Mid, 03=Long)
+1A|05 02 69|BCD 1 byte 00/01|[APF: FUNCTION > 2 > APF (Touch for 1 second)] Sets or reads the TYPE setting.|(00=SHARP, 01=SOFT)
+1A|05 02 70|BCD 1 byte 00 ~ 06|[APF: FUNCTION > 2 > APF (Touch for 1 second)] Sets or reads the AF LEVEL setting.|(00=0 dB ~ 06=6 dB)
+1A|06|see p.22|Set or read the DATA mode and filter width settings|
+1A|07|00/01|Set or read the NTP server access|00=Terminate 01=Initiate
+1A|08|00 ~ 02|Read the NTP server access result|00=Accessing/not accessed since power ON 01=Successful 02=Failed (also when synchronisation stopped by 1A 07 00); 00 returned just after power ON
+1B|00|see p.23|Set or read the Repeater tone frequency|
+1B|01|see p.23|Set or read the TSQL tone frequency|
+1C|00|00/01|Set or read the RX/TX status of the transceiver (PTT)|00=RX 01=TX; auto output on change when CI-V Output (for ANT) ON (1C 04 01)
+1C|01|00 ~ 02|Set or read the internal antenna tuner status|00=OFF 01=ON 02=Tune
+1C|02|00/01|Set or read XFC (transmit frequency monitor)|00=OFF 01=ON
+1C|03|see p.16|Read the transmit frequency|auto output on change if 1C 04 01; cannot be set
+1C|04|00/01|Set or read the CI-V Output (for ANT)|00=OFF 01=ON
+1E|00||Read the number of available TX frequency bands|
+1E|01|see p.16|Read upper and lower edge frequencies of a TX frequency band|
+1E|02||Read the maximum number of User Band Edges|returns 30
+1E|03|see p.16|Set or read upper and lower edge frequencies of a User Band Edge|send/read (*)
+21|00|see p.23|Set or read the RIT frequency|1Hz/10Hz/100Hz/1kHz digits + sign 00=+ 01=-
+21|01|00/01|Set or read the RIT function ON/OFF|00=OFF 01=ON
+21|02|00/01|Set or read the TX (delta TX) function ON/OFF|00=OFF 01=ON
+25||see p.23: byte 00=Selected VFO 01=Unselected VFO + FREQ 5 bytes|Set or read the operating frequency of the Selected or Unselected VFO|send/read (*)
+26||see p.24: byte 00/01 + mode + data mode 00=OFF 01=ON + filter 01-03|Set or read operating mode, data mode and IF filter width of the Selected or Unselected VFO|send/read (*); data/filter can be skipped
+27|00|see p.24|Output the scope waveform data to the controller|only if 27 10 and 27 11 ON
+27|10|00/01|Set or read the spectrum scope ON/OFF|00=OFF 01=ON
+27|11|00/01|Set or read scope waveform data output to PC|00=OFF 01=ON; only via USB or LAN
+27|12|00 (Main only)|Set or read the Main or Sub scope|
+27|13|00 (Single only)|Set or read Single or Dual scope|
+27|14|see p.25|Set or read scope mode|00=Center 01=Fixed 02=SCROLL-C 03=SCROLL-F
+27|15|see p.25|Set or read Span (Center/SCROLL-C)|
+27|16|see p.25|Set or read Scope Edge Number (Fixed/SCROLL-F)|
+27|17|see p.25|Set or read Scope Hold ON/OFF|
+27|19|see p.25|Set or read Scope Reference level|
+27|1A|see p.25|Set or read Scope Sweep speed|
+27|1B|00/01|Set or read Scope during Tx (CENTER TYPE)|00=OFF 01=ON
+27|1C|00 ~ 02|Set or read CENTER Type Display|00=Filter Center 01=Carrier Point Center 02=Carrier Point Center (Abs. Freq.)
+27|1D|see p.25|Set or read Scope VBW|
+27|1E|see p.26|Set or read Scope Fixed Edge frequencies|
+27|20|00/01|Set or read Marker Position (FIX Type/SCROLL Type)|00=Filter Center 01=Carrier Point
+28|00|00|Stop the Voice TX memory transmission|
+28|00|01 ~ 08|Start a Voice TX memory transmission|01=T1 ~ 08=T8

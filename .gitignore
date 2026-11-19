@@ -1,0 +1,13 @@
+﻿# Sorties de compilation et reglages locaux
+dist/
+dist-*/
+_hors-github*/
+data/
+*.zip
+rapport*.txt
+*.tmp
+*.new
+
+# Notes locales (non publiees)
+REPRISE.md
+CHAT.md

@@ -1,0 +1,333 @@
+00||BCD 5 bytes frequency (10 Hz/1 Hz byte first)|Send frequency data (transceive)|p.19-8
+01||mode byte + filter byte|Send mode data (transceive)|p.19-8; filter byte may be omitted (FIL1)
+02||none (read) -> 2x BCD 5 bytes with separator 2D|Read band edge frequencies|p.19-8
+03||BCD 5 bytes frequency|Read operating frequency|p.19-8
+04||mode byte + filter byte|Read operating mode|00 LSB 01 USB 02 AM 03 CW 04 RTTY 05 FM 07 CW-R 08 RTTY-R; filter 01 FIL1 02 FIL2 03 FIL3; p.19-8
+05||BCD 5 bytes frequency|Set operating frequency|p.19-8
+06||mode byte + optional filter byte|Operating mode selection|00 LSB 01 USB 02 AM 03 CW 04 RTTY 05 FM 07 CW-R 08 RTTY-R; filter 01~03; p.19-8 (no sub-command rows in table)
+07||none|Select VFO mode|
+07|00|none|Select VFO A|
+07|01|none|Select VFO B|
+07|A0|none|Equalize VFO A and VFO B|A=B
+07|B0|none|Exchange VFO A and VFO B|swap
+08||none|Select Memory mode|
+08||BCD 2 bytes 0001~0109|Select memory channel|0001=M-CH01..0099=M-CH99; 0100=P1 0101=P2 (table prints range to 0109)
+09||none|Memory write|
+0A||none|Memory copy to VFO|
+0B||none|Memory clear|
+0E|00|none|Scan stop|
+0E|01|none|Programmed/memory scan start|
+0E|02|none|Programmed scan start|
+0E|03|none|F scan start|
+0E|12|none|Fine programmed scan start|
+0E|13|none|Fine F scan start|
+0E|22|none|Memory scan start|
+0E|23|none|Select memory scan start|
+0E|A1|none|Select F scan span +-5 kHz|
+0E|A2|none|Select F scan span +-10 kHz|
+0E|A3|none|Select F scan span +-20 kHz|
+0E|A4|none|Select F scan span +-50 kHz|
+0E|A5|none|Select F scan span +-100 kHz|
+0E|A6|none|Select F scan span +-500 kHz|
+0E|A7|none|Select F scan span +-1 MHz|
+0E|B0|none|Set as non-select channel|
+0E|B1|none|Set as select channel|previously set number by CI-V is used after power ON, or 1 if none
+0E|B1 01~03|none|Set as select channel SEL1..SEL3|01=SEL1 02=SEL2 03=SEL3
+0E|B2|1 byte 00~03|Set for select memory scan|00=ALL 01=SEL1 02=SEL2 03=SEL3
+0E|D0|none|Set scan resume OFF|
+0E|D3|none|Set scan resume ON|
+0F||none (read) / reply 1 byte 00/01|Read split setting|00 OFF 01 ON
+0F|00|none|Turn split OFF|
+0F|01|none|Turn split ON|
+10|00|none|Send/read tuning step OFF|* send/read command
+10|01|none|Send/read 100 Hz tuning step|
+10|02|none|Send/read 1 kHz tuning step|
+10|03|none|Send/read 5 kHz tuning step|
+10|04|none|Send/read 9 kHz tuning step|
+10|05|none|Send/read 10 kHz tuning step|
+10|06|none|Send/read 12.5 kHz tuning step|
+10|07|none|Send/read 20 kHz tuning step|
+10|08|none|Send/read 25 kHz tuning step|
+11||1 byte 00/20|Send/read attenuator|00=OFF 20=20 dB ON (the value is the data byte; no sub-command)
+13|00|none|Speech all data with voice synthesizer|
+13|01|none|Speech frequency and S-meter by voice synthesizer|
+13|02|none|Speech operating mode by voice synthesizer|
+14|01|BCD 2 bytes 0000~0255|AF level|0000=min 0255=max
+14|02|BCD 2 bytes 0000~0255|RF gain level|0000=min 0255=max
+14|03|BCD 2 bytes 0000~0255|Squelch level|0000=min 0255=max
+14|06|BCD 2 bytes 0000~0255|NR level|0000=0% 0255=100%
+14|07|BCD 2 bytes 0000~0255|Inner TWIN PBT position|0000=max CCW 0128=center 0255=max CW
+14|08|BCD 2 bytes 0000~0255|Outer TWIN PBT position|0000=max CCW 0128=center 0255=max CW
+14|09|BCD 2 bytes 0000~0255|CW pitch|0000=300 Hz 0128=600 Hz 0255=900 Hz; 5 Hz steps
+14|0A|BCD 2 bytes 0000~0255|RF PWR position|0000=max CCW 0255=max CW
+14|0B|BCD 2 bytes 0000~0255|MIC gain position|0000=max CCW 0255=max CW
+14|0C|BCD 2 bytes 0000~0255|KEY SPEED level|0000=6 wpm 0255=48 wpm
+14|0D|BCD 2 bytes 0000~0255|NOTCH position|0000=max CCW 0128=center 0255=max CW
+14|0E|BCD 2 bytes 0000~0255|COMP level|0000=0 0255=10
+14|0F|BCD 2 bytes 0000~0255|Break-in delay|0000=2.0d 0255=13.0d
+14|12|BCD 2 bytes 0000~0255|NB level|0000=0% 0255=100%
+14|15|BCD 2 bytes 0000~0255|Monitor gain|0000=0% 0255=100%
+14|16|BCD 2 bytes 0000~0255|VOX gain|0000=0% 0255=100%
+14|17|BCD 2 bytes 0000~0255|Anti-VOX gain|0000=0% 0255=100%
+14|19|BCD 2 bytes 0000~0255|BRIGHT level|0000=0% 0255=100%
+15|01|1 byte 00/01|Read noise or S-meter squelch status|00 = squelch closed (01 open)
+15|02|BCD 2 bytes 0000~0255|Read S-meter level|0000=S0 0120=S9 0241=S9+60dB
+15|05|1 byte 00/01|Read various squelch function status|00 = squelch closed
+15|11|BCD 2 bytes 0000~0255|Read PO meter level|0000=0% 0143=50% 213=100%
+15|12|BCD 2 bytes 0000~0255|Read SWR meter level|0000=SWR1.0 0048=1.5 0080=2.0 0120=3.0
+15|13|BCD 2 bytes 0000~0255|Read ALC meter level|0000=min 0120=max
+15|14|BCD 2 bytes 0000~0255|Read COMP meter level|0000=0 dB 0130=15 dB 0241=30 dB
+15|15|BCD 2 bytes 0000~0255|Read Vd meter level|0000=0 V 0013=10 V 0241=16 V
+15|16|BCD 2 bytes 0000~0255|Read Id meter level|0000=0 0097=10 0146=15 0241=25
+16|02|1 byte 00~02|Preamp|00 OFF 01 Preamp 1 ON 02 Preamp 2 ON
+16|12|1 byte 00~03|AGC|00 OFF (as printed) 01 FAST 02 MID 03 SLOW
+16|22|1 byte 00/01|Noise blanker|00 OFF 01 ON
+16|40|1 byte 00/01|Noise reduction|00 OFF 01 ON
+16|41|1 byte 00/01|Auto notch|00 OFF 01 ON
+16|42|1 byte 00/01|Repeater tone|00 OFF 01 ON
+16|43|1 byte 00/01|Tone squelch|00 OFF 01 ON
+16|44|1 byte 00/01|Speech compressor|00 OFF 01 ON
+16|45|1 byte 00/01|Monitor function|00 OFF 01 ON
+16|46|1 byte 00/01|VOX function|00 OFF 01 ON
+16|47|1 byte 00~02|BK-IN function|00 OFF 01 Semi BK-IN 02 Full BK-IN
+16|48|1 byte 00/01|Manual notch|00 OFF 01 ON
+16|4F|1 byte 00/01|Twin peak filter|00 OFF 01 ON; can be ON only when Mark/Shift = 2125 Hz/170 Hz
+16|50|1 byte 00/01|Dial lock function|00 OFF 01 ON
+16|56|1 byte 00/01|DSP filter type|00 SHARP 01 SOFT
+16|57|1 byte 00~02|Manual notch width|00 WIDE 01 MID 02 NAR
+16|58|1 byte 00~02|SSB transmit bandwidth|00 WIDE 01 MID 02 NAR
+17||ASCII text up to 30 chars (FF stops)|Send CW message|p.19-11; sent as CW if TRANSMIT/TX switch ON or break-in ON
+18|00|none|Turn OFF the transceiver|
+18|01|none|Turn ON the transceiver|send FE repeatedly first: 115200bps 150, 57600 75, 38400 50, 19200 25, 9600 13, 4800 7
+19|00|none (reply 1 byte ID)|Read the transceiver ID|
+1A|00|memory number BCD 2 bytes + memory data|Send/read memory contents|p.19-10; clear = channel + FF
+1A|01|band code + register code + data|Send/read band stacking register contents|p.19-9
+1A|02|channel 01-08 + ASCII text|Send/read memory keyer contents|p.19-10
+1A|03|1 byte 00~49|Send/read selected filter width|AM: 00=200 Hz..49=10 kHz; others 00=50 Hz..31/40=2700/3600 Hz
+1A|04|1 byte 00~13|Send/read selected AGC time constant|00=OFF; AM 01=0.3s..13=8.0s; SSB/CW/RTTY 01=0.1s..13=6.0s
+1A|05 00 01|p. 19-8|SSB RX HPF/LPF settings|
+1A|05 00 02|00 to 10|SSB RX Tone (Bass) level|(00=-5 to 10=+5)
+1A|05 00 03|00 to 10|SSB RX Tone (Treble) level|(00=-5 to 10=+5)
+1A|05 00 04|p. 19-8|AM RX HPF/LPF settings|
+1A|05 00 05|00 to 10|AM RX Tone (Bass) level|(00=-5 to 10=+5)
+1A|05 00 06|00 to 10|AM RX Tone (Treble) level|(00=-5 to 10=+5)
+1A|05 00 07|p. 19-8|FM RX HPF/LPF settings|
+1A|05 00 08|00 to 10|FM RX Tone (Bass) level|(00=-5 to 10=+5)
+1A|05 00 09|00 to 10|FM RX Tone (Treble) level|(00=-5 to 10=+5)
+1A|05 00 10|p. 19-8|CW RX HPF/LPF settings|
+1A|05 00 11|p. 19-8|RTTY RX HPF/LPF settings|
+1A|05 00 12|00 to 10|SSB TX Tone (Bass) level|(00=-5 to 10=+5)
+1A|05 00 13|00 to 10|SSB TX Tone (Treble) level|(00=-5 to 10=+5)
+1A|05 00 14|p. 19-8|SSB TX bandwidth for wide|
+1A|05 00 15|p. 19-8|SSB TX bandwidth for mid|
+1A|05 00 16|p. 19-8|SSB TX bandwidth for narrow|
+1A|05 00 17|00 to 10|AM TX Tone (Bass) level|(00=-5 to 10=+5)
+1A|05 00 18|00 to 10|AM TX Tone (Treble) level|(00=-5 to 10=+5)
+1A|05 00 19|00 to 10|FM TX Tone (Bass) level|(00=-5 to 10=+5)
+1A|05 00 20|00 to 10|FM TX Tone (Treble) level|(00=-5 to 10=+5)
+1A|05 00 21|0000 to 0255|beep gain|(0000=min. to 0255=max.)
+1A|05 00 22|00/01|beep gain limit *|(00=OFF, 01=ON)
+1A|05 00 23|00/01|confirmation beep|(00=OFF, 01=ON)
+1A|05 00 24|00/01/02/03|00=the band edge beep OFF ; 01=the band edge beep ON (Beep sounds with a default amateur band) ; 02=the band edge beep with user setting ON ; 03=the band edge beep with user setting/TX limit ON|
+1A|05 00 25|00 to 02|RF/SQL Control setting|(00=Auto, 01=SQL, 02=RF+SQL)
+1A|05 00 26|00 to 05|TX Delay setting (HF)|( 00=OFF, 01=10 ms, 02=15 ms, 03=20 ms, 04=25 ms, 05=30 ms)
+1A|05 00 27|00 to 05|TX Delay setting|(50 MHz) ( 00=OFF, 01=10 ms, 02=15 ms, 03=20 ms, 04=25 ms, 05=30 ms)
+1A|05 00 28|00 to 05|TX Delay setting|(70 MHz) ( 00=OFF, 01=10 ms, 02=15 ms, 03=20 ms, 04=25 ms, 05=30 ms)
+1A|05 00 29|00 to 05|Time-Out Timer setting|( 00=OFF, 01=3 min., 02=5 min., 03=10min., 04=20 min., 05=30 min.)
+1A|05 00 30|00/01|quick split set *|(00=OFF, 01=ON)
+1A|05 00 31|p. 19-9|FM split offset -9.999 to +9.999 MHz for HF|
+1A|05 00 32|p. 19-9|FM split offset -9.999 to +9.999 MHz for 50 MHz|
+1A|05 00 33|00/01|split lock set *|(00=OFF, 01=ON)
+1A|05 00 34|00/01|[TUNER] Switch set|(00=Manual, 01=Auto)
+1A|05 00 35|00 or 01|PTT tune set *|(00=OFF, 01=ON)
+1A|05 00 36|00 to 02|RTTY mark frequency|(00=1275 Hz, 01=1615 Hz, 02=2125 Hz)
+1A|05 00 37|00 to 02|RTTY shift width|(00=170 Hz, 01=200 Hz, 02=425 Hz)
+1A|05 00 38|00/01|RTTY keying polarity|(00=Normal, 01=Reverse)
+1A|05 00 39|00/01|speech language|(00=English, 01=Japanese)
+1A|05 00 40|00/01|speech speed|(00=Low, 01=High)
+1A|05 00 41|00/01|S-level speech|(00=OFF, 01=ON)
+1A|05 00 42|00/01|speech with a mode switch operation|(00=OFF, 01=ON)
+1A|05 00 43|0000 to 0255|speech level|(0000=0% to 0255=100%)
+1A|05 00 44|00/01|[SPEECH/LOCK] key function setting|( 00=Push: SPEECH, Hold down: LOCK, 01=Push: LOCK, Hold down: SPEECH)
+1A|05 00 45|00/01|Lock function setting|(00=MAIN DIAL, 01=PANEL)
+1A|05 00 46|00/01|memo pad numbers|(00=5 ch, 01=10 ch)
+1A|05 00 47|00 to 02|main dial auto TS|(00=OFF, 01=Low, 02=High)
+1A|05 00 48|00/01|mic. up/down speed|(00=Low, 01=High)
+1A|05 00 49|00 or 01|quick RIT/TX clear function|(00=OFF, 01=ON)
+1A|05 00 50|00 to 02|SSB notch operation *|(00=Auto, 01=Manual, 02=Auto/Manual)
+1A|05 00 51|00 to 02|AM notch operation|(00=Auto, 01=Manual, 02=Auto/Manual)
+1A|05 00 52|00/01|SSB/CW synchronous tuning function|(00=OFF, 01=ON)
+1A|05 00 53|00/01|CW normal side set|(00=LSB, 01=USB)
+1A|05 00 54|00/01|screen capture by the [POWER] switch|(00=OFF, 01=ON)
+1A|05 00 55|00/01|screen capture image data saving format|(00=PNG format, 01=BMP format)
+1A|05 00 56|00/01|keyboard type|(00=Ten-key, 01=Full Keyboard)
+1A|05 00 57|00/01|calibration marker|(00=OFF, 01=ON)
+1A|05 00 58|0000 to 0255|reference frequency|(0000=0%,0255=100%)
+1A|05 00 59|00 or 01|AF/IF signal output to ACC/USB|(00=AF, 01=IF)
+1A|05 00 60|0000 to 0255|AF output level to ACC/USB|(0000=0% to 0255=100%)
+1A|05 00 61|00/01|squelch function for the AF signal output to ACC/USB|(00=OFF (Open), 01=ON)
+1A|05 00 62|00/01|beep and speech output setting to ACC/USB (when AF signal output is set)|(00=OFF, 01=ON)
+1A|05 00 63|0000 to 0255|IF signal output level to ACC/USB|(0000=0%, 0255=100%) D Command table (Continued) 19 CONTROL COMMAND Remote control (CI-V) information (Continued)
+1A|05 00 64|0000 to 0255|MOD input level from ACC|(0000=0% to 0255=100%)
+1A|05 00 65|0000 to 0255|MOD input level from USB|(0000=0% to 0255=100%)
+1A|05 00 66|00 to 03|MOD input connector during DATA OFF|(00=MIC, 01=ACC, 02=MIC/ACC, 03=USB)
+1A|05 00 67|00 to 03|MOD input connector during DATA|(00=MIC, 01=ACC, 02=MIC/ACC, 03=USB)
+1A|05 00 68|00/01|external keypad setting for VOICE *|(00=OFF, 01=ON)
+1A|05 00 69|00/01|external keypad setting for Memory KEYER|(00=OFF, 01=ON)
+1A|05 00 70|00/01|external keypad setting for RTTY Memory|(00=OFF, 01=ON)
+1A|05 00 71|00/01|CI-V transceive setting|(00=OFF, 01=ON)
+1A|05 00 72|0000 to 0223|transceive CI-V Address for USB to REMOTE in hexadecimal code|(0000=00h to 0223=DFh)
+1A|05 00 73|00/01|CI-V Output (for ANT) capability|(00=OFF, 01=ON)
+1A|05 00 74|00/01|CI-V USB port setting|(00=Link to [REMOTE], 01=Unlink to [REMOTE]) (Read only)
+1A|05 00 75|00/01|echo back setting for CI-V operation from USB|(00=ON, 01=OFF)
+1A|05 00 76|00/01|USB (serial port) function setting|(00=CI-V, 01=RTTY Decode)
+1A|05 00 77|00 to 03|data transfer speed for RTTY decode output|( 00=4800 bps, 01=9600 bps, 02=19200 bps, 03=38400 bps)
+1A|05 00 78|00 to 02|transmission control line setting for USB|(00=OFF, 01=DTR, 02=RTS)   Different line must be set from both CW keying and RTTY (FSK)
+1A|05 00 79|00 to 02|CW keying line setting for USB|(00=OFF, 01= DTR, 02=RTS)   Different line must be set from both transmission control and RTTY (FSK)
+1A|05 00 80|00 to 02|RTTY (FSK) line setting for USB|(00=OFF, 01=DTR, 02=RTS)   Different line must be set from both CW keying and transmission control"
+1A|05 00 81|0000 to 0255|LCD unit backlight brightness|(0000=0% to 0255=100%)
+1A|05 00 82|00/01|screen image type|(00=A, 01=B)
+1A|05 00 83|00/01|frequency readout font|(00=Basic, 01=Round)
+1A|05 00 84|00/01|peak hold set for meter *|(00=OFF, 01=ON)
+1A|05 00 85|00/01|memory name indication setting|(00=OFF, 01=ON)
+1A|05 00 86|00/01|manual notch width pop-up indication setting|(00=OFF, 01=ON)
+1A|05 00 87|00/01|PBT shifting value display setting while rotating [TWIN PBT]|(00=OFF, 01=ON)
+1A|05 00 88|00/01|IF filter width and shifting value display setting when the IF filter is switched|(00=OFF, 01=ON)
+1A|05 00 89|00 to 03|screen saver function|( 00=OFF, 01=15 minutes, 02=30 minutes, 03=60 minutes)
+1A|05 00 90|00/01|opening message indication|(00=OFF, 01=ON)
+1A|05 00 91|p. 19-9|opening message contents (up to 10-character)|
+1A|05 00 92|00/01|Power ON Check setting|(00=OFF, 01=ON)
+1A|05 00 93|00/01|Display Language|(00=English, 01=Japanese)
+1A|05 00 94|20000101 to 20991231|date setting|(20000101=2000/01/01 to 20991231=2099/12/31)
+1A|05 00 95|0000 to 2359|time setting|(0000=00:00 to 2359=23:59)
+1A|05 00 96|p. 19-11|UTC offset time|
+1A|05 00 97|00/01|scope indication during TX|(00=OFF, 01=ON)
+1A|05 00 98|00 to 02|scope max. hold|(00=OFF, 01=ON)
+1A|05 00 99|00 to 02|scope center frequency set|( 00=Filter center, 01=Carrier point center, 02=Carrier point center (Abs. Freq.)
+1A|05 01 00|00/01|scope marker position setting during fix type scope|(00=Filter center, 01 Carrier point)
+1A|05 01 01|00/01|external monitor signal width|(00=Narrow, 01=Wide)
+1A|05 01 02|00 to 03|averaging function for spectrum scope|(00=OFF, 01=2, 02=3, 03=4)
+1A|05 01 03|00/01|spectrum display type|(00=Fill, 01=Fill+Line)
+1A|05 01 04|p. 19-8|spectrum fill color|
+1A|05 01 05|p. 19-8|spectrum line color|
+1A|05 01 06|p. 19-8|spectrum color for peak hold|
+1A|05 01 07|00/01|waterfall set for spectrum scope|(00=OFF, 01=ON)
+1A|05 01 08|00 to 02|waterfall speed|(00=Slow, 01=Mid, 02=Fast)
+1A|05 01 09|00 to 02|waterfall height when expanded scope is selected|(00=Small, 01=Mid, 02=Larger)
+1A|05 01 10|00 to 07|peak color level set for waterfall of the spectrum scope|( 00=Grid 1, 01=Grid 2, 02=Grid 3, 03=Grid 4, 04=Grid 5, 05=Grid 6, 06=Grid 7, 07=Grid 8)
+1A|05 01 11|00/01|scope waterfall marker auto-hide|(00=OFF, 01=ON)
+1A|05 01 12|p. 19-8|scope edge 1 frequencies for 0.03 to 1.60 MHz band|
+1A|05 01 13|p. 19-8|scope edge 2 frequencies for 0.03 to 1.60 MHz band|
+1A|05 01 14|p. 19-8|scope edge 3 frequencies for 0.03 to 1.60 MHz band|
+1A|05 01 15|p. 19-8|scope edge 1 frequencies for 1.60 to 2.00 MHz band|
+1A|05 01 16|p. 19-8|scope edge 2 frequencies for 1.60 to 2.00 MHz band|
+1A|05 01 17|p. 19-8|scope edge 3 frequencies for 1.60 to 2.00 MHz band|
+1A|05 01 18|p. 19-8|scope edge 1 frequencies for 2.00 to 6.00 MHz band|
+1A|05 01 19|p. 19-8|scope edge 2 frequencies for 2.00 to 6.00 MHz band|
+1A|05 01 20|p. 19-8|scope edge 3 frequencies for 2.00 to 6.00 MHz band|
+1A|05 01 21|p. 19-8|scope edge 1 frequencies for 6.00 to 8.00 MHz band|
+1A|05 01 22|p. 19-8|scope edge 2 frequencies for 6.00 to 8.00 MHz band|
+1A|05 01 23|p. 19-8|scope edge 3 frequencies for 6.00 to 8.00 MHz band|
+1A|05 01 24|p. 19-8|scope edge 1 frequencies for 8.00 to 11.00 MHz band|
+1A|05 01 25|p. 19-8|scope edge 2 frequencies for 8.00 to 11.00 MHz band|
+1A|05 01 26|p. 19-8|scope edge 3 frequencies for 8.00 to 11.00 MHz band|
+1A|05 01 27|p. 19-8|scope edge 1 frequencies for 11.00 to 15.00 MHz band|
+1A|05 01 28|p. 19-8|scope edge 2 frequencies for 11.00 to 15.00 MHz band D Command table (Continued) 19 CONTROL COMMAND Remote control (CI-V) information (Continued)|
+1A|05 01 29|p. 19-8|scope edge 3 frequencies for 11.00 to 15.00 MHz band|
+1A|05 01 30|p. 19-8|scope edge 1 frequencies for 15.00 to 20.00 MHz band|
+1A|05 01 31|p. 19-8|scope edge 2 frequencies for 15.00 to 20.00 MHz band|
+1A|05 01 32|p. 19-8|scope edge 3 frequencies for 15.00 to 20.00 MHz band|
+1A|05 01 33|p. 19-8|scope edge 1 frequencies for 20.00 to 22.00 MHz band|
+1A|05 01 34|p. 19-8|scope edge 2 frequencies for 20.00 to 22.00 MHz band|
+1A|05 01 35|p. 19-8|scope edge 3 frequencies for 20.00 to 22.00 MHz band|
+1A|05 01 36|p. 19-8|scope edge 1 frequencies for 22.00 to 26.00 MHz band|
+1A|05 01 37|p. 19-8|scope edge 2 frequencies for 22.00 to 26.00 MHz band|
+1A|05 01 38|p. 19-8|scope edge 3 frequencies for 22.00 to 26.00 MHz band|
+1A|05 01 39|p. 19-8|scope edge 1 frequencies for 26.00 to 30.00 MHz band|
+1A|05 01 40|p. 19-8|scope edge 2 frequencies for 26.00 to 30.00 MHz band|
+1A|05 01 41|p. 19-8|scope edge 3 frequencies for 26.00 to 30.00 MHz band|
+1A|05 01 42|p. 19-8|scope edge 1 frequencies for 30.00 to 45.00 MHz band|
+1A|05 01 43|p. 19-8|scope edge 2 frequencies for 30.00 to 45.00 MHz band|
+1A|05 01 44|p. 19-8|scope edge 2 frequencies for 30.00 to 45.00 MHz band|
+1A|05 01 45|p. 19-8|scope edge 1 frequencies for 45.00 to 60.00 MHz band|
+1A|05 01 46|p. 19-8|scope edge 2 frequencies for 45.00 to 60.00 MHz band|
+1A|05 01 47|p. 19-8|scope edge 3 frequencies for 45.00 to 60.00 MHz band|
+1A|05 01 48|p. 19-8|scope edge 1 frequencies for 60.00 to 74.80 MHz band|
+1A|05 01 49|p. 19-8|scope edge 2 frequencies for 60.00 to 74.80 MHz band|
+1A|05 01 50|p. 19-8|scope edge 3 frequencies for 60.00 to 74.80 MHz band|
+1A|05 01 51|00/01|audio FFT scope display type|(00=Fill, 01=Fill+Line)
+1A|05 01 52|p. 19-8|Audio FFT scope waveform color|
+1A|05 01 53|00/01|Audio FFT scope waterfall display|(00=OFF, 01=ON)
+1A|05 01 54|p. 19-8|Audio Oscilloscope scope waveform color|
+1A|05 01 55|00/01/02/03/04|Normal selection for contest number style 01 "190ANO" selection for contest number style 02 "190ANT" selection for contest number style 03 "90NO" selection for contest number style 04 "90NT" selection for contest number style|
+1A|05 01 56|01 to 08|count up trigger channel|( 01=M1, 02=M2, 03=M3, 04=M4, 05=M5, 06=M6, 07=M7, 08=M8)
+1A|05 01 57|0001 to 9999|present number|(0001=1 to 9999=9999)
+1A|05 01 58|0000 to 0255|CW side tone gain|(0000=0% to 0255=100%)
+1A|05 01 59|00/01|CW side tone gain limit|(00=OFF, 01=ON)
+1A|05 01 60|01 to 60|CW keyer repeat time|(01=1 sec. to 60=60 sec.)
+1A|05 01 61|28 to 45|CW keyer dot/dash ratio|(28=1:1:2.8 to 45=1:1:4.5)
+1A|05 01 62|00 to 03|rise time|( 00=2 msec., 01=4 msec., 02=6 msec., 03=8 msec.)
+1A|05 01 63|00/01|paddle polarity|(00=Normal, 01=Reverse)
+1A|05 01 64|00 to 02|keyer type|(00=Straight, 01=Bug, 02=Paddle)
+1A|05 01 65|00/01|mic. up/down keyer set|(00=OFF, 01=ON)
+1A|05 01 66|00 to 03|averaging function for RTTY FFT scope|(00=OFF, 01=2, 02=3, 03=4)
+1A|05 01 67|p. 19-8|RTTY FFT scope waveform color|
+1A|05 01 68|00/01|RTTY decode USOS|(00=OFF, 01=ON)
+1A|05 01 69|00/01|RTTY decode new line code|(00=CR,LF,CR+LF, 01=CR+LF)
+1A|05 01 70|00/01|RTTY TX USOS|(00=OFF, 01=ON)
+1A|05 01 71|p. 19-8|received RTTY text font color|
+1A|05 01 72|p. 19-8|transmitted RTTY text font color|
+1A|05 01 73|00/01|RTTY log function|(00=OFF, 01=ON)
+1A|05 01 74|00/01|file saving format for the RTTY log|(00=Text, 01=HTML)
+1A|05 01 75|00/01|RTTY time stamp set|(00=OFF, 01=ON)
+1A|05 01 76|00/01|RTTY Decode Log Time Stamp|(00=Local, 01=UTC)
+1A|05 01 77|00/01|RTTY frequency stamp|(00=OFF, 01=ON)
+1A|05 01 78|00/01|scan speed|(00=Low, 01=High)
+1A|05 01 79|00/01|scan resume|(00=OFF, 01=ON)
+1A|05 01 80|00/01|auto monitor function setting when transmitting a recorded voice memory|(00=OFF, 01=ON)
+1A|05 01 81|01/15|repeat interval to transmit recorded voice audio|(01=1 sec. to 15=15 sec.)
+1A|05 01 82|00/01|recording mode for QSO recorder|(00=TX&RX, 01=RX Only)
+1A|05 01 83|00/01|recording TX audio for QSO recorder|(00=Microphone audio, 01=TX monitor audio)
+1A|05 01 84|00/01|squelch relation to recording RX audio for QSO recorder|(00=Always, 01=Squelch Auto)
+1A|05 01 85|00/01|QSO record file split function setting|(00=OFF, 01=ON)
+1A|05 01 86|00/01|PTT Automatic Recording function setting|(00=OFF, 01=ON)
+1A|05 01 87|00 to 03|RX audio recording status for PTT Automatic Recording function|( 00=OFF (records no RX audio), 01=Records the RX audio just before 5 sec., 02=Records the RX audio just before 10 sec., 03=Records the RX audio just before 15 sec.)
+1A|05 01 88|00 to 03|QSO PLAY Skip time|(00=3 sec., 01=5 sec., 02=10 sec., 03=30 sec.)
+1A|05 01 89|00 to 09|NB depth|(00=1 to 09=10)
+1A|05 01 90|0000 to 0255|NB width|(0000=1 to 0255=100)
+1A|05 01 91|00 to 20|VOX delay|(00=0.0 sec. to 20=2.0 sec.)
+1A|05 01 92|00 to 03|VOX voice delay|(00=OFF, 01=Short, 02=Mid., 03=Long)
+1A|05 01 93|00/01|MF band attenuator setting|(00=OFF, 01=ON)
+1A|06|2 bytes: data mode 00/01 + filter 01~03|Send/read DATA mode setting|p.19-9; 00 data OFF (then filter also 00) 01 data ON
+1A|07|1 byte 00/01|Send/read IP+ function setting|00 OFF 01 ON
+1B|00|BCD 3 bytes|Send/read repeater tone frequency|p.19-11
+1B|01|BCD 3 bytes|Set/read TSQL tone frequency|p.19-11
+1C|00|1 byte 00/01|Send/read transceiver status (PTT)|00 RX 01 TX; auto-output on change when CI-V Output (for ANT) is ON
+1C|01|1 byte 00~02|Send/read antenna tuner|00 OFF 01 ON 02 tuning (start / while tuning)
+1C|02|1 byte 00/01|Send/read transmit frequency monitor|00 OFF 01 ON
+1C|03|BCD 5 bytes frequency|Read transmit frequency|p.19-8
+1C|04|1 byte 00/01|Send/read command to disable antenna controller output from REMOTE|
+1E|00|none|Read number of available TX frequency bands|
+1E|01|band edge data|Read TX band edge frequencies|p.19-8
+1E|02|none|Read number of user-set TX frequency bands|
+1E|03|band edge data|Send/read user-set TX band edge frequencies|p.19-8
+21|00|BCD RIT frequency (p.19-11)|Send/read RIT frequency|
+21|01|1 byte 00/01|Send/read RIT setting|00 OFF 01 ON
+21|02|1 byte 00/01|Send/read TX (delta TX) setting|00 OFF 01 ON
+25||1 byte 00/01 + BCD 5 bytes|Send/read selected or unselected VFO frequency|00 selected VFO, 01 unselected VFO; p.19-11
+26||1 byte 00/01 + mode + data-mode 00/01 + filter 01~03|Send/read selected or unselected VFO operating mode and filter|00 selected 01 unselected; mode 00 LSB 01 USB 02 AM 03 CW 04 RTTY 05 FM 07 CW-R 08 RTTY-R; data and filter may be skipped; p.19-11
+27|00|scope waveform data (p.19-12)|Read scope waveform data|only when 27 10 and 27 11 ON
+27|10|1 byte 00/01|Send/read scope ON/OFF status|00 OFF 01 ON
+27|11|1 byte 00/01|Send/read scope wave data output|00 OFF 01 ON; settable only when USB unlinked and CI-V baud 115200
+27|12|1 byte 00|Send/read Main or Sub scope setting|00 = Main only
+27|13|1 byte 00|Send/read Single/Dual scope setting|00 = Single only
+27|14|1 byte 00/01|Send/read Scope Center mode or Fixed mode|00 center 01 fixed; p.19-12
+27|15|BCD span data|Send/read span in Center mode|p.19-12
+27|16|1 byte 01~03|Send/read edge number in Fixed mode|p.19-12
+27|17|1 byte 00/01|Send/read scope hold|p.19-12
+27|19|sign + level data|Send/read scope reference level|-20.0 dB..+20.0 dB in 0.5 dB steps; p.19-12
+27|1A|1 byte 00~02|Send/read sweep speed|00 FAST 01 MID 02 SLOW; p.19-13
+27|1B|1 byte 00/01|Send/read scope indication during TX in Center mode|00 OFF 01 ON
+27|1C|1 byte 00~02|Send/read scope center frequency setting in Center mode|00 Filter center 01 Carrier point center 02 Carrier point center (Abs. Freq.)
+27|1D|1 byte 00/01|Send/read scope VBW|00 Narrow 01 Wide; p.19-13
+27|1E|edge frequency data|Send/read scope fixed edge frequencies|p.19-13

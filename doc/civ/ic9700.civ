@@ -1,0 +1,528 @@
+# IC-9700 CI-V command catalog extracted from IC-9700_ENG_CI-V_0.pdf. Format CMD|SUB|DATA|NAME|NOTES
+# Default address A2h, controller E0h. Frame FE FE <to> <from> Cn [Sc] [data] FD ; OK=FB, NG=FA. NO 29 receiver prefix on this model: main/sub band selected with 07 D0/D1 (read 07 D2), unselected VFO via cmd 25/26.
+# Asterisks in manual: * = send/read; *1 read only; *2 send only; *3 CW msg sent in CW mode with TX/break-in; *4 power ON (18 01) needs FE preamble (4800:5, 9600:9, 19200:20, 38400:40, 57600:59, 115200:119); *5 memory keyer counter: clear other channel's counter first; *6 set at least 1 GPS sentence ON (max 4); *7 output setting auto OFF after power OFF; *8 USB port needs CI-V USB Port=Unlink from REMOTE and CI-V Baud=115200 (LAN port always ok)
+# FREQ = BCD 5 bytes LSB first: [10Hz 1Hz][1kHz 100Hz][100kHz 10kHz][10MHz 1MHz][1GHz 100MHz] (10MHz digit 0-9, 1GHz digit 0-1, 100MHz digit 0-4)
+00||FREQ BCD 5 bytes (see p.13)|Send the frequency data (transceive)|
+01||MODE bytes (see p.13)|Send the mode data (transceive)|
+02||BAND EDGE (see p.13)|Read the band edge frequencies|read only (*1)
+03||FREQ BCD 5 bytes|Read the operating frequency|read only (*1)
+04||MODE 2 bytes mode,filter|Read the operating mode|read only (*1)
+05||FREQ BCD 5 bytes|Set the operating frequency|send only (*2)
+06||MODE bytes mode[,filter]|Set the operating mode|send only (*2); mode 00 LSB,01 USB,02 AM,03 CW,04 RTTY,05 FM,07 CW-R,08 RTTY-R,17 DV,22 DD (DD selectable in 1200 MHz band other than satellite mode); filter 01 FIL1,02 FIL2,03 FIL3 may be skipped
+07||(none)|Select the VFO mode|
+07|00||Select VFO A|in satellite mode: selects the VFO mode
+07|01||Select VFO B|in satellite mode FA (NG) is returned
+07|A0||Equalize VFO A and VFO B|
+07|B0||Exchange MAIN and SUB Bands|
+07|D0||Select the main band|
+07|D1||Select the sub band|
+07|D2|00 or 01|Send/read main/sub band selection|send/read (*); 00=main band selection 01=sub band selection
+08||(none)|Select the Memory mode|send only (*2)
+08||BCD 2 bytes 0001 to 0099|Select the Memory channel (including satellite mode)|0001=M-CH01 0099=M-CH99
+08||BCD 2 bytes 0100 to 0105|Select program scan edge channel 1A/1B to 3A/3B|0100/0101 (1A ch/1B ch) ... 0104/0105 (3A ch/3B ch)
+08||BCD 2 bytes 0106, 0107|Select call channel C1/C2|0106=C1 0107=C2
+09||(none)|Memory write|
+0A||(none)|Memory copy to VFO|
+0B||(none)|Memory clear|
+0C||see p.13|Read frequency offset (duplex offset)|read only (*1)
+0D||see p.13|Send frequency offset|send only (*2)
+0E|00||Cancel the scan|
+0E|01||Start a Programmed/memory scan|
+0E|02||Start a Programmed scan|
+0E|03||Start a F scan|
+0E|12||Start a Fine programmed scan|
+0E|13||Start a Fine F scan|
+0E|22||Start a Memory scan|
+0E|23||Start a Select memory scan|
+0E|24||Start a Mode Select scan|
+0E|A1~A7||Select F scan span|send only (*2); x=1..7: +-5,+-10,+-20,+-50,+-100,+-500 kHz,+-1 MHz
+0E|B0||Clear the Select channel setting|send only (*2)
+0E|B1||Set as select channel|send only (*2); previously set number by CI-V after power ON, or 1 if none selected
+0E|B1|01 to 03|Set the channel as a Select channel|01=SEL1 02=SEL2 03=SEL3
+0E|B2|00 to 03|Set the Select memory scan channel|send only (*2); 00=ALL 01=SEL1 02=SEL2 03=SEL3
+0E|D0||Set Scan resume OFF|send only (*2)
+0E|D3||Set Scan resume ON (Close&Delay)|send only (*2)
+0F||(none) request, reply 00/01/11/12/13|Read Split / duplex setting|read only (*1); reply 00=Split OFF 01=Split ON 11=DUP- 12=DUP+ 13=DD Repeater Simplex mode (RPS)
+0F|00||Set Split function OFF|send only (*2)
+0F|01||Set Split function ON|send only (*2)
+0F|10||Set the simplex operation|send only (*2)
+0F|11||Set DUP- operation|send only (*2)
+0F|12||Set DUP+ operation|send only (*2)
+0F|13||Set DD Repeater Simplex mode (RPS)|send only (*2)
+10||00 to 11|Send/read the tuning step|send/read (*); 00=OFF (10 Hz or 1 Hz),01=100 Hz,02=500 Hz,03=1 kHz,04=5 kHz,05=6.25 kHz,06=10 kHz,07=12.5 kHz,08=20 kHz,09=25 kHz,10=50 kHz,11=100 kHz
+11||BCD 1 byte 00 or 10|Send/read attenuator|send/read (*); 00=OFF 10=10 dB attenuator
+13|00||Speech all data with voice synthesizer|S meter level, frequency and mode
+13|01||Speech the operating frequency and S meter level|
+13|02||Speech the operating mode|mode announced after ongoing speech
+14|01|BCD 2 bytes 0000 ~ 0255|Send/read the AF level|send/read (*); 0000=min 0255=max
+14|02|BCD 2 bytes 0000 ~ 0255|Send/read the RF gain level|0000=min 0255=max
+14|03|BCD 2 bytes 0000 ~ 0255|Send/read the squelch level|0000=min 0255=max
+14|06|BCD 2 bytes 0000 ~ 0255|Send/read the NR level|0000=0% 0255=100%
+14|07|BCD 2 bytes 0000 ~ 0255|Send/read TWIN PBT (PBT1) position|0000=max CCW 0128=center 0255=max CW
+14|08|BCD 2 bytes 0000 ~ 0255|Send/read TWIN PBT (PBT2) position|0000=max CCW 0128=center 0255=max CW
+14|09|BCD 2 bytes 0000 ~ 0255|Send/read CW pitch|5 Hz steps; 0000=300 Hz 0128=600 Hz 0255=900 Hz
+14|0A|BCD 2 bytes 0000 ~ 0255|Send/read RF power|0000=min 0255=max
+14|0B|BCD 2 bytes 0000 ~ 0255|Send/read MIC gain|0000=min 0255=max
+14|0C|BCD 2 bytes 0000 ~ 0255|Send/read keying speed|0000=6 WPM 0255=48 WPM
+14|0D|BCD 2 bytes 0000 ~ 0255|Send/read Notch filter setting|0000=max CCW 0128=center 0255=max CW
+14|0E|BCD 2 bytes 0000 ~ 0255|Send/read the COMP level|0000=0 0255=10
+14|0F|BCD 2 bytes 0000 ~ 0255|Send/read the Break-IN delay|0000=2.0 d 0255=13.0 d
+14|12|BCD 2 bytes 0000 ~ 0255|Send/read NB level|0000=0% 0255=100%
+14|15|BCD 2 bytes 0000 ~ 0255|Send/read Monitor audio [MONI] level|0000=0% 0255=100%; NOTE: this model has no 14 14 DRIVE and no 14 13 DIGI-SEL, no 14 05 APF
+14|16|BCD 2 bytes 0000 ~ 0255|Send/read the VOX gain|0000=0% 0255=100%
+14|17|BCD 2 bytes 0000 ~ 0255|Send/read the Anti VOX gain|0000=0% 0255=100%
+14|19|BCD 2 bytes 0000 ~ 0255|Send/read LCD backlight brightness|0000=0% 0255=100%
+15|01|00 or 01|Read noise or S-meter squelch status|read only (*1); 00=Close 01=Open
+15|02|BCD 2 bytes 0000 to 0255|Read S-meter level|0000=S0 0120=S9 0241=S9+60 dB
+15|05|00 or 01|Read various squelch (tone squelch etc) status|00=Close 01=Open
+15|07|00 or 01|Read the OVF status|00=OVF indicator OFF 01=ON
+15|11|BCD 2 bytes 0000 ~ 0255|Read the PO meter level|0000=0% 0143=50% 0213=100%
+15|12|BCD 2 bytes 0000 ~ 0255|Read SWR meter level|0000=SWR1.0 0048=1.5 0080=2.0 0120=3.0
+15|13|BCD 2 bytes 0000 ~ 0255|Read ALC meter level|0000=min 0120=max
+15|14|BCD 2 bytes 0000 ~ 0255|Read COMP meter level|0000=0 dB 0130=15 dB 0210=25.5 dB
+15|15|BCD 2 bytes 0000 ~ 0255|Read Vd meter level|0000=0 V 0013=10 V 0241=16 V
+15|16|BCD 2 bytes 0000 ~ 0255|Read Id meter level|0000=0 A 0121=10 A 0241=20 A
+16|02|00 to 03|Send/read the Preamp / External Preamp|00=P.AMP OFF/EXT-P.AMP OFF 01=P.AMP ON/EXT OFF 02=P.AMP OFF/EXT ON 03=both ON
+16|12|01 to 03|Send/read the AGC time constant|01=FAST 02=MID 03=SLOW
+16|22|00 or 01|Send/read the Noise blanker|00=OFF 01=ON
+16|40|00 or 01|Send/read the Noise reduction|00=OFF 01=ON
+16|41|00 or 01|Send/read the Auto Notch function|00=OFF 01=ON
+16|42|00 or 01|Send/read the Repeater tone|00=OFF 01=ON
+16|43|00 or 01|Send/read the Tone squelch|00=OFF 01=ON
+16|44|00 or 01|Send/read the Speech compressor|00=OFF 01=ON
+16|45|00 or 01|Send/read the Monitor [MONI] function|00=OFF 01=ON
+16|46|00 or 01|Send/read the VOX function|00=OFF 01=ON
+16|47|00 to 02|Send/read the BK-IN function|00=BK-IN OFF 01=Semi BK-IN ON 02=Full BK-IN ON
+16|48|00 or 01|Send/read the Manual Notch function|00=OFF 01=ON
+16|4A|00 or 01|Send/read the AFC function|00=OFF 01=ON
+16|4B|00 or 01|Send/read the DTCS function|00=OFF 01=ON
+16|4F|00 or 01|Send/read the Twin peak filter|00=OFF 01=ON; ON only when Mark=2125 Hz and Shift=170 Hz
+16|50|00 or 01|Send/read the Dial lock function|00=OFF 01=ON
+16|56|00 or 01|Send/read the DSP IF filter type|00=SHARP 01=SOFT
+16|57|00 to 02|Send/read the Manual Notch width|00=WIDE 01=MID 02=NAR
+16|58|00 to 02|Send/read SSB transmit bandwidth|00=WIDE 01=MID 02=NAR; applied value depends on COMP: WIDE=1A 05 0017, MID=1A 05 0018, NAR=1A 05 0019
+16|59|00 or 01|Send/read the sub band (the Dualwatch function)|00=OFF 01=ON
+16|5A|00 or 01|Send/read the satellite mode|00=OFF 01=ON
+16|5B|00 to 02|Send/read the DSQL/CSQL setting (DV mode only)|00=OFF 01=DSQL 02=CSQL
+16|5C|00 to 02|Set the GPS TX mode|00=OFF 01=D-PRS 02=NMEA
+16|(sub byte not printed in the manual; probably 5D - UNSURE)|00 to 03, 06 to 09|Set the Tone squelch function|00=OFF 01=TONE 02=TSQL 03=DTCS 06=DTCS (T) 07=TONE (T)/DTCS (R) 08=DTCS (T)/TSQL (R) 09=TONE (T)/TSQL (R)
+16|65|00 or 01|Set the IP Plus function|00=OFF 01=ON
+17||ASCII text up to 30 chars (see p.10)|Send CW messages|footnote *3
+18|00||Turn OFF the transceiver|
+18|01||Turn ON the transceiver|footnote *4
+19|00||Read the transceiver ID|read only (*1)
+1A|00|see pp.14,15|Send/read memory contents|send/read (*)
+1A|01|see p.15|Send/read band stacking register contents|
+1A|02|see pp.15,16|Send/read memory keyer contents|footnote *5
+1A|03|see p.16|Send/read the selected IF filter width|
+1A|04|see p.16|Send/read the selected AGC time constant|
+1A|05 00 01|See p. 16|SET > Tone Control/TBW > RX > Send/read SSB RX HPF/LPF settings|
+1A|05 00 02|BCD 1 byte 00 to 10|SET > Tone Control/TBW > RX > Send/read SSB RX Tone (Bass) level|(00=-5 to 10=+5)
+1A|05 00 03|BCD 1 byte 00 to 10|SET > Tone Control/TBW > RX > Send/read SSB RX Tone (Treble) level|(00=-5 to 10=+5)
+1A|05 00 04|See p. 16|SET > Tone Control/TBW > RX > Send/read AM RX HPF/LPF settings|
+1A|05 00 05|BCD 1 byte 00 to 10|SET > Tone Control/TBW > RX > Send/read AM RX Tone (Bass) level|(00=-5 to 10=+5)
+1A|05 00 06|BCD 1 byte 00 to 10|SET > Tone Control/TBW > RX > Send/read AM RX Tone (Treble) level|(00=-5 to 10=+5)
+1A|05 00 07|See p. 16|SET > Tone Control/TBW > RX > Send/read FM RX HPF/LPF settings|
+1A|05 00 08|BCD 1 byte 00 to 10|SET > Tone Control/TBW > RX > Send/read FM RX Tone (Bass) level|(00=-5 to 10=+5)
+1A|05 00 09|BCD 1 byte 00 to 10|SET > Tone Control/TBW > RX > Send/read FM RX Tone (Treble) level|(00=-5 to 10=+5)
+1A|05 00 10|See p. 16|SET > Tone Control/TBW > RX > Send/read DV RX HPF/LPF settings|
+1A|05 00 11|BCD 1 byte 00 to 10|SET > Tone Control/TBW > RX > Send/read DV RX Tone (Bass) level|(00=-5 to 10=+5)
+1A|05 00 12|BCD 1 byte 00 to 10|SET > Tone Control/TBW > RX > Send/read Auto DV RX Tone (Treble) level|(00=-5 to 10=+5)
+1A|05 00 13|See p. 16|SET > Tone Control/TBW > RX > Send/read CW RX HPF/LPF settings|
+1A|05 00 14|See p. 16|SET > Tone Control/TBW > RX > Send/read RTTY RX HPF/LPF settings|
+1A|05 00 15|BCD 1 byte 00 to 10|SET > Tone Control/TBW > TX > Send/read SSB TX Tone (Bass) level|(00=-5 to 10=+5)
+1A|05 00 16|BCD 1 byte 00 to 10|SET > Tone Control/TBW > TX > Send/read SSB TX Tone (Treble) level|(00=-5 to 10=+5)
+1A|05 00 17|See p. 16|SET > Tone Control/TBW > TX > Send/read SSB TX bandwidth for wide|
+1A|05 00 18|See p. 16|SET > Tone Control/TBW > TX > Send/read SSB TX bandwidth for mid|
+1A|05 00 19|See p. 16|SET > Tone Control/TBW > TX > Send/read SSB TX bandwidth for narrow|
+1A|05 00 20|See p. 16|SET > Tone Control/TBW > TX > SSB-D TX passband width|
+1A|05 00 21|BCD 1 byte 00 to 10|SET > Tone Control/TBW > TX > Send/read AM TX Tone (Bass) level|(00=-5 to 10=+5)
+1A|05 00 22|BCD 1 byte 00 to 10|SET > Tone Control/TBW > TX > Send/read AM TX Tone (Treble) level|(00=-5 to 10=+5)
+1A|05 00 23|BCD 1 byte 00 to 10|SET > Tone Control/TBW > TX > Send/read FM TX Tone (Bass) level|(00=-5 to 10=+5)
+1A|05 00 24|BCD 1 byte 00 to 10|SET > Tone Control/TBW > TX > Send/read FM TX Tone (Treble) level|(00=-5 to 10=+5)
+1A|05 00 25|BCD 1 byte 00 to 10|SET > Tone Control/TBW > TX > Send/read DV TX Tone (Bass) level|(00=-5 to 10=+5)
+1A|05 00 26|BCD 1 byte 00 to 10|SET > Tone Control/TBW > TX > Send/read DV TX Tone (Treble) level|(00=-5 to 10=+5) Cmd. Sub cmd. Data Description
+1A|05 00 27|BCD 2 bytes 0000 ~ 0255|SET > Function > Beep Level|(0000=Minimum to 0255=Maximum)
+1A|05 00 28|BCD 1 byte 00 or 01|SET > Function > Beep Level Limit|(00=OFF, 01=ON)
+1A|05 00 29|BCD 1 byte 00 or 01|SET > Function > Beep (Confirmation)|(00=OFF, 01=ON)
+1A|05 00 30|BCD 1 byte 00 or 01|SET > Function > Band Edge Beep|(00=OFF, 01=ON) ( ON = Beep sounds with a default amateur band) 02 SET > Function > Band Edge Beep (02=ON (User)) 03 SET > Function > Band Edge Beep (03=ON (User) & TX Limit)
+1A|05 00 31|BCD 2 bytes 0050 ~ 0200|SET > Function > Beep Sound (MAIN)|(0050=500 Hz to 0200=2000 Hz)
+1A|05 00 32|BCD 2 bytes 0050 ~ 0200|SET > Function > Beep Sound (SUB)|(0050=500 Hz to 0200=2000 Hz)
+1A|05 00 33|BCD 1 byte 00 or 01|SET > Function > Sub Band Mute (TX) > Speaker/Phones|(00=OFF, 01=ON)
+1A|05 00 34|BCD 1 byte 00 or 01|SET > Function > Sub Band Mute (TX) > USB|(00=OFF, 01=ON)
+1A|05 00 35|BCD 1 byte 00 or 01|SET > Function > Sub Band Mute (TX) > LAN|(00=OFF, 01=ON)
+1A|05 00 36|BCD 1 byte 00 to 02|SET > Function > RF/SQL Control|(00=Auto, 01=SQL, 02=RF+SQL)
+1A|05 00 37|BCD 1 byte 00 or 01|SET > Function > FM/DV Center Error function|(00=OFF, 01=ON)
+1A|05 00 38|BCD 1 byte 00 to 05|SET > Function > TX Delay > 144M|(00=OFF, 01=10 ms, 02=15 ms, 03=20 ms, 04=25 ms, 05=30 ms)
+1A|05 00 39|BCD 1 byte 00 to 05|SET > Function > TX Delay > 430M|(00=OFF, 01=10 ms, 02=15 ms, 03=20 ms, 04=25 ms, 05=30 ms)
+1A|05 00 40|BCD 1 byte 00 to 05|SET > Function > TX Delay > 1200M|(00=OFF, 01=10 ms, 02=15 ms, 03=20 ms, 04=25 ms, 05=30 ms)
+1A|05 00 41|BCD 1 byte 00 to 05|SET > Function > Time-Out Timer|( 00=OFF, 01=3 min., 02=5 min., 03=10 min., 04=20 min., 05=30 min.)
+1A|05 00 42|BCD 1 byte 00 or 01|SET > Function > PTT Lock|(00=OFF, 01=ON)
+1A|05 00 43|BCD 1 byte 00 or 01|SET > Function > SPLIT > Quick SPLIT|(00=OFF, 01=ON) ( Setting the [SPLIT] key operation when it is held down for 1 second.)
+1A|05 00 44|See p. 16|SET > Function > SPLIT > FM SPLIT Offset|
+1A|05 00 45|BCD 1 byte 00 or 01|SET > Function > SPLIT > SPLIT LOCK|(00=OFF, 01=ON)
+1A|05 00 46|BCD 1 byte 00 or 01|SET > Function > Auto Repeater|(00=OFF, 01=ON (DUP,TONE) for USA version)
+1A|05 00 47|BCD 1 byte 00 to 02|SET > Function > RTTY Mark Frequency|(00=1275 Hz, 01=1615 Hz, 02=2125 Hz)
+1A|05 00 48|BCD 1 byte 00 to 02|SET > Function > RTTY Shift Width|(00=170 Hz, 01=200 Hz, 02=425 Hz)
+1A|05 00 49|BCD 1 byte 00 or 01|SET > Function > RTTY Keying Polarity|(00=Normal, 01=Reverse)
+1A|05 00 50|BCD 1 byte 00 or 01|SET > Function > SPEECH > SPEECH Language|(00=English, 01=Japanese)
+1A|05 00 51|BCD 1 byte 00 or 01|SET > Function > SPEECH > Alphabet|(00=Normal, 01=Phonetic Code)
+1A|05 00 52|BCD 1 byte 00 or 01|SET > Function > SPEECH > SPEECH Speed|(00=Slow, 01=Fast)
+1A|05 00 53|BCD 1 byte 00 to 02|SET > Function > SPEECH > RX Call Sign SPEECH|(00=OFF, 01=ON (Kerchunk), 02=ON (All))
+1A|05 00 54|BCD 1 byte 00 or 01|SET > Function > SPEECH > RX>CS SPEECH|(00=OFF, 01=ON)
+1A|05 00 55|BCD 1 byte 00 or 01|SET > Function > SPEECH > S-Level SPEECH|(00=OFF, 01=ON)
+1A|05 00 56|BCD 1 byte 00 or 01|SET > Function > SPEECH > MODE SPEECH|(00=OFF, 01=ON)
+1A|05 00 57|BCD 2 bytes 0000 ~ 0255|SET > Function > SPEECH > SPEECH Level|(0000=0% to 0255=100%)
+1A|05 00 58|BCD 1 byte 00 or 01|SET > Function > [SPEECH/LOCK] Switch|(00=SPEECH/LOCK, 01=LOCK/SPEECH)
+1A|05 00 59|BCD 1 byte 00 or 01|SET > Function > Lock Function|(00=MAIN DIAL, 01=PANEL)
+1A|05 00 60|BCD 1 byte 00 or 01|SET > Function > Memo Pad Quantity|(00=5 ch, 01=10 ch)
+1A|05 00 61|BCD 1 byte 00 to 02|SET > Function > MAIN DIAL Auto TS|(00=OFF, 01=Low, 02=High)
+1A|05 00 62|BCD 1 byte 00 or 01|SET > Function > MIC Up/Down Speed|(00=Slow, 01=Fast)
+1A|05 00 63|BCD 1 byte 00 or 01|SET > Function > AFC Limit|(00=OFF, 01=ON)
+1A|05 00 64|BCD 1 byte 00 to 02|SET > Function > [NOTCH] Switch (SSB)|(00=Auto, 01=Manual, 02=Auto/Manual)
+1A|05 00 65|BCD 1 byte 00 to 02|SET > Function > [NOTCH] Switch (AM)|(00=Auto, 01=Manual, 02=Auto/Manual)
+1A|05 00 66|BCD 1 byte 00 or 01|SET > Function > SSB/CW Synchronous Tuning|(00=OFF, 01=ON)
+1A|05 00 67|BCD 1 byte 00 or 01|SET > Function > CW Normal Side|(00=LSB, 01=USB)
+1A|05 00 68|BCD 1 byte 00 or 01|SET > Function > Screen Keyboard Type|(00=Ten-key, 01=Full Keyboard)
+1A|05 00 69|BCD 1 byte 00 to 02|SET > Function > Screen Full Keyboard Layout|(00=English, 01=German, 02=French)
+1A|05 00 70|BCD 1 byte 00 or 01|SET > Function > Screen Capture [POWER] Switch|(00=OFF, 01=ON)
+1A|05 00 71|BCD 1 byte 00 or 01|SET > Function > Screen Capture File Type|(00=PNG, 01=BMP)
+1A|05 00 72|BCD 2 bytes 0000 ~ 0255|SET > Function > REF Adjust|(0000=0%, 0255=100%)
+1A|05 00 73|BCD 2 bytes 0000 ~ 0255|SET > Function > REF Adjust (FINE)|(0000=0%, 0255=100%)
+1A|05 00 74|BCD 1 byte 00 to 03|SET > DV/DD Set > Standby Beep|( 00=OFF, 01=ON, 02=ON (to me: High Tone), 03=ON (to me: Alarm/High Tone))
+1A|05 00 75|BCD 1 byte 00 to 02|SET > DV/DD Set > Auto Reply|(00=OFF, 01=ON, 02=Voice)
+1A|05 00 76|BCD 1 byte 00 or 01|SET > DV/DD Set > DV Data TX|(00=PTT 01=Auto)
+1A|05 00 77|BCD 1 byte 00 or 01|SET > DV/DD Set > DV Fast Data > Fast Data|(00=OFF, 01=ON)
+1A|05 00 78|BCD 1 byte 00 or 01|SET > DV/DD Set > DV Fast Data > GPS Data Speed|(00=Slow, 01=Fast)
+1A|05 00 79|BCD 1 byte 00 to 10|SET > DV/DD Set > DV Fast Data > TX Delay (PTT)|(00=OFF, 01=1 sec. to 10=10 sec.)
+1A|05 00 80|BCD 1 byte 00 to 02|SET > DV/DD Set > Digital Monitor|(00=Auto, 01=Digital, 02=Analog)
+1A|05 00 81|BCD 1 byte 00 or 01|SET > DV/DD Set > Digital Repeater Set|(00=OFF, 01=ON)
+1A|05 00 82|BCD 1 byte 00 or 01|SET > DV/DD Set > DV Auto Detect|(00=OFF, 01=ON)
+1A|05 00 83|BCD 1 byte 00 or 01|SET > DV/DD Set > RX Record (RPT)|(00=ALL, 01=Latest Only)
+1A|05 00 84|BCD 1 byte 00 or 01|SET > DV/DD Set > BK|(00=OFF, 01=ON)
+1A|05 00 85|BCD 1 byte 00 or 01|SET > DV/DD Set > EMR|(00=OFF, 01=ON)
+1A|05 00 86|BCD 2 bytes 0000 ~ 0255|SET > DV/DD Set > EMR AF Level|(0000=0%, 0255=100%)
+1A|05 00 87|BCD 1 byte 00 or 01|SET > DV/DD Set > DD TX Inhibit (Power ON)|(00=OFF, 01=ON)
+1A|05 00 88|BCD 1 byte 00 or 01|SET > DV/DD Set > DD Packet Output|(00=Normal, 01=All)
+1A|05 00 89|BCD 1 byte 00 or 01|SET > QSO/RX Log > QSO Log|(00=OFF, 01=ON) Cmd. Sub cmd. Data Description
+1A|05 00 90|BCD 1 byte 00 or 01|SET > QSO/RX Log > RX History Log|(00=OFF, 01=ON)
+1A|05 00 91|BCD 1 byte 00 to 02|SET > QSO/RX Log > CSV Format > Separator/Decimal|( 00=Separator is " , " and Decimal is " . ," 01=Separator is " ; " and Decimal is " . ," 02=Separator is " ; " and Decimal is " , ")
+1A|05 00 92|BCD 1 byte 00 to 02|SET > QSO/RX Log > CSV Format > Date|(00="yyyy/mm/dd," 01="mm/dd/yyyy," 02="dd/mm/yyyy")
+1A|05 00 93|BCD 1 byte 00 or 01|SET > Connectors > External P.AMP > 144M|(00=OFF, 01=ON)
+1A|05 00 94|BCD 1 byte 00 or 01|SET > Connectors > External P.AMP > 430M|(00=OFF, 01=ON)
+1A|05 00 95|BCD 1 byte 00 or 01|SET > Connectors > External P.AMP > 1200M|(00=OFF, 01=ON)
+1A|05 00 96|BCD 1 byte 00 or 01|SET > Connectors > External Speaker Separate|(00=Separate, 01=Mix)
+1A|05 00 97|BCD 1 byte 00 to 30|SET > Connectors > Phones > Level|(00=-15 dB to 30=+15 dB)
+1A|05 00 98|BCD 1 byte 00 to 02|SET > Connectors > Phones > L/R Mix|(00=Separate, 01=Mix, 02=Auto)
+1A|05 00 99|BCD 1 byte 00 or 01|SET > Connectors > ACC AF/IF Output > AF/SQL Output Select|(00=MAIN, 01=SUB)
+1A|05 01 00|BCD 1 byte 00 or 01|SET > Connectors > ACC AF/IF Output > Output Select|(00=AF, 01=IF)
+1A|05 01 01|BCD 2 bytes 0000 ~ 0255|SET > Connectors > ACC AF/IF Output > AF Output Level|(0000=0% to 0255=100%)
+1A|05 01 02|BCD 1 byte 00 or 01|SET > Connectors > ACC AF/IF Output > AF SQL|(00=OFF (Open), 01=ON)
+1A|05 01 03|BCD 1 byte 00 or 01|SET > Connectors > ACC AF/IF Output > AF Beep/Speech... Output|(00=OFF, 01=ON)
+1A|05 01 04|BCD 2 bytes 0000 ~ 0255|SET > Connectors > ACC AF/IF Output > ACC IF Output Level|(0000=0% to 0255=100%)
+1A|05 01 05|BCD 1 byte 00 or 01|SET > Connectors > USB AF/IF Output > Output Select|(00=AF, 01=IF)
+1A|05 01 06|BCD 2 bytes 0000 ~ 0255|SET > Connectors > USB AF/IF Output > AF Output Level|(0000=0%, 0255=100%)
+1A|05 01 07|BCD 1 byte 00 or 01|SET > Connectors > USB AF/IF Output > AF SQL|(00=OFF (Open), 01=ON)
+1A|05 01 08|BCD 1 byte 00 or 01|SET > Connectors > USB AF/IF Output > AF Beep/Speech... Output|(00=OFF, 01=ON)
+1A|05 01 09|BCD 2 bytes 0000 ~ 0255|SET > Connectors > USB AF/IF Output > IF Output Level|(0000=0%, 0255=100%)
+1A|05 01 10|BCD 1 byte 00 or 01|SET > Connectors > LAN AF/IF Output > Output Select|(00=AF, 01=IF)
+1A|05 01 11|BCD 1 byte 00 or 01|SET > Connectors > LAN AF/IF Output > AF SQL|(00=OFF (Open), 01=ON)
+1A|05 01 12|BCD 2 bytes 0000 ~ 0255|SET > Connectors > MOD Input > ACC MOD Level|(0000=0% to 0255=100%)
+1A|05 01 13|BCD 2 bytes 0000 ~ 0255|SET > Connectors > MOD Input > USB MOD Level|(0000=0% to 0255=100%)
+1A|05 01 14|BCD 2 bytes 0000 ~ 0255|SET > Connectors > MOD Input > LAN MOD Level|(0000=0% to 0255=100%)
+1A|05 01 15|BCD 1 byte 00 ~ 05|SET > Connectors > MOD Input > DATA OFF MOD|( 00=MIC, 01=ACC, 02=MIC,ACC, 03=USB, 04=MIC,USB, 05=LAN)
+1A|05 01 16|BCD 1 byte 00 ~ 05|SET > Connectors > MOD Input > DATA MOD|( 00=MIC, 01=ACC, 02=MIC,ACC, 03=USB, 04=MIC,USB, 05=LAN)
+1A|05 01 17|BCD 1 byte 00 or 01|SET > Connectors > ACC SEND Output > 144M|(00=OFF, 01=ON)
+1A|05 01 18|BCD 1 byte 00 or 01|SET > Connectors > ACC SEND Output > 430M|(00=OFF, 01=ON)
+1A|05 01 19|BCD 1 byte 00 or 01|SET > Connectors > ACC SEND Output > 1200M|(00=OFF, 01=ON)
+1A|05 01 20|BCD 1 byte 00 to 04|SET > Connectors > USB SEND/Keying > USB SEND|( 00=OFF, 01=USB(A) DTR, 02=USB(A) RTS, 03=USB(B) DTR, 04=USB(B) RTS) ( You cannot select the same setting for USB keying (CW) or USB keying (RTTY).)
+1A|05 01 21|BCD 1 byte 00 to 04|SET > Connectors > USB SEND/Keying > USB Keying (CW)|( 00=OFF, 01=USB(A) DTR, 02=USB(A) RTS, 03=USB(B) DTR, 04=USB(B) RTS) ( You cannot select the same setting for USB SEND.)
+1A|05 01 22|BCD 1 byte 00 to 04|SET > Connectors > USB SEND/Keying > USB Keying (RTTY)|( 00=OFF, 01=USB(A) DTR, 02=USB(A) RTS, 03=USB(B) DTR, 04=USB(B) RTS) ( You cannot select the same setting for USB SEND.)
+1A|05 01 23|BCD 1 byte 00 or 01|SET > Connectors > USB SEND/Keying > Inhibit Timer at USB connection|(00=OFF, 01=ON)
+1A|05 01 24|BCD 1 byte 00 or 01|SET > Connectors > External Keypad > VOICE|(00=OFF, 01=ON)
+1A|05 01 25|BCD 1 byte 00 or 01|SET > Connectors > External Keypad > KEYER|(00=OFF, 01=ON)
+1A|05 01 26|BCD 1 byte 00 or 01|SET > Connectors > External Keypad > RTTY|(00=OFF, 01=ON)
+1A|05 01 27|BCD 1 byte 00 or 01|SET > Connectors > CI-V > CI-V Transceive|(00=OFF, 01=ON)
+1A|05 01 28|BCD 2 bytes 0000 ~ 0223|SET > Connectors > CI-V > CI-V USB/ LANREMOTE Transceive Address|(0000=00h to 0223=DFh in Hexadecimal)
+1A|05 01 29|BCD 1 byte 00 or 01|SET > Connectors > CI-V > CI-V USB Port|( 00=Link to [REMOTE], 01=Unlink to [REMOTE]) [footnote *1]
+1A|05 01 30|BCD 1 byte 00 or 01|SET > Connectors > CI-V > CI-V USB Echo Back|(00=OFF, 01=ON)
+1A|05 01 31|BCD 1 byte 00 or 01|SET > Connectors > CI-V > CI-V DATA Echo Back|(00=OFF, 01=ON)
+1A|05 01 32|BCD 1 byte 00 to 02|SET > Connectors > CI-V > USB (B)/DATA Function > USB (B) Function|(00=OFF, 01=RTTY Decode, 02=DV Data)
+1A|05 01 33|BCD 1 byte 00 to 04|SET > Connectors > CI-V > USB (B)/DATA Function > DATA Function|( 00=OFF, 01=RTTY Decode, 02=DV Data, 03= GPS/Weather, 04= CI-V)
+1A|05 01 34|BCD 1 byte 00 or 01|SET > Connectors > CI-V > USB (B)/DATA Function > GPS Out|(00=OFF, 01=DATAUSB (B))
+1A|05 01 35|BCD 1 byte 00 or 01|SET > Connectors > CI-V > USB (B)/DATA Function > DV Data/GPS Out Baud Rate|(00=4800bps, 01=9600bps)
+1A|05 01 36|BCD 1 byte 00 to 03|SET > Connectors > CI-V > USB (B)/DATA Function > RTTY Decode Baud Rate|(00=4800bps, 01=9600bps, 02=19200bps, 03=38400bps)
+1A|05 01 37|BCD 1 byte 00 or 01|SET > Network > DHCP (Valid after Restart)|(00=OFF, 01=ON)
+1A|05 01 38|BCD 8 bytes 0000000000 000001 ~ 0255025502 550254|SET > Network > IP Address (Valid after Restart)|( 0000000000000001=0.0.0.1 to 0255025502 550254=255.255.255.254) ( Valid when the DHCP (Valid after Restart) is set to OFF.) Cmd. Sub cmd. Data Description
+1A|05 01 39|BCD 8 bytes 0000000000 000001 ~ 0255025502 550254|SET > Network > DHCP (Valid after Restart) Read the IP address set by the DHCP server|( 0000000000000001=0.0.0.1 to 0255025502 550254=255.255.255.254) ( When the DHCP setting (Valid after Restart) is set to OFF, the manually set IP address (static IP address) is returned.) [footnote *1]
+1A|05 01 40|BCD 1 byte 01 ~ 30|SET > Network > Subnet Mask (Valid after Restart)|(01=128.0.0.0 (1 bit) to 30=255.255.255.252 (30 bit)) ( Valid when the DHCP (Valid after Restart) setting is set to OFF.)
+1A|05 01 41|BCD 8 bytes 0000000000 000001 ~ 0255025502 550254, FF|SET > Network > Default Gateway (Valid after Restart)|( 0000000000000001=0.0.0.1 to 0255025502 550254=255.255.255.254, FF=Blank) ( Valid when the DHCP (Valid after Restart) setting is set to OFF.)
+1A|05 01 42|BCD 8 bytes 0000000000 000001 ~ 0255025502 550254, FF|SET > Network > Primary DNS Server (Valid after Restart)|( 0000000000000001=0.0.0.1 to 0255025502 550254=255.255.255.254, FF=Blank) ( Valid when the DHCP (Valid after Restart) setting is set to OFF.)
+1A|05 01 43|BCD 8 bytes 0000000000 000001 ~ 0255025502 550254, FF|SET > Network > 2nd DNS Server (Valid after Restart)|( 0000000000000001=0.0.0.1 to 0255025502 550254=255.255.255.254, FF=Blank) ( Valid when the DHCP (Valid after Restart) setting is set to OFF.)
+1A|05 01 44|See p. 15|SET > Network > Network Name|(Up to 15 characters)
+1A|05 01 45|BCD 1 byte 00 or 01|SET > Network > Network Control (Valid after Restart)|(00=OFF, 01=ON)
+1A|05 01 46|BCD 1 byte 00 or 01|SET > Network > Power OFF Setting (for Remote Control)|(00=Shutdown only, 01=Standby/Shutdown)
+1A|05 01 47|BCD 2 bytes 000001 ~ 065535|SET > Network > Control Port (UDP) (Valid after Restart)|(000001=1 to 065535=65535)
+1A|05 01 48|BCD 2 bytes 000001 ~ 065535|SET > Network > Serial Port (UDP) (Valid after Restart)|(000001=1 to 065535=65535)
+1A|05 01 49|BCD 2 bytes 000001 ~ 065535|SET > Network > Audio Port (UDP) (Valid after Restart)|(000001=1 to 065535=65535)
+1A|05 01 50|BCD 1 byte 00 or 01|SET > Network > Internet Access Line (Valid after Restart)|( 00=FTTH (Fiber To The Home), 01=ADSL/ CATV)
+1A|05 01 51|See p. 15|SET > Network > Network Radio Name|(Up to 16 characters)
+1A|05 01 52|BCD 2 bytes 0000 ~ 0255|SET > Display > LCD Backlight|(0000=0% to 0255=100%)
+1A|05 01 53|BCD 1 byte 00 or 01|SET > Display > Display Type|(00=A, 01=B)
+1A|05 01 54|BCD 1 byte 00 or 01|SET > Display > Display Font|(00=Basic, 01=Round)
+1A|05 01 55|BCD 1 byte 00 or 01|SET > Display > Meter Peak Hold (Bar)|(00=OFF, 01=ON)
+1A|05 01 56|BCD 1 byte 00 or 01|SET > Display > Memory Name|(00=OFF, 01=ON)
+1A|05 01 57|BCD 1 byte 00 or 01|SET > Display > MN-Q Popup (MN OFFON)|(00=OFF, 01=ON)
+1A|05 01 58|BCD 1 byte 00 or 01|SET > Display > BW Popup (PBT)|(00=OFF, 01=ON)
+1A|05 01 59|BCD 1 byte 00 or 01|SET > Display > BW Popup (FIL)|(00=OFF, 01=ON)
+1A|05 01 60|BCD 1 byte 00 to 03|SET > Display > RX Call Sign Display|(00=OFF, 01=Normal, 02=RX Hold, 03=Hold)
+1A|05 01 61|BCD 1 byte 00 or 01|SET > Display > RX Position Indicator|(00=OFF, 01=ON)
+1A|05 01 62|BCD 1 byte 00 to 02|SET > Display > RX Position Display|( 00=OFF, 01=ON (Main/Sub), 02=ON (Main Only))
+1A|05 01 63|BCD 1 byte 00 to 04|SET > Display > RX Position Display Timer|( 00=5 sec, 01=10 sec, 02=15 sec, 03=30 sec, 04=Hold)
+1A|05 01 64|BCD 1 byte 00 or 01|SET > Display > Reply Position Display|(00=OFF, 01=ON)
+1A|05 01 65|BCD 1 byte 00 to 02|SET > Display > TX Call Sign Display|( 00=OFF, 01=Your Call Sign, 02=My Call Sign)
+1A|05 01 66|BCD 1 byte 00 or 01|SET > Display > Scroll Speed|(00=Slow, 01=Fast)
+1A|05 01 67|BCD 1 byte 00 to 03|SET > Display > Screen Saver|( 00=OFF, 01=15 min., 02=30 min., 03=60 min.)
+1A|05 01 68|BCD 1 byte 00 or 01|SET > Display > Opening Message|(00=OFF, 01=ON)
+1A|05 01 69|BCD 1 byte 00 or 01|SET > Display > Power ON Check|(00=OFF, 01=ON)
+1A|05 01 70|BCD 1 byte 00 or 01|SET > Display > Display Unit > Latitude/Longitude|(00=ddd°mm.mm', 01=ddd°mm'ss")
+1A|05 01 71|BCD 1 byte 00 or 01|SET > Display > Display Unit > Altitude/Distance|(00=m, 01=ft/mi)
+1A|05 01 72|BCD 1 byte 00 to 02|SET > Display > Display Unit > Speed|(00=km/h, 01=mph, 02=knots)
+1A|05 01 73|BCD 1 byte 00 or 01|SET > Display > Display Unit > Temperature|(00=ºC, 01=ºF)
+1A|05 01 74|BCD 1 byte 00 to 03|SET > Display > Display Unit > Barometric|(00=hPa, 01=mb, 02=mmHg, 03=inHg)
+1A|05 01 75|BCD 1 byte 00 or 01|SET > Display > Display Unit > Rainfall|(00=mm, 01=inch)
+1A|05 01 76|BCD 1 byte 00 to 03|SET > Display > Display Unit > Wind Speed|(00=m/s, 01=km/h, 02=mph, 03=knots)
+1A|05 01 77|BCD 1 byte 00 or 01|SET > Display > Display Language|(00=English, 01=Japanese)
+1A|05 01 78|BCD 1 byte 00 or 01|SET > Display > System Language|(00=English, 01=Japanese)
+1A|05 01 79|BCD 2 bytes 20000101 ~ 20991231|SET > Time Set > Date/Time > Date|(20000101=2000/01/01 to 20991231=2099/12/31)
+1A|05 01 80|BCD 2 bytes 0000 ~ 2359|SET > Time Set > Date/Time > Time|(0000=00:00 to 2359=23:59)
+1A|05 01 81|BCD 1 byte 00 or 01|SET > Time Set > Date/Time > NTP Function|(00=OFF, 01=ON)
+1A|05 01 82|See p. 15|SET > Time Set > Date/Time > NTP Server Address|
+1A|05 01 83|BCD 1 byte 00 or 01|SET > Time Set > Date/Time > GPS Time Correct|(00=OFF, 01=Auto)
+1A|05 01 84|See p. 16|SET > Time Set > UTC Offset|
+1A|05 01 85|BCD 1 byte 00 to 02|SET > SD Card > Import/Export > CSV Format > Separator/Decimal|( 00=Separator is " , " and Decimal is " . ," 01=Separator is " ; " and Decimal is " . ," 02=Separator is " ; " and Decimal is " , ")
+1A|05 01 86|BCD 1 byte 00 to 02|SET > SD Card > Import/Export > CSV Format > Date|(00=""yyyy/mm/dd," 01="mm/dd/yyyy," 02="dd/mm/yyyy")
+1A|05 01 87|BCD 1 byte 00 or 01|SCOPE > Scope during Tx (CENTER TYPE)|(00=OFF, 01=ON)
+1A|05 01 88|BCD 1 byte 00 to 02|SCOPE > Max Hold|(00=OFF, 01=10s Hold, 02=ON)
+1A|05 01 89|BCD 1 byte 00 ~ 02|SCOPE > CENTER Type Display|( 00=Filter center, 01=Carrier point center, 02=Carrier point center (Abs. Freq.))
+1A|05 01 90|BCD 1 byte 00 or 01|SCOPE > Marker Position (Fix Type)|(00=Filter center, 01 Carrier point)
+1A|05 01 91|See p. 16|SCOPE > VBW|
+1A|05 01 92|BCD 1 byte 00 to 03|SCOPE > Averaging|(00=OFF, 01=2, 02=3, 03=4)
+1A|05 01 93|BCD 1 byte 00 or 01|SCOPE > Waveform Type|(00=Fill, 01=Fill+Line)
+1A|05 01 94|See p. 16|SCOPE > Waveform Color (Current)|
+1A|05 01 95|See p. 16|SCOPE > Waveform Color (Line)|
+1A|05 01 96|See p. 16|SCOPE > Waveform Color (Max Hold)|
+1A|05 01 97|BCD 1 byte 00 or 01|SCOPE > Waterfall Display|(00=OFF, 01=ON) Cmd. Sub cmd. Data Description
+1A|05 01 98|BCD 1 byte 00 to 02|SCOPE > Waterfall Speed|(00=Slow, 01=Mid, 02=Fast)
+1A|05 01 99|BCD 1 byte 00 to 02|SCOPE > Waterfall Size (Expand Screen)|(00=Small, 01=Mid, 02=Large)
+1A|05 02 00|BCD 1 byte 00 to 07|SCOPE > Waterfall Peak Color Level|(00=Grid 1 to 07=Grid 8)
+1A|05 02 01|BCD 1 byte 00 or 01|SCOPE > Waterfall Marker Auto-hide|(00=OFF, 01=ON)
+1A|05 02 02|See p. 17|SCOPE > Fixed Edges > 144M > No.1:|
+1A|05 02 03|See p. 17|SCOPE > Fixed Edges > 144M > No.2:|
+1A|05 02 04|See p. 17|SCOPE > Fixed Edges > 144M > No.3:|
+1A|05 02 05|See p. 17|SCOPE > Fixed Edges > 430M > No.1:|
+1A|05 02 06|See p. 17|SCOPE > Fixed Edges > 430M > No.2:|
+1A|05 02 07|See p. 17|SCOPE > Fixed Edges > 430M > No.3:|
+1A|05 02 08|See p. 17|SCOPE > Fixed Edges > 1200M > No.1:|
+1A|05 02 09|See p. 17|SCOPE > Fixed Edges > 1200M > No.2:|
+1A|05 02 10|See p. 17|SCOPE > Fixed Edges > 1200M > No.3:|
+1A|05 02 11|BCD 1 byte 00 or 01|AUDIO SCOPE SET > FFT Scope Waveform Type|(00=Line, 01=Fill)
+1A|05 02 12|See p. 16|AUDIO SCOPE SET > FFT Scope Waveform Color|
+1A|05 02 13|BCD 1 byte 00 or 01|AUDIO SCOPE SET > FFT Scope Waterfall Display|(00=OFF, 01=ON)
+1A|05 02 14|See p. 16|AUDIO SCOPE SET > Oscilloscope Waveform Color|
+1A|05 02 15|BCD 2 bytes 0000 ~ 0255|VOICE TX > TX LEVEL|(0000=0%, 0255=100%)
+1A|05 02 16|BCD 1 byte 00 or 01|VOICE TX SET > Auto Monitor|(00=OFF, 01=ON)
+1A|05 02 17|BCD 1 byte 01 to 15|VOICE TX SET > Repeat Time|(01=1 sec. to 15=15 sec.)
+1A|05 02 18|BCD 1 byte 00 to 04|KEYER 001 > Number Style|( 00=Normal, 01=190ANO, 02=190ANT, 03=90NO, 04=90NT)
+1A|05 02 19|BCD 1 byte 01 to 08|KEYER 001 > Count Up Trigger|(01=M1 to 08=M8)
+1A|05 02 20|BCD 2 bytes 0001 to 9999|KEYER 001 > Present Number|(0001=1 to 9999=9999)
+1A|05 02 21|BCD 2 bytes 0000 ~ 0255|CW-KEY SET > Side Tone Level|(0000=0% to 0255=100%)
+1A|05 02 22|BCD 1 byte 00 or 01|CW-KEY SET > Side Tone Level Limit|(00=OFF, 01=ON)
+1A|05 02 23|BCD 1 byte 01 to 60|CW-KEY SET > Keyer Repeat time|(01=1 sec. to 60=60 sec.)
+1A|05 02 24|BCD 1 byte 28 to 45|CW-KEY SET > Dot/Dash Ratio|(28=1:1:2.8 to 45=1:1:4.5; 0.1 steps)
+1A|05 02 25|BCD 1 byte 00 to 03|CW-KEY SET > Rise Time|(00=2 msec., 01=4 msec., 02=6 msec., 03=8 msec.)
+1A|05 02 26|BCD 1 byte 00 or 01|CW-KEY SET > Paddle Polarity|(00=Normal, 01=Reverse)
+1A|05 02 27|BCD 1 byte 00 to 02|CW-KEY SET > Key Type|(00=Straight, 01=Bug, 02=Paddle)
+1A|05 02 28|BCD 1 byte 00 or 01|CW-KEY SET > MIC Up/Down Keyer|(00=OFF, 01=ON)
+1A|05 02 29|BCD 1 byte 00 to 03|RTTY DECODE SET > FFT Scope Averaging|(00=OFF, 01=2, 02=3, 03=4)
+1A|05 02 30|See p. 16|RTTY DECODE SET > FFT Scope Waveform Color|
+1A|05 02 31|BCD 1 byte 00 or 01|RTTY DECODE SET > Decode USOS|(00=OFF, 01=ON)
+1A|05 02 32|BCD 1 byte 00 or 01|RTTY DECODE SET > Decode New Line Code|(00=CR, LF, CR+LF, 01=CR+LF)
+1A|05 02 33|BCD 1 byte 00 or 01|RTTY DECODE SET > TX USOS|(00=OFF, 01=ON)
+1A|05 02 34|BCD 1 byte 00 or 01|RTTY DECODE SET > Displayed Characters during Tx (Satellite)|( 00=Displayed Characters during RX, 01=Displayed Characters during TX)
+1A|05 02 35|See p. 16|RTTY DECODE SET > Font Color (Receive)|
+1A|05 02 36|See p. 16|RTTY DECODE SET > Font Color (Transmit)|
+1A|05 02 37|BCD 1 byte 00 or 01|RTTY DECODE LOG > Decode Log|(00=OFF, 01=ON)
+1A|05 02 38|BCD 1 byte 00 or 01|RTTY DECODE LOG > Log Set > File Type|(00=Text, 01=HTML)
+1A|05 02 39|BCD 1 byte 00 or 01|RTTY DECODE SET > Log Set > Time Stamp|(00=OFF, 01=ON)
+1A|05 02 40|BCD 1 byte 00 or 01|RTTY DECODE SET > Log Set > Time Stamp (Time)|(00=Local, 01=UTC)
+1A|05 02 41|BCD 1 byte 00 or 01|RTTY DECODE SET > Log Set > Time Stamp (Frequency)|(00=OFF, 01=ON)
+1A|05 02 42|BCD 1 byte 00 or 01|QSO RECORDER > Recorder Set > TX REC Audio|(00=Direct, 01=Monitor)
+1A|05 02 43|BCD 1 byte 00 or 01|QSO RECORDER > Recorder Set > RX REC Condition|(00=Always, 01=Squelch Auto)
+1A|05 02 44|BCD 1 byte 00 or 01|QSO RECORDER > Recorder Set > File Split|(00=OFF, 01=ON)
+1A|05 02 45|BCD 1 byte 00 or 01|QSO RECORDER > Recorder Set > REC Operation|(00=MAIN/SUB Separate, 01=MAIN/SUB Link)
+1A|05 02 46|BCD 1 byte 00 or 01|QSO RECORDER > Recorder Set > PTT Auto REC|(00=OFF, 01=ON)
+1A|05 02 47|BCD 1 byte 00 to 03|QSO RECORDER > Recorder Set > PRE-REC for PTT Auto REC|(00=OFF, 01=5 sec., 02=10 sec., 03=15 sec.)
+1A|05 02 48|BCD 1 byte 00 to 03|QSO RECORDER > Player Set > Skip Time|(00=3 sec., 01=5 sec., 02=10 sec., 03=30 sec.)
+1A|05 02 49|BCD 1 byte 00 or 01|SCAN SET > SCAN Speed|(00=Slow, 01=Fast)
+1A|05 02 50|BCD 1 byte 00 or 01|SCAN SET > SCAN Resume|(00=OFF, 01=ON)
+1A|05 02 51|BCD 1 byte 00 to 10|SCAN SET > Pause Timer|( 00=2 sec. to 09=20 sec.; 2 sec. steps, 10=HOLD)
+1A|05 02 52|BCD 1 byte 00 to 06|SCAN SET > Resume Timer|(00=0 sec. to 05=5 sec., 06=HOLD)
+1A|05 02 53|BCD 1 byte 00 to 04|SCAN SET > Temporary Skip Timer|( 00=5 min., 01=10 min., 02=15 min., 03=While Scanning, 04=While Powered ON)
+1A|05 02 54|BCD 1 byte 00 or 01|SCAN SET > MAIN DIAL Operation (SCAN)|(00=OFF, 01=Up/Down)
+1A|05 02 55|BCD 1 byte 00 to 02|GPS > GPS Set > GPS Select|(00=OFF, 01=External GPS, 02=Manual)
+1A|05 02 56|BCD 1 byte 00 or 01|GPS > GPS Set > GPS Receiver Baud Rate|(00=4800bps, 01=9600bps)
+1A|05 02 57|See p. 17|GPS > GPS Set > Manual Position|
+1A|05 02 58|BCD 1 byte 00 to 02|GPS > GPS TX Mode|(00=OFF, 01=D-PRS, 02=NMEA)
+1A|05 02 59|See p. 17|GPS > GPS TX Mode > D-PRS > Unproto Address (Up to 56 characters)|
+1A|05 02 60|BCD 1 byte 00 to 03|GPS > GPS TX Mode > D-PRS > TX Format|(00=Position, 01=Object, 02=Item, 03=Weather)
+1A|05 02 61|BCD 1 byte 00 to 04|GPS > GPS TX Mode > D-PRS > TX Format > Position > Symbol|(00=No.1, 01=No.2, 02=No.3, 03=No.4)
+1A|05 02 62|See p. 17|GPS > GPS TX Mode > D-PRS > TX Format > Position > the GPS-A Symbol No.1 setting (2 characters)|
+1A|05 02 63|See p. 17|GPS > GPS TX Mode > D-PRS > TX Format > Position > the GPS-A Symbol No.2 setting (2 characters)|
+1A|05 02 64|See p. 17|GPS > GPS TX Mode > D-PRS > TX Format > Position > the GPS-A Symbol No.3 setting (2 characters)|
+1A|05 02 65|See p. 17|GPS > GPS TX Mode > D-PRS > TX Format > Position > the GPS-A Symbol No.4 setting (2 characters)|
+1A|05 02 66|BCD 1 byte 00 to 42|GPS > GPS TX Mode > D-PRS > TX Format > Position > SSID|( 00=---, 01=(-0), 02=-1 to 16=-15, 17=-A to 42=-Z)
+1A|05 02 67|BCD 1 byte 00 to 03|GPS > GPS TX Mode > D-PRS > TX Format > Position > Comment|( 00=1 to 03=4) D
+1A|05 02 68|See p. 17|GPS > GPS TX Mode > D-PRS > TX Format > Position > Comment 1 (Up to 43 characters)|
+1A|05 02 69|See p. 17|GPS > GPS TX Mode > D-PRS > TX Format > Position > Comment 2 (Up to 43 characters)|
+1A|05 02 70|See p. 17|GPS > GPS TX Mode > D-PRS > TX Format > Position > Comment 3 (Up to 43 characters)|
+1A|05 02 71|See p. 17|GPS > GPS TX Mode > D-PRS > TX Format > Position > Comment 4 (Up to 43 characters)|
+1A|05 02 72|BCD 1 byte 00 to 02|GPS > GPS TX Mode > D-PRS > TX Format > Position > Time Stamp|(00=OFF, 01=DHM, 02=HMS)
+1A|05 02 73|BCD 1 byte 00 or 01|GPS > GPS TX Mode > D-PRS > TX Format > Position > Altitude|(00=OFF, 01=ON)
+1A|05 02 74|BCD 1 byte 00 to 02|GPS > GPS TX Mode > D-PRS > TX Format > Position > Data Extension|(00=OFF, 01=Course/Speed, 02=Power/Height/Gain/Directivity)
+1A|05 02 75|BCD 1 byte 00 to 09|GPS > GPS TX Mode > D-PRS > TX Format > Position > Power|( 00=0W, 01=1W, 02=4W, 03=9W, 04=16W, 05=25W, 06=36W, 07=49W, 08=64W, 09=81W)
+1A|05 02 76|BCD 1 byte 00 to 09|GPS > GPS TX Mode > D-PRS > TX Format > Position > Height|( 00=3 m (10 ft), 01=6 m (20 ft), 02=12 m (40 ft), 03=24 m (80 ft), 04=49 m (160 ft), 05=98 m (320 ft), 06=195 m (640 ft), 07=390 m (1280 ft), 08=780 m (2560 ft), 09=1561 m (5120 ft))
+1A|05 02 77|BCD 1 byte 00 to 09|GPS > GPS TX Mode > D-PRS > TX Format > Position > Gain|(00=0 dB to 09=9 dB)
+1A|05 02 78|BCD 1 byte 00 to 08|GPS > GPS TX Mode > D-PRS > TX Format > Position > Directivity|( 00=Omni, 01=45ºNE, 02=90ºE, 03=135ºSE, 04=180ºS, 05=225ºSW, 06=270ºW, 07=315ºNW, 08=360ºN)
+1A|05 02 79|See p. 17|GPS > GPS TX Mode > D-PRS > TX Format > Object > Object Name (Up to 9 characters)|
+1A|05 02 80|BCD 1 byte 00 or 01|GPS > GPS TX Mode > D-PRS > TX Format > Object > Data Type|(00=Live Object, 01=Kill Object)
+1A|05 02 81|See p. 17|GPS > GPS TX Mode > D-PRS > TX Format > Object > Symbol (2 characters)|
+1A|05 02 82|See p. 17|GPS > GPS TX Mode > D-PRS > TX Format > Object > Comment (Up to 43 characters)|
+1A|05 02 83|See p. 17|GPS > GPS TX Mode > D-PRS > TX Format > Object > Position|
+1A|05 02 84|BCD 1 byte 00 to 02|GPS > GPS TX Mode > D-PRS > TX Format > Object > Data Extension|(00=OFF, 01=Course/Speed, 02=Power/Height/Gain/Directivity)
+1A|05 02 85|BCD 1 byte 000 to 360|GPS > GPS TX Mode > D-PRS > TX Format > Object > Course (0º to 360º; 1 degree steps)|
+1A|05 02 86|BCD 1 byte 00 to 1850|GPS > GPS TX Mode > D-PRS > TX Format > Object > Speed (0 km/h to 1850 km/h)|
+1A|05 02 87|BCD 1 byte 00 to 09|GPS > GPS TX Mode > D-PRS > TX Format > Object > Power|( 00=0W, 01=1W, 02=4W, 03=9W, 04=16W, 05=25W, 06=36W, 07=49W, 08=64W, 09=81W)
+1A|05 02 88|BCD 1 byte 00 to 09|GPS > GPS TX Mode > D-PRS > TX Format > Object > Height|( 00=3 m (10 ft), 01=6 m (20 ft), 02=12 m (40 ft), 03=24 m (80 ft), 04=49 m (160 ft), 05=98 m (320 ft), 06=195 m (640 ft), 07=390 m (1280 ft), 08=780 m (2560 ft), 09=1561 m (5120 ft))
+1A|05 02 89|BCD 1 byte 00 to 09|GPS > GPS TX Mode > D-PRS > TX Format > Object > Gain|(00=0 dB to 09=9 dB)
+1A|05 02 90|BCD 1 byte 00 to 08|GPS > GPS TX Mode > D-PRS > TX Format > Object > Directivity|( 00=Omni, 01=45ºNE, 02=90ºE, 03=135ºSE, 04=180ºS, 05=225ºSW, 06=270ºW, 07=315ºNW, 08=360ºN)
+1A|05 02 91|BCD 1 byte 00 to 42|GPS > GPS TX Mode > D-PRS > TX Format > Object > SSID|( 00=---, 01=(-0), 02=-1 to 16=-15, 17=-A to 42=-Z)
+1A|05 02 92|BCD 1 byte 00 or 01|GPS > GPS TX Mode > D-PRS > TX Format > Object > Time Stamp|(00=DHM, 01=HMS)
+1A|05 02 93|See p. 17|GPS > GPS TX Mode > D-PRS > TX Format > Item > Item Name (Up to 9 characters)|
+1A|05 02 94|BCD 1 byte 00 or 01|GPS > GPS TX Mode > D-PRS > TX Format > Item > Data Type|(00=Live Item, 01=Killed Item)
+1A|05 02 95|See p. 17|GPS > GPS TX Mode > D-PRS > TX Format > Item > Symbol (2 characters)|
+1A|05 02 96|See p. 17|GPS > GPS TX Mode > D-PRS > TX Format > Item > Comment (Up to 43 characters)|
+1A|05 02 97|See p. 17|GPS > GPS TX Mode > D-PRS > TX Format > Item > Position|
+1A|05 02 98|BCD 1 byte 00 to 02|GPS > GPS TX Mode > D-PRS > TX Format > Item > Data Extension|(00=OFF, 01=Course/Speed, 02=Power/Height/Gain/Directivity)
+1A|05 02 99|BCD 1 byte 000 to 360|GPS > GPS TX Mode > D-PRS > TX Format > Item > Course (0º to 360º; 1 degree steps)|
+1A|05 03 00|BCD 1 byte 00 to 1850|GPS > GPS TX Mode > D-PRS > TX Format > Item > Speed (0 km/h to 1850 km/h)|
+1A|05 03 01|BCD 1 byte 00 to 09|GPS > GPS TX Mode > D-PRS > TX Format > Item > Power|( 00=0W, 01=1W, 02=4W, 03=9W, 04=16W, 05=25W, 06=36W, 07=49W, 08=64W, 09=81W)
+1A|05 03 02|BCD 1 byte 00 to 09|GPS > GPS TX Mode > D-PRS > TX Format > Item > Height|( 00=3 m (10 ft), 01=6 m (20 ft), 02=12 m (40 ft), 03=24 m (80 ft), 04=49 m (160 ft), 05=98 m (320 ft), 06=195 m (640 ft), 07=390 m (1280 ft), 08=780 m (2560 ft), 09=1561 m (5120 ft))
+1A|05 03 03|BCD 1 byte 00 to 09|GPS > GPS TX Mode > D-PRS > TX Format > Item > Gain|(00=0 dB to 09=9 dB)
+1A|05 03 04|BCD 1 byte 00 to 08|GPS > GPS TX Mode > D-PRS > TX Format > Item > Directivity|( 00=Omni, 01=45ºNE, 02=90ºE, 03=135ºSE, 04=180ºS, 05=225ºSW, 06=270ºW, 07=315ºNW, 08=360ºN)
+1A|05 03 05|BCD 1 byte 00 to 42|GPS > GPS TX Mode > D-PRS > TX Format > Item > SSID|( 00=---, 01=(-0), 02=-1 to 16=-15, 17=-A to 42=-Z)
+1A|05 03 06|See p. 17|GPS > GPS TX Mode > D-PRS > TX Format > Weather > Symbol (2 characters)|
+1A|05 03 07|BCD 1 byte 00 to 42|GPS > GPS TX Mode > D-PRS > TX Format > Weather > SSID|( 00=---, 01=(-0), 02=-1 to 16=-15, 17=-A to 42=-Z)
+1A|05 03 08|See p. 17|GPS > GPS TX Mode > D-PRS > TX Format > Weather > Comment (Up to 43 characters)|
+1A|05 03 09|BCD 1 byte 00 to 02|GPS > GPS TX Mode > D-PRS > TX Format > Weather > Time Stamp|(00=OFF, 01=DHM, 02=HMS)
+1A|05 03 10|BCD 1 byte 00 or 01|GPS > GPS TX Mode > NMEA > GPS Sentence (RMC)|(00=OFF, 01=ON) [footnote *6]
+1A|05 03 11|BCD 1 byte 00 or 01|GPS > GPS TX Mode > NMEA > GPS Sentence (CGA)|(00=OFF, 01=ON) [footnote *6]
+1A|05 03 12|BCD 1 byte 00 or 01|GPS > GPS TX Mode > NMEA > GPS Sentence (GLL)|(00=OFF, 01=ON) [footnote *6]
+1A|05 03 13|BCD 1 byte 00 or 01|GPS > GPS TX Mode > NMEA > GPS Sentence (GSA)|(00=OFF, 01=ON) [footnote *6]
+1A|05 03 14|BCD 1 byte 00 or 01|GPS > GPS TX Mode > NMEA > GPS Sentence (VTG)|(00=OFF, 01=ON) [footnote *6]
+1A|05 03 15|BCD 1 byte 00 or 01|GPS > GPS TX Mode > NMEA > GPS Sentence (GSV)|(00=OFF, 01=ON) D [footnote *6]
+1A|05 03 16|See p. 17|GPS > GPS TX Mode > NMEA > GPS Message (Up to 20 characters)|
+1A|05 03 17|See p. 17|GPS > GPS Alarm> Alarm Area (Group)|
+1A|05 03 18|BCD 1 byte 00 to 03|GPS > GPS Alarm> Alarm Area (RX/Memory)|(00=Limited, 01=Extended, 02=Both)
+1A|05 03 19|BCD 1 byte 00 to 08|GPS > GPS Auto TX 00=OFF, 01**=5 sec., 02=10 sec., 03=30 sec., 04=1 min., 05=3 min., 06=5 min., 07=10 min., 08=30 min.) ** When 4 kinds of GPS sentences are selected, you cannot select "01."|
+1A|05 03 20|BCD 1 byte 00 to 03|DTMF SET > DTMF Speed|( 00=100ms, 01=200ms, 02=300ms, 03=500 ms)
+1A|05 03 21|BCD 2 bytes 0000 to 0255|Set the NB LEVEL (144 MHz)|(0000=0% to 0255=100%)
+1A|05 03 22|BCD 1 byte 00 to 09|Set the NB DEPTH (144 MHz)|(00=1 to 09=10)
+1A|05 03 23|BCD 2 bytes 0000 to 0255|Set the NB WIDTH (144 MHz)|(0000=1 to 0255=100)
+1A|05 03 24|BCD 2 bytes 0000 to 0255|Set the NB LEVEL (430 MHz)|(0000=0% to 0255=100%)
+1A|05 03 25|BCD 1 byte 00 to 09|Set the NB DEPTH (430 MHz)|(00=1 to 09=10)
+1A|05 03 26|BCD 2 bytes 0000 to 0255|Set the NB WIDTH (430 MHz)|(0000=1 to 0255=100)
+1A|05 03 27|BCD 2 bytes 0000 to 0255|Set the NB LEVEL (1200 MHz)|(0000=0% to 0255=100%)
+1A|05 03 28|BCD 1 byte 00 to 09|Set the NB DEPTH (1200 MHz)|(00=1 to 09=10)
+1A|05 03 29|BCD 2 bytes 0000 to 0255|Set the NB WIDTH (1200 MHz)|(0000=1 to 0255=100)
+1A|05 03 30|BCD 1 byte 00 to 20|Set the VOX DELAY|(00=0.0 sec. to 20=2.0 sec.; 0.1 sec steps)
+1A|05 03 31|BCD 1 byte 00 to 03|Set the VOX voice delay|(00=OFF, 01=Short, 02=Mid, 03=Long)
+1A|05 03 32|BCD 1 byte 00 or 01|Set the TX PWR LIMIT (144M) function|(00=OFF, 01=ON)
+1A|05 03 33|BCD 2 bytes 0000 to 0255|Set the TX PWR LIMIT (144M)|(0000=1 to 0255=100)
+1A|05 03 34|BCD 1 byte 00 or 01|Set the TX PWR LIMIT (430M) function|(00=OFF, 01=ON)
+1A|05 03 35|BCD 2 bytes 0000 to 0255|Set the TX PWR LIMIT (430M)|(0000=1 to 0255=100)
+1A|05 03 36|BCD 1 byte 00 or 01|Set the TX PWR LIMIT (1200M) function|(00=OFF, 01=ON)
+1A|05 03 37|BCD 2 bytes 0000 to 0255|Set the TX PWR LIMIT (1200M)|(0000=1 to 0255=100)
+1A|05 03 38|BCD 1 byte 00 or 01|Set the Received Call sign Display ("Name" or "Call Sign")|(00=Call Sign, 01=Name)
+1A|05 03 39|BCD 1 byte 00 to 02|Set the Compass Direction|( 00=Heading Up, 01=North Up, 02=South Up)
+1A|06|see p.17|DATA mode with filter set|
+1A|07|see p.18|Set the Satellite memory contents|
+1A|08|00 or 01|NTP server access|00=Terminate 01=Initiate
+1A|09|00 to 02|Read NTP server access result|read only (*1); 00=Accessing or not accessed since power ON 01=Succeeded 02=Failed
+1A|0A|00 or 01|Read the OVF indicator status|read only (*1); 00=OFF 01=ON
+1B|00|see p.19|Send/read the Repeater tone frequency|
+1B|01|see p.19|Send/read the TSQL tone frequency|
+1B|02|see p.19|Send/read the DTCS code and polarity|
+1B|07|see p.19|Send/read the CSQL code (DV mode)|
+1C|00|00 or 01|Send/read the transceiver's status (PTT)|00=RX 01=TX
+1C|02|00 or 01|Send/read the Transmit frequency monitor (XFC)|00=OFF 01=ON
+1C|03|see p.13|Read the transmit frequency|read only (*1)
+1E|00||Read number of available TX frequency band|read only
+1E|01|see p.13|Read TX band edge frequencies|read only
+1E|02||Read number of user-set TX frequency band|read only
+1E|03|see p.13|Set the user-set TX band edge frequencies|send/read (*)
+1F|00|see p.19|SET > My Station > My Call Sign (DV)|send/read (*)
+1F|01|see p.19|SET > Display > TX Call Sign Display|
+1F|02|see p.19|SET > My Station > TX Message (DV)|
+20|00 00|00 or 01|Send/read the Auto DV RX Call signs output|00=OFF 01=ON; footnote *7
+20|00 01|see p.20|Output DV RX Call signs for transceive|
+20|00 02|see p.20|Read Auto DV RX Call signs|read only (*1)
+20|01 00|00 or 01|Send/read the Auto DV RX message output|00=OFF 01=ON; footnote *7
+20|01 01|see p.20|Output DV RX message for transceive|
+20|01 02|see p.20|Read Auto DV RX message|read only (*1)
+20|02 00|00 or 01|Send/read the Auto DV RX status output|00=OFF 01=ON; footnote *7
+20|02 01|see p.20|Output DV RX status for transceive|
+20|02 02|see p.20|Read Auto DV RX status|read only (*1)
+20|03 00|00 or 01|Send/read the Auto DV RX GPS/D-PRS data output|00=OFF 01=ON; footnote *7
+20|03 0100|see p.21|Output DV RX GPS/D-PRS Position for transceive|
+20|03 0101|see p.21|Output DV RX D-PRS Object status for transceive|
+20|03 0102|see p.21|Output DV RX D-PRS Item status for transceive|
+20|03 0103|see p.21|Output DV RX D-PRS Weather status for transceive|
+20|03 0200|see p.21|Read Auto DV RX GPS/D-PRS Position status|read only (*1)
+20|03 0201|see p.21|Read Auto DV RX D-PRS Object status|read only (*1)
+20|03 0202|see p.21|Read Auto DV RX D-PRS Item status|read only (*1)
+20|03 0203|see p.21|Read Auto DV RX D-PRS Weather status|read only (*1)
+20|04 00|00 or 01|Send/read Auto DV RX GPS/D-PRS message output|00=OFF 01=ON; footnote *7
+20|04 01|see p.22|Output DV RX D-PRS message for transceive|
+20|04 02|see p.22|Read Auto DV RX D-PRS message status|read only (*1)
+21|00|see p.23|RIT frequency|send/read (*)
+21|01|00 or 01|RIT setting|00=OFF 01=ON
+22|00|see p.23|Set the DV TX data (up to 30 byte)|
+22|01 00|00 or 01|Set the Auto DV RX data output|send/read (*)
+22|01 01|see p.23|Set the DV RX data for transceive (up to 30 byte)|
+22|02|00 or 01|SET > DV/DD Set > DV Data TX|send/read (*); 00=PTT 01=Auto
+22|03|00 or 01|SET > DV/DD Set > DV Fast Data > Fast Data|send/read (*); 00=OFF 01=ON
+22|04|00 or 01|SET > DV/DD Set > DV Fast Data > GPS Data Speed|send/read (*); 00=Slow 01=Fast
+22|05|00 to 10|SET > DV/DD Set > DV Fast Data > TX Delay (PTT)|send/read (*); 00=OFF 01=1 sec to 10=10 sec
+23|00|see p.23|Read the position status|read only (*1)
+23|01|00, 02, 03|GPS > GPS Set > GPS Select|send/read (*); 00=OFF 02=External GPS 03=Manual
+23|02|see p.17|GPS > GPS Set > Manual Position|send/read (*)
+24|00 00|00 or 01|Send/read TX output power setting|send/read (*); 00=OFF 01=ON
+24|00 01|00 or 01|Set the TX output power for transceive|00=OFF 01=ON
+25||see p.23: byte 00=Selected VFO 01=Unselected VFO + FREQ 5 bytes|Set the selected or unselected VFO frequency|send/read (*); 00/01 settable in VFO mode only (FA/NG in satellite mode, memory/call/DR mode for 01)
+26||see p.23: byte 00/01 + mode + data mode 00=OFF 01=ON + filter|Set the selected or unselected VFO's operating mode and filter|send/read (*); data and filter may be skipped; same restrictions as 25
+27|00|see p.24|Read the Scope waveform data|only when 27 10 and 27 11 are ON
+27|10|00 or 01|Send/read the Scope ON/OFF status|00=OFF 01=ON
+27|11|00 or 01|Send/read the Scope wave data output|00=OFF 01=ON; footnote *8
+27|12|00 or 01|Send/read the Main or Sub scope setting|00=Main 01=Sub
+27|14|see p.24|Send/read the Scope Center mode or Fixed mode setting|
+27|15|see p.24|Send/read Span setting in Center mode Scope|
+27|16|see p.24|Send/read Edge number setting in Fixed mode Scope|
+27|17|see p.24|Send/read Scope hold function ON/OFF status|
+27|19|see p.24|Send/read Scope Reference level setting|
+27|1A|see p.25|Send/read Sweep speed setting|
+27|1B|00 or 01|SCOPE > Scope during Tx (CENTER TYPE)|00=OFF 01=ON
+27|1C|00 to 02|SCOPE > CENTER Type Display|00=Filter center 01=Carrier point center 02=Carrier point center (Abs. Freq.)
+27|1D|see p.16 (as printed)|Send/read the Scope VBW setting|
+27|1E|see p.25|Send/read the Scope Fixed edge frequencies|
+28|00|00 to 08|Voice TX Memory|00=Stop 01=T1 to 08=T8

@@ -1,0 +1,235 @@
+00||BCD frequency data (length not detailed in this manual)|Send frequency data (transceive)|Data format only described as BCD code data for frequency
+01||mode data (same as command 06)|Send mode data (transceive)|"Same as command 06"
+02||none (read)|Read band edge frequencies|
+03||BCD frequency data|Read operating frequency|
+04||mode data|Read operating mode|
+05||BCD frequency data|Set operating frequency|
+06|00|none|Select LSB|mode code = sub-command column in this manual
+06|01|none|Select USB|
+06|02|none|Select AM|
+06|03|none|Select CW|
+06|04|none|Select RTTY|
+06|05|none|Select FM|
+06|07|none|Select CW-R|WFM code is not listed in the 06 rows (WFM is only mentioned in cmd 10 text)
+06|08|none|Select RTTY-R|
+07||none|Select VFO mode|
+07|00|none|Select VFO A|
+07|01|none|Select VFO B|
+07|A0|none|Equalize VFO A and VFO B|A=B
+07|B0|none|Exchange VFO A and VFO B|swap
+08||none|Select memory mode|
+08||BCD 0001~0105|Select memory channel|*P1=0100, P2=0101
+08||BCD 0106 or 0107|Select the call channel|C1=0106, C2=0107
+08|A0|bank number 1~5|Set the bank number|1=A 2=B 3=C 4=D 5=E
+09||none|Memory write|
+0A||none|Memory to VFO|
+0B||none|Memory clear|
+0C||none|Read offset frequency|
+0D||offset frequency data|Set offset frequency|
+0E|00|none|Scan stop|
+0E|01|none|Programmed/memory scan start|
+0E|02|none|Programmed scan start|
+0E|22|none|Memory scan start|
+0E|23|none|Select memory scan start|
+0E|B0|none|Set as non-select channel|
+0E|B1|none|Set as select channel|
+0E|D0|none|Set scan resume OFF|
+0E|D3|none|Set scan resume ON|
+0F|00|none|Turn the split function OFF|
+0F|01|none|Turn the split function ON|
+0F|10|none|Select simplex operation|
+0F|11|none|Select -DUP operation|
+0F|12|none|Select +DUP operation|
+10|00|none|Select 10 Hz (1 Hz) tuning step|AM/FM/WFM: 10 Hz (1 Hz); SSB/CW/RTTY: TS OFF
+10|01|none|Select 100 Hz tuning step|
+10|02|none|Select 1 kHz tuning step|
+10|03|none|Select 5 kHz tuning step|
+10|04|none|Select 9 kHz tuning step|
+10|05|none|Select 10 kHz tuning step|
+10|06|none|Select 12.5 kHz tuning step|
+10|07|none|Select 20 kHz tuning step|
+10|08|none|Select 25 kHz tuning step|
+10|09|none|Select 100 kHz tuning step|
+10|10|none|Select MHz step|AM/FM/WFM: MHz step; SSB/CW/RTTY: TS OFF
+11||1 byte 00/12|Select/read attenuator|0=OFF, 12=ON (12 dB); sub-command column shows "--" (value is the data)
+13|00|none|Announce with voice synthesizer: all data|00=all data
+13|01|none|Announce with voice synthesizer: frequency and S-meter level|
+13|02|none|Announce with voice synthesizer: receive mode|
+14|01|Level data (0~255)|AF level|0=max CCW 255=max CW
+14|02|Level data (0~255)|RF level|0=max CCW 255=11 o'clock
+14|03|Level data (0~255)|SQL level|0=11 o'clock 255=max CW
+14|06|Level data (0~255)|NR level|0=min 255=max
+14|07|Level data (0~255)|Inner PBT / IF shift|0=max CCW 128=center 255=max CW
+14|08|Level data (0~255)|Outside PBT|0=max CCW 128=center 255=max CW
+14|09|Level data (0~255)|CW pitch|0=300 Hz 128=600 Hz 255=900 Hz in 5 Hz steps
+14|0A|Level data (0~255)|RF power|0=min 255=max
+14|0B|Level data (0~255)|MIC gain|0=min 255=max
+14|0C|Level data (0~255)|Key speed|0=slow 255=fast
+14|0D|Level data (0~255)|NOTCH (NF1) frequency|0=low freq 255=high freq
+14|0E|Level data (0~10)|COMP level|0=0 10=10 (not 0~255)
+14|0F|Level data (20~130)|Break-in delay|20=2.0d 130=13.0d
+14|12|Level data (0~255)|NB level|0=0 255=100%
+14|15|Level data (0~255)|Monitor gain|0=0 255=100%
+14|16|Level data (0~255)|VOX gain|0=0 255=100%
+14|17|Level data (0~255)|Anti-VOX gain|0=0 255=100%
+14|18|Level data (0~255)|Contrast (LCD)|0=0 255=100%
+14|19|Level data (0~255)|Bright (LCD)|0=0 255=100%
+14|1A|Level data (0~255)|NOTCH (NF2) frequency|0=low freq 255=high freq
+15|01|none (read)|Read squelch condition|
+15|02|none (read)|Read S-meter level|
+15|11|none (read)|Read RF power meter|
+15|12|none (read)|Read SWR meter|
+15|13|none (read)|Read ALC meter|
+15|14|none (read)|Read COMP meter|
+16|02|1 byte 0/1|Preamp|0=OFF 1=ON (single preamp)
+16|12|1 byte 0~3|AGC selection|0=OFF 1=Slow 2=Mid 3=Fast (note: reversed vs newer rigs)
+16|22|1 byte 0/1|Noise blanker|0=OFF 1=ON
+16|40|1 byte 0/1|Noise reduction|0=OFF 1=ON
+16|41|1 byte 0/1|Auto notch|0=OFF 1=ON
+16|42|1 byte 0/1|Repeater tone|0=OFF 1=ON
+16|43|1 byte 0/1|Tone squelch|0=OFF 1=ON
+16|44|1 byte 0/1|Speech compressor|0=OFF 1=ON
+16|45|1 byte 0/1|Monitor|0=OFF 1=ON
+16|46|1 byte 0/1|VOX function|0=OFF 1=ON
+16|47|1 byte 0~2|Break-in|0=OFF 1=semi break-in 2=full break-in
+16|48|1 byte 0/1|Manual notch (NF1)|0=OFF 1=ON
+16|4B|1 byte 0/1|DTCS|0=OFF 1=ON
+16|4C|1 byte 0/1|VSC|0=OFF 1=ON
+16|4F|1 byte 0/1|Twin Peak Filter|0=OFF 1=ON
+16|50|1 byte 0/1|Dial lock function|0=OFF 1=ON
+16|51|1 byte 0/1|Manual notch (NF2)|0=OFF 1=ON
+19|00|none (reply ID)|Read the transceiver ID|
+1A|00|memory number + data (see p.148)|Send/read memory contents|additional code 0000~0102 (0100=P1 0101=P2 0102=Call)
+1A|01|band code + register code + data (p.148)|Send/read band stacking register contents|e.g. 0703 = oldest 21 MHz
+1A|02|channel 01~04 + ASCII (p.148)|Send/read memory keyer contents|
+1A|03|1 byte|Send/read the selected filter width|SSB CW RTTY: 0=50 Hz to 31=2700 Hz; AM: 0=200 Hz to 49=10 kHz
+1A|04|1 byte|Send/read the selected AGC time constant|0=OFF 1=0.1/0.3 sec to 13=6.0/8.0 sec
+1A|05 00 01|per description (data length not stated in manual)|RF Power setting|(0=mini. to 255=max.)
+1A|05 00 02|per description (data length not stated in manual)|MIC Gain setting|(0=mini. to 255=max.)
+1A|05 00 03|per description (data length not stated in manual)|of SSB TX bandwidth (lower edge) for wide|(0=100, 1=200, 2=300, 3=500 HZ)
+1A|05 00 04|per description (data length not stated in manual)|of SSB TX bandwidth (higher edge) for wide|(0=2500, 1=2700, 2=2800, 3=2900 HZ)
+1A|05 00 05|per description (data length not stated in manual)|of SSB TX bandwidth (lower edge) for middle|(0=100, 1=200, 2=300, 3=500 HZ)
+1A|05 00 06|per description (data length not stated in manual)|of SSB TX bandwidth (higher edge) for middle|(0=2500, 1=2700, 2=2800, 3=2900 HZ)
+1A|05 00 07|per description (data length not stated in manual)|of SSB TX bandwidth (lower edge) for narrow|(0=100, 1=200, 2=300, 3=500 HZ)
+1A|05 00 08|per description (data length not stated in manual)|of SSB TX bandwidth (higher edge) for narrow|(0=2500, 1=2700, 2=2800, 3=2900 HZ)
+1A|05 00 09|per description (data length not stated in manual)|Twin Peak Filter|(0=OFF; 1=ON)
+1A|05 00 10|per description (data length not stated in manual)|RTTY mark frequency|(0=1275 Hz, 1=1615 Hz, 2=2125 Hz)
+1A|05 00 11|per description (data length not stated in manual)|RTTY shift width|(0=170 Hz, 1=200 Hz, 2=425 Hz)
+1A|05 00 12|per description (data length not stated in manual)|RTTY keying polarity|(0=Normal, 1=Reverse)
+1A|05 00 13|per description (data length not stated in manual)|CW key speed|(0=0.6 WPM to 255=60 WPM)
+1A|05 00 14|per description (data length not stated in manual)|CW Pitch setting|(0=300 Hz, 120=900 Hz, in 5 Hz steps)
+1A|05 00 15|per description (data length not stated in manual)|CW side tone level|(0=min. to 255=max.)
+1A|05 00 16|per description (data length not stated in manual)|CW side tone level limit|(0=OFF, 1=ON)
+1A|05 00 17|per description (data length not stated in manual)|LCD contrast|(0=0% to 255=100%)
+1A|05 00 18|per description (data length not stated in manual)|LCD bright|(0=0%, 255=100%)
+1A|05 00 19|per description (data length not stated in manual)|LCD unit bright|(0=0% to 255=100%)
+1A|05 00 20|per description (data length not stated in manual)|LCD flicker level|(0=0% to 255=100%)
+1A|05 00 21|per description (data length not stated in manual)|switch backlight|(0=0% to 255=100%)
+1A|05 00 22|per description (data length not stated in manual)|display type|(0=A, 1=B, 2=C)
+1A|05 00 23|per description (data length not stated in manual)|display font type|(0=Basic, 1=Italic)
+1A|05 00 24|per description (data length not stated in manual)|display font size|(0=Normal, 1=Large)
+1A|05 00 25|per description (data length not stated in manual)|meter peak hold|(0=OFF, 1=ON)
+1A|05 00 26|per description (data length not stated in manual)|filter pop up indication for PBT shifting|(0=OFF, 1=ON)
+1A|05 00 27|per description (data length not stated in manual)|filter pop up indication for IF filter setting|(0=OFF, 1=ON)
+1A|05 00 28|per description (data length not stated in manual)|pop up indication for 1 Hz mode|(0=OFF, 1=ON)
+1A|05 00 29|per description (data length not stated in manual)|pop up indication for scope center/fix|(0=OFF, 1=ON)
+1A|05 00 30|per description (data length not stated in manual)|TV pop up indication for channel Up/Down|(0=OFF, 1=ON)
+1A|05 00 31|per description (data length not stated in manual)|TV pop up indication for P.AMP/ATT|(0=OFF, 1=ON)
+1A|05 00 32|per description (data length not stated in manual)|indication of the voice TX memory channel names|(0=OFF, 1=ON)
+1A|05 00 33|per description (data length not stated in manual)|indication of the keyer memory names|(0=OFF, 1=ON)
+1A|05 00 34|per description (data length not stated in manual)|indication of the DTMF memory names|(0=OFF, 1=ON)
+1A|05 00 35|per description (data length not stated in manual)|external display setting|(0=1:1.8, 1=1:1.6) 147
+1A|05 00 36|per description (data length not stated in manual)|opening message|(0=OFF, 1=ON)
+1A|05 00 37|per description (data length not stated in manual)|my call sign setting|(10 character: see p. 149 )
+1A|05 00 38|per description (data length not stated in manual)|power ON check|(0=OFF, 1=ON)
+1A|05 00 39|per description (data length not stated in manual)|current year|(2000 to 2099)
+1A|05 00 40|per description (data length not stated in manual)|current date|(0101 to 1231=Jan. 1st to Dec. 31st)
+1A|05 00 41|per description (data length not stated in manual)|current time|(0000 to 2359=00:00 to 23:59)
+1A|05 00 42|per description (data length not stated in manual)|clock2 function|(0=OFF, 1=ON)
+1A|05 00 43|per description (data length not stated in manual)|offset time for clock2 function|(24001 to 24000=-24:00 to +24:00)
+1A|05 00 44|per description (data length not stated in manual)|auto power OFF period|(0=OFF, 1=30 min., 2=60 min., 3=90 min.)
+1A|05 00 45|per description (data length not stated in manual)|TX monitor set|(0=OFF, 1=ON)
+1A|05 00 46|per description (data length not stated in manual)|TX monitor gain|(0=0% to 255=100%)
+1A|05 00 47|per description (data length not stated in manual)|confirmation beep|(0=OFF, 1=ON)
+1A|05 00 48|per description (data length not stated in manual)|band edge beep|(0=OFF, 1=ON)
+1A|05 00 49|per description (data length not stated in manual)|beep gain|(0=min. to 255=max.)
+1A|05 00 50|per description (data length not stated in manual)|beep gain limit|(0=OFF, 1=ON)
+1A|05 00 51|per description (data length not stated in manual)|RF/SQL control set|(0=Auto, 1=SQL, 2=RF+SQL)
+1A|05 00 52|per description (data length not stated in manual)|quick split set|(0=OFF, 1=ON)
+1A|05 00 53|per description (data length not stated in manual)|split offset -9.999 to +9.999 MHz (see p. 149 for de- tails)|
+1A|05 00 54|per description (data length not stated in manual)|split lock set|(0=OFF, 1=ON)
+1A|05 00 55|per description (data length not stated in manual)|duplex offset 0.000 to 9.999 MHz for HF (see p. 149 for details)|
+1A|05 00 56|per description (data length not stated in manual)|duplex offset 0.000 to 9.999 MHz for 50 MHz band (see p. 149 for details)|
+1A|05 00 57|per description (data length not stated in manual)|duplex offset 0.000 to 9.999 MHz for 144 MHz band (see p. 149 for details)|
+1A|05 00 58|per description (data length not stated in manual)|duplex offset 0.000 to 9.999 MHz for 430 MHz band (see p. 149 for details)|
+1A|05 00 59|per description (data length not stated in manual)|one touch repeater set|(0=DUP-, 1=DUP+)
+1A|05 00 60|per description (data length not stated in manual)|auto repeater set|(0=OFF, 1=ON-1, 2=ON-2)
+1A|05 00 61|per description (data length not stated in manual)|tuner auto start set|(0=OFF, 1=ON)
+1A|05 00 62|per description (data length not stated in manual)|PTT tune set|(0=OFF, 1=ON)
+1A|05 00 63|per description (data length not stated in manual)|[TUNER/CALL] key ac- tion set|(0=Manual, 1=Auto)
+1A|05 00 64|per description (data length not stated in manual)|[ACC] (pin 7) output "VSEND" set|(0=OFF, 1=UHF only, 2=ON)
+1A|05 00 65|per description (data length not stated in manual)|speech level|(0=0 to 255=100%)
+1A|05 00 66|per description (data length not stated in manual)|speech language|(0=English, 1=Japanese)
+1A|05 00 67|per description (data length not stated in manual)|speech speed|(0=Slow, 1=Fast)
+1A|05 00 68|per description (data length not stated in manual)|S-level speech|(0=OFF, 1=ON)
+1A|05 00 69|per description (data length not stated in manual)|speech capability with [MODE] key operation|(0=OFF, 1=ON)
+1A|05 00 70|per description (data length not stated in manual)|memopad numbers|(0=5 ch, 1=10 ch)
+1A|05 00 71|per description (data length not stated in manual)|scan speed|(0=Low, 1=High)
+1A|05 00 72|per description (data length not stated in manual)|scan resume|(0=OFF, 1=ON)
+1A|05 00 73|per description (data length not stated in manual)|main dial auto TS|(0=OFF, 1=Low, 2=High)
+1A|05 00 74|per description (data length not stated in manual)|[F-1] key assigment of the HM-151.|(0="P.AMP/ATT," 1="NB," 2="NR," 3="MNF," 4="ANF," 5="TS," 6="SPL," 7="A/B," 8="MCL," 9="BNK," 10="COM," 11="AGC," 12="TBW," 13="DUP," 14="TON," 15="MET," 16="VSC," 17="MPW," 18="MPR," 19="<SCOPE>," 20="<METER>")
+1A|05 00 75|per description (data length not stated in manual)|[F-2] key assigment of the HM-151. (Selectable functions are same as [F-1].)|
+1A|05 00 76|per description (data length not stated in manual)|mic. up/down speed|(0=Low, 1=High)
+1A|05 00 77|per description (data length not stated in manual)|quick RIT/TX clear function|(0=OFF, 1=ON)
+1A|05 00 78|per description (data length not stated in manual)|SSB/CW synchronous tuning function|(0=OFF, 1=ON)
+1A|05 00 79|per description (data length not stated in manual)|CW normal side set|(0=LSB, 1=USB)
+1A|05 00 80|per description (data length not stated in manual)|voice recorder 1st menu set|(0=Voice-root, 1=Voice- RX/TX)
+1A|05 00 81|per description (data length not stated in manual)|keyer 1st menu set|(0=Keyer-root, 1=Keyer-send)
+1A|05 00 82|per description (data length not stated in manual)|DTMF 1st menu set|(0=DTMF-root, 1=DTMF-send)
+1A|05 00 83|per description (data length not stated in manual)|SSB mode selectability|(0=OFF: inhibition, 1=ON: selec- table)
+1A|05 00 84|per description (data length not stated in manual)|CW mode selectability|(0=OFF: inhibition, 1=ON: selec- table)
+1A|05 00 85|per description (data length not stated in manual)|RTTY mode selectabil- ity.|(0=OFF: inhibition, 1=ON: se- lectable)
+1A|05 00 86|per description (data length not stated in manual)|AM mode selectability|(0=OFF: inhibition, 1=ON: selectable)
+1A|05 00 87|per description (data length not stated in manual)|FM mode selectability|(0=OFF: inhibition, 1=ON: selec- table)
+1A|05 00 88|per description (data length not stated in manual)|WFM mode selectabil- ity|(0=OFF: inhibition, 1=ON: se- lectable)
+1A|05 00 89|per description (data length not stated in manual)|external keypad set for voice memory|(0=OFF, 1=ON)
+1A|05 00 90|per description (data length not stated in manual)|external keypad set for keyer memory|(0=OFF, 1=ON)
+1A|05 00 91|per description (data length not stated in manual)|external keypad type connected to [MIC] connector of controller|(0=Dot/Dash type, 1=Ext Keypad)
+1A|05 00 92|per description (data length not stated in manual)|CI-V transceive set|(0=OFF, 1=ON)
+1A|05 00 93|per description (data length not stated in manual)|reference frequency set|(0=0 to 255=100%)
+1A|05 00 94|per description (data length not stated in manual)|speech compresser level|(0=0 to 10=10)
+1A|05 00 95|per description (data length not stated in manual)|auto voice monitor set|(0=OFF, 1=ON)
+1A|05 00 96|per description (data length not stated in manual)|MIC memo function|(0=OFF, 1=ON)
+1A|05 00 97|per description (data length not stated in manual)|contest number style|(0=Normal, 1=190AANO, 2=190AANT, 3=90ANO, 4=90ANT)
+1A|05 00 98|per description (data length not stated in manual)|count up trigger chan- nel|(1=M1, 2=M2, 3=M3, 4=M4)
+1A|05 00 99|per description (data length not stated in manual)|present number (1-9999)|
+1A|05 01 00|per description (data length not stated in manual)|CW keyer repeat time|(1=1 sec. to 60=60 sec.)
+1A|05 01 01|per description (data length not stated in manual)|CW keyer dot/dash ratio|(28=1:1:2.8 to 45=1:1:4.5)
+1A|05 01 02|per description (data length not stated in manual)|rise time|(0=2 msec., 1=4 msec., 2=6 msec., 3=8 msec.)
+1A|05 01 03|per description (data length not stated in manual)|CW paddle polarity|(0=Normal, 1=Reverse)
+1A|05 01 04|per description (data length not stated in manual)|CW keyer type|(0=Straight, 1=Bug-key, 2=ELEC- Key)
+1A|05 01 05|per description (data length not stated in manual)|MIC up/down keyer (HM-103) set|(0=OFF, 1=ON)
+1A|05 01 06|per description (data length not stated in manual)|RTTY decode USOS|(0=OFF, 1=ON)
+1A|05 01 07|per description (data length not stated in manual)|RTTY decode new line code|(0=CR,LF,CR+LF, 1=CR+LF)
+1A|05 01 08|per description (data length not stated in manual)|scope max. hold|(0=OFF, 1=ON)
+1A|05 01 09|per description (data length not stated in manual)|scope size set|(0=Nor- mal, 1=Wide)
+1A|05 01 10|per description (data length not stated in manual)|fast sweep set|(0=1 sweep, 1=Continuous)
+1A|05 01 11|per description (data length not stated in manual)|fast sweep audio level|(0=0 dB, 1=-10 dB, 2=OFF)
+1A|05 01 12|per description (data length not stated in manual)|NB level set|(0=min. to 255=max.)
+1A|05 01 13|per description (data length not stated in manual)|NB width set|(0=min. to 255=max.)
+1A|05 01 14|per description (data length not stated in manual)|NR level set|(0=0 to 15=15)
+1A|05 01 15|per description (data length not stated in manual)|VOX gain|(0=0% to 255=100%)
+1A|05 01 16|per description (data length not stated in manual)|anti VOX gain|(0=0% to 255=100%)
+1A|05 01 17|per description (data length not stated in manual)|VOX delay|(0=0.0 sec. to 20=2.0 sec.)
+1A|05 01 18|per description (data length not stated in manual)|DTMF speed set|(0=100 msec., 1=200 msec., 2=300 msec., 3=500 msec.)
+1A|05 01 19|per description (data length not stated in manual)|Break-IN delay set|(20=2.0d to 130=13.0d)
+1A|06|per description|Send/read SSB transmit bandwidth|0=WIDE 1=MID 2=NAR
+1A|07|per description|Send/read DSP filter shape|0=sharp 1=soft
+1A|08|per description|Send/read manual notch filter 1 bandwidth|0=WIDE 1=MID 2=NAR
+1A|09|per description|Send/read manual notch filter 2 bandwidth|0=WIDE 1=MID 2=NAR
+1A|0A|per description|Send/read 9600 bps mode set|0=OFF 1=ON
+1B|00|repeater tone data (p.149)|Set/read repeater tone frequency|
+1B|01|TSQL tone data (p.149)|Set/read TSQL tone frequency|
+1B|02|DTCS data (p.149)|Set/read DTCS code and polarity|
+1C|00|1 byte 0/1|Set/read the transceiver condition (PTT)|0=Rx 1=Tx
+1C|01|1 byte 0/1/2|Set/read antenna tuner condition|0=OFF 1=ON 2=start tuning or while tuning

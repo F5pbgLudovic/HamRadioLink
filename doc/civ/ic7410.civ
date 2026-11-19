@@ -1,0 +1,206 @@
+00||BCD 5 bytes frequency (10 Hz/1 Hz byte first)|Send operating frequency (transceive)|p.106
+01||mode byte + filter byte|Send operating mode (transceive)|p.106; filter byte may be omitted (FIL1)
+02||none (read) -> 2x BCD 5 bytes with separator 2D|Read band edge frequencies|p.106
+03||BCD 5 bytes frequency|Read operating frequency|p.106
+04||mode byte + filter byte|Read operating mode|00 LSB 01 USB 02 AM 03 CW 04 RTTY 05 FM 07 CW-R 08 RTTY-R; filter 01 FIL1 02 FIL2 03 FIL3; p.106
+05||BCD 5 bytes frequency|Send operating frequency|p.106
+06||mode byte + optional filter byte|Send operating mode|00 LSB 01 USB 02 AM 03 CW 04 RTTY 05 FM 07 CW-R 08 RTTY-R; filter 01~03 (default filter of mode if omitted); p.106 (no sub-command rows in table)
+07||none|Select VFO mode|
+07|00|none|Select VFO A|
+07|01|none|Select VFO B|
+07|A0|none|Equalize VFO A and VFO B|A=B
+07|B0|none|Exchange VFO A and VFO B|swap
+08||none|Select Memory mode|
+08||BCD 2 bytes 0001~0101|Select memory channel|0001=M-CH01..0099=M-CH99, 0100=P1, 0101=P2
+09||none|Memory write|
+0A||none|Memory copy to VFO|
+0B||none|Memory clear|
+0E|00|none|Scan stop|
+0E|01|none|Programmed/memory scan start|
+0E|02|none|Programmed scan start|
+0E|03|none|F scan start|
+0E|12|none|Fine programmed scan start|
+0E|13|none|Fine F scan start|
+0E|22|none|Memory scan start|
+0E|23|none|Select memory scan start|
+0E|A1|none|Set F scan span +-5 kHz|
+0E|A2|none|Set F scan span +-10 kHz|
+0E|A3|none|Set F scan span +-20 kHz|
+0E|A4|none|Set F scan span +-50 kHz|
+0E|A5|none|Set F scan span +-100 kHz|
+0E|A6|none|Set F scan span +-500 kHz|
+0E|A7|none|Set F scan span +-1 MHz|
+0E|B0|none|Set as non-select channel|
+0E|B1|none|Set as select channel|
+0E|D0|none|Set scan resume OFF|
+0E|D3|none|Set scan resume ON|
+0F||none (read) / reply 1 byte 00/01|Read Split function|00 OFF 01 ON
+0F|00|none|Set Split function OFF|
+0F|01|none|Set Split function ON|
+10|00|none|Send/read tuning step 10 Hz (1 Hz)|
+10|01|none|Send/read tuning step 100 Hz|
+10|02|none|Send/read tuning step 1 kHz|
+10|03|none|Send/read tuning step 5 kHz|
+10|04|none|Send/read tuning step 9 kHz|
+10|05|none|Send/read tuning step 10 kHz|
+10|06|none|Send/read tuning step 12.5 kHz|
+10|07|none|Send/read tuning step 20 kHz|
+10|08|none|Send/read tuning step 25 kHz|
+11|00|none|Send/read attenuator OFF|the table gives the value in the sub-cmd column
+11|20|none|Send/read 20 dB attenuator|20 = 20 dB ON; only OFF and 20 dB are listed
+12|00|none|Send/read ANT1 selection|
+12|01|none|Send/read ANT2 selection|
+13|00|none|Announce frequency, mode and S-meter with voice synthesizer|
+13|01|none|Announce frequency and S-meter with voice synthesizer|
+13|02|none|Announce mode with voice synthesizer|
+14|01|BCD 2 bytes 0000~0255|AF position|0000=max CCW 0255=max CW
+14|02|BCD 2 bytes 0000~0255|RF position|0000=max CCW 0255=11 o'clock
+14|03|BCD 2 bytes 0000~0255|SQL position|0000=11 o'clock 0255=max CW
+14|06|BCD 2 bytes 0000~0255|NR position|0000=max CCW 0255=max CW
+14|07|BCD 2 bytes 0000~0255|Inner TWIN PBT position|0000=max CCW 0128=center 0255=max CW
+14|08|BCD 2 bytes 0000~0255|Outer TWIN PBT position|0000=max CCW 0128=center 0255=max CW
+14|09|BCD 2 bytes 0000~0255|CW PITCH position|0000=300 Hz 0128=600 Hz 0255=900 Hz
+14|0A|BCD 2 bytes 0000~0255|RF PWR position|0000=max CCW 0255=max CW
+14|0B|BCD 2 bytes 0000~0255|MIC position|0000=max CCW 0255=max CW
+14|0C|BCD 2 bytes 0000~0255|KEY SPEED position|0000=max CCW 0255=max CW
+14|0D|BCD 2 bytes 0000~0255|NOTCH position|0000=max CCW 0128=center 0255=max CW
+14|0E|BCD 2 bytes 0000~0255|COMP position|0000=max CCW 0255=max CW
+14|0F|BCD 2 bytes 0000~0255|BK-IN DELAY position|0000=max CCW 0255=max CW
+14|12|BCD 2 bytes 0000~0255|NB position|0000=max CCW 0255=max CW
+14|15|BCD 2 bytes 0000~0255|MONI GAIN position|0000=max CCW 0255=max CW
+14|16|BCD 2 bytes 0000~0255|VOX gain|0000=0% 0255=100%
+14|17|BCD 2 bytes 0000~0255|Anti-VOX gain|0000=0% 0255=100%
+14|18|BCD 2 bytes 0000~0255|CONTRAST level|0000=0% 0255=100%
+14|19|BCD 2 bytes 0000~0255|BRIGHT level|0000=0% 0255=100%
+15|01|1 byte 00/01|Read squelch state|00 squelch close 01 squelch open
+15|02|BCD 2 bytes 0000~0255|Read S-meter level|0000=S0 0120=S9 0240=S9+60dB
+15|11|BCD 2 bytes 0000~0255|Read RF power meter|0000=0% 0141=50% 0215=100%
+15|12|BCD 2 bytes 0000~0255|Read SWR meter|0000=SWR1.0 0041=1.5 0081=2.0 0120=3.0
+15|13|BCD 2 bytes 0000~0255|Read ALC meter|0000=min 0120=max
+15|14|BCD 2 bytes 0000~0255|Read COMP meter|0000=0 dB 0120=15 dB 0240=30 dB
+16|02|1 byte 00/01/02|Preamp|00 OFF 01 Preamp 1 ON 02 Preamp 2 ON
+16|12|1 byte 01/02/03|AGC|01 FAST 02 MID 03 SLOW
+16|22|1 byte 00/01|Noise blanker|00 OFF 01 ON
+16|40|1 byte 00/01|Noise reduction|00 OFF 01 ON
+16|41|1 byte 00/01|Auto notch|00 OFF 01 ON
+16|42|1 byte 00/01|Repeater tone|00 OFF 01 ON
+16|43|1 byte 00/01|Tone squelch|00 OFF 01 ON
+16|44|1 byte 00/01|Speech compressor|00 OFF 01 ON
+16|45|1 byte 00/01|Monitor function|00 OFF 01 ON
+16|46|1 byte 00/01|VOX function|00 OFF 01 ON
+16|47|1 byte 00/01/02|BK-IN function|00 OFF 01 Semi BK-IN 02 Full BK-IN
+16|48|1 byte 00/01|Manual notch|00 OFF 01 ON
+16|4C|1 byte 00/01|VSC function|00 OFF 01 ON
+16|4F|1 byte 00/01|Twin peak filter|00 OFF 01 ON
+16|50|1 byte 00/01|Dial lock function|00 OFF 01 ON
+16|55|1 byte 00/01/02|1st IF filter|00 15 kHz 01 6 kHz 02 3 kHz
+16|56|1 byte 00/01|DSP filter type|00 SHARP 01 SOFT
+16|57|1 byte 00/01/02|Manual notch width|00 WIDE 01 MID 02 NAR
+16|58|1 byte 00/01/02|SSB transmit bandwidth|00 WIDE 01 MID 02 NAR
+17||ASCII text up to 30 chars (FF stops)|Send CW message|p.107; sent as CW in CW mode or if break-in ON
+19|00|none (reply 1 byte ID)|Read the transceiver ID|
+1A|00|memory number BCD 2 bytes + memory data|Send/read memory contents|p.108
+1A|01|band code + register code + data|Send/read band stacking register contents|p.106
+1A|02|channel 01-04 + ASCII text|Send/read memory keyer contents|p.107
+1A|03|1 byte 00~49|Send/read selected filter width|AM: 00=200 Hz..49=10 kHz; others 00=50 Hz..40/31=3600/2700 Hz
+1A|04|1 byte 00~13|Send/read selected AGC time constant|00=OFF; AM 01=0.3s..13=8.0s; others 01=0.1s..13=6.0s
+1A|05 00 01|0000 to 0255|LCD contrast|(0000=0% (low) to 0255=100% (high))
+1A|05 00 02|0000 to 0255|LCD backlight brightness level|(0000=0% (dark) to 0255=100% (bright))
+1A|05 00 03|0000 to 0255|beep level|(0000=0% to 0255=100%)
+1A|05 00 04|00/01|00=beep level limit OFF ; 01=beep level limit ON|
+1A|05 00 05|00/01|00=confirmation beep OFF ; 01=confirmation beep ON|
+1A|05 00 06|00/01/02/03|00=band edge beep OFF ; 01=band edge beep ON (Beep sounds with a default band) ; 02=band edge beep with user set- ting ON ; 03=band edge beep with user set- ting/TX limit ON|
+1A|05 00 07|0050 to 0200|beep audio frequency|(0050=500 Hz to 0200=2000 Hz)
+1A|05 00 08|00/01/02|00=Auto selection for [RF/SQL] ; 01=SQL selection for [RF/SQL] ; 02=RF+SQL selection for [RF/SQL]|
+1A|05 00 09|00/01|00=Meter Peak Hold function OFF ; 01=Meter Peak Hold function ON|
+1A|05 00 10|00/01/02/03/04/05|00=Time-Out Timer (CI-V) OFF ; 01=3 min. Time-Out Timer (CI-V) ; 02=5 min. Time-Out Timer (CI-V) ; 03=10 min. Time-Out Timer (CI-V) ; 04=20 min. Time-Out Timer (CI-V) ; 05=30 min. Time-Out Timer (CI-V)|
+1A|05 00 11|00/01|00=Quick Split function OFF ; 01=Quick Split function ON|
+1A|05 00 12||see p. 107 Send/read FM Split offset frequency (HF)|
+1A|05 00 13||see p. 107 Send/read FM Split offset frequency|(50 MHz)
+1A|05 00 14|00/01|00=Split Lock function OFF ; 01=Split Lock function ON|
+1A|05 00 15|00/01|00=Tuner Auto Start OFF ; 01=Tuner Auto Start ON|
+1A|05 00 16|00/01|00=PTT Tune OFF ; 01=PTT Tune ON|
+1A|05 00 17|00/01/02|00=antenna selection OFF ; 01=manual antenna selection ; 02=auto antenna selection|
+1A|05 00 18|0000 to 0255|voice synthesizer level|(0000=0% to 0255=100%)
+1A|05 00 19|00/01|00=English selection for voice syn- thesizer speech language ; 01=Japanese selection for voice synthesizer speech language|
+1A|05 00 20|00/01|00=speech speed slow ; 01=speech speed fast|
+1A|05 00 21|00/01|00=S-meter level announcement OFF ; 01=S-meter level announcement ON|
+1A|05 00 22|00/01|00=operating mode announcement (after pushing mode switch) OFF ; 01=operating mode announcement (after pushing mode switch) ON|
+1A|05 00 23|00/01|00=number of memo pad channels ; 01=number of memo pad channels|
+1A|05 00 24|00/01/02|00=auto TS for [DIAL] OFF ; 01=auto TS for [DIAL] Low ; 02=auto TS for [DIAL] High|
+1A|05 00 25|00/01|00=Low selection for microphone Up/Down speed ; 01=High selection for microphone Up/Down speed|
+1A|05 00 26|00/01|00=Quick RIT/TX clear OFF ; 01=Quick RIT/TX clear ON|
+1A|05 00 27|00/01/02|00=Auto Notch selection for SSB ; 01=Manual Notch selection for SSB ; 02=Auto/Manual Notch selection for SSB|
+1A|05 00 28|00/01/02|00=Auto Notch selection for AM ; 01=Manual Notch selection for AM ; 02=Auto/Manual Notch selection for AM|
+1A|05 00 29|00/01|00=manual notch filter width pop- up OFF ; 01=manual notch filter width pop- up ON 104|
+1A|05 00 30|00/01|00=BW Popup (PBT) setting OFF ; 01=BW Popup (PBT) setting ON|
+1A|05 00 31|00/01|00=BW Popup (FIL) setting OFF ; 01=BW Popup (FIL) setting ON|
+1A|05 00 32|00/01|00=SSB/CW Synchronous Tuning function OFF ; 01=SSB/CW Synchronous Tuning function ON|
+1A|05 00 33|00/01|00=LSB selection for CW normal side ; 01=USB selection for CW normal side|
+1A|05 00 34|00/01|00=KEYER-Root selection for keyer 1st menu ; 01=KEYER-SEND selection for keyer 1st menu|
+1A|05 00 35|00/01|00=external keypad OFF ; 01=KEYER SEND selection for the external keypad|
+1A|05 00 36|00/01|00=USB audio squelch OFF (OPEN) ; 01=USB audio squelch ON|
+1A|05 00 37|0000 to 0255|USB modulation level|(0000=0% to 0255=100%)
+1A|05 00 38|00/01/02/03|00=MIC selection for the modula- tion input during DATA mode OFF ; 01=ACC selection for the modula- tion input during DATA mode OFF ; 02=MIC+ACC selection for the modulation input during DATA mode OFF ; 03=USB selection for the modula- tion input during DATA mode OFF|
+1A|05 00 39|00/01/02/03|00=MIC selection for the modula- tion input during DATA mode operation ; 01=ACC selection for the modula- tion input during DATA mode operation ; 02=MIC+ACC selection for the modulation input during DATA mode op- eration ; 03=USB selection for the modula- tion input during DATA mode operation|
+1A|05 00 40|00/01|00=CI-V transceive OFF ; 01=CI-V transceive ON|
+1A|05 00 41|00/01|00=CI-V selection for "USB" (COM port) function ; 01=RTTY selection for "USB" (COM port) function|
+1A|05 00 42|00/01/02/03/04|00=300 bps selection for RTTY De- code Baud rate ; 01=1200 bps selection for RTTY Decode Baud rate ; 02=4800 bps selection for RTTY Decode Baud rate ; 03=9600 bps selection for RTTY Decode Baud rate ; 04=19200 bps selection for RTTY Decode Baud rate|
+1A|05 00 43|00/01|00=Calibration marker OFF ; 01=Calibration marker ON|
+1A|05 00 44|0000 to 0255|reference frequency|(0000=0% to 0255=100%)
+1A|05 00 45||see p. 107 Send/read SSB RX HPF/LPF setting|
+1A|05 00 46|00 to 10|SSB RX Tone (Bass) level|(00=-5 to 10=+5)
+1A|05 00 47|00 to 10|SSB RX Tone (Treble) level|(00=-5 to 10=+5)
+1A|05 00 48|00 to 10|SSB TX Tone (Bass) level|(00=-5 to 10=+5)
+1A|05 00 49|00 to 10|SSB TX Tone (Treble) level|(00=-5 to 10=+5)
+1A|05 00 50||see p. 107 Send/read SSB TX bandwidth for WIDE|
+1A|05 00 51||see p. 107 Send/read SSB TX bandwidth for MID|
+1A|05 00 52||see p. 107 Send/read SSB TX bandwidth for NAR- ROW|
+1A|05 00 53||see p. 107 Send/read AM RX HPF/LPF setting|
+1A|05 00 54|00 to 10|AM RX tone (Bass) level|(00=-5 to 10=+5)
+1A|05 00 55|00 to 10|AM RX Tone (Treble) level|(00=-5 to 10=+5)
+1A|05 00 56|00 to 10|AM TX tone (Bass) level|(00=-5 to 10=+5)
+1A|05 00 57|00 to 10|AM TX Tone (Treble) level|(00=-5 to 10=+5)
+1A|05 00 58||see p. 107 Send/read FM RX HPF/LPF setting|
+1A|05 00 59|00 to 10|FM RX tone (Bass) level|(00=-5 to 10=+5)
+1A|05 00 60|00 to 10|FM RX Tone (Treble) level|(00=-5 to 10=+5)
+1A|05 00 61|00 to 10|FM TX tone (Bass) level|(00=-5 to 10=+5)
+1A|05 00 62|00 to 10|FM TX Tone (Treble) level|(00=-5 to 10=+5)
+1A|05 00 63||see p. 107 Send/read CW RX HPF/LPF setting|
+1A|05 00 64||see p. 107 Send/read RTTY RX HPF/LPF setting|
+1A|05 00 65|00/01/02/03/04|00=Normal selection for contest number style ; 01="190 ANO" selection for con- test number style ; 02="190 ANT" selection for con- test number style ; 03="90 NO" selection for contest number style ; 04="90 NT" selection for contest number style|
+1A|05 00 66|01/02/03/04|01=M1 selection for count up trig- ger channel ; 02=M2 selection for count up trig- ger channel ; 03=M3 selection for count up trig- ger channel ; 04=M4 selection for count up trig- ger channel|
+1A|05 00 67|0001 to 9999|present number|(0001=1 to 9999=9999)
+1A|05 00 68|0000 to 0255|CW sidetone gain|(0000=0% to 0255=100%)
+1A|05 00 69|00/01|00=CW sidetone gain limit OFF ; 01=CW sidetone gain limit ON|
+1A|05 00 70|01 to 60|CW keyer repeat time|(01=1 sec. to 60=60 sec.)
+1A|05 00 71|00/01|00=Normal selection for message display ; 01=Message selection for message display|
+1A|05 00 72|28 to 45|CW keyer dot/dash ratio|(28=1:1:2.8 to 45=1:1:4.5)
+1A|05 00 73|00/01/02/03|00=2 msec. selection for Rise time ; 01=4 msec. selection for Rise time ; 02=6 msec. selection for Rise time ; 03=8 msec. selection for Rise time 105|
+1A|05 00 74|00/01|00=Normal selection for paddle po- larity ; 01=Reverse selection for paddle polarity|
+1A|05 00 75|00/01/02|00=Straight selection for keyer type ; 01=BUG-Key selection for keyer type ; 02=ELEC-Key selection for keyer type|
+1A|05 00 76|00/01|00=Mic. up/down keyer OFF ; 01=Mic. up/down keyer ON|
+1A|05 00 77|00/01/02|00=1275 Hz selection for RTTY mark frequency ; 01=1615 Hz selection for RTTY mark frequency ; 02=2125 Hz selection for RTTY mark frequency|
+1A|05 00 78|00/01/02|00=170 Hz selection for RTTY shift width ; 01=200 Hz selection for RTTY shift width ; 02=425 Hz selection for RTTY shift width|
+1A|05 00 79|00/01|00=Normal selection for RTTY key- ing polarity ; 01=Reverse selection for RTTY keying polarity|
+1A|05 00 80|00/01|00=RTTY decode USOS OFF ; 01=RTTY decode USOS ON|
+1A|05 00 81|00/01|00="CR,LF,CR+LF" selection for RTTY decode new line code ; 01="CR+LF" selection for RTTY decode new line code|
+1A|05 00 82|00/01|00=2 lines selection for number of RTTY decoder line ; 01=3 lines selection for number of RTTY decoder line|
+1A|05 00 83|00/01|00=Scan speed low ; 01=Scan speed high|
+1A|05 00 84|00/01|00=Scan resume OFF ; 01=Scan resume ON|
+1A|05 00 85|00 to 09|NB depth|(00=1 to 09=10)
+1A|05 00 86|0000 to 0255|NB width|(0000=1 to 0255=100)
+1A|05 00 87|0000 to 0255|VOX gain|(0000=0% to 0255=100%)
+1A|05 00 88|0000 to 0255|ANTI-VOX gain|(0000=0% to 0255=100%)
+1A|05 00 89|00 to 20|VOX delay time|(00=0.0 sec. to 20=2.0 sec.)
+1A|05 00 90|00/01/02/03|00=VOX voice delay OFF ; 01=Short selection for VOX voice delay ; 02=Mid selection for VOX voice delay ; 03=Long selection for VOX voice delay|
+1A|06|2 bytes: data mode 00/01 + filter 01~03|Send/read DATA mode selection|p.108; 00 data OFF 01 data ON
+1B|00|BCD 3 bytes|Send/read repeater tone frequency|p.108
+1B|01|BCD 3 bytes|Send/read tone squelch frequency|p.108
+1C|00|1 byte 00/01|Send/read transceiver status (PTT)|00 RX 01 TX
+1C|01|1 byte 00/01/02|Send/read antenna tuner|00 OFF (through) 01 ON 02 manual tuning selection (start tuning)
+1C|02|1 byte 00/01|Send/read transmit frequency monitor check|00 OFF 01 ON
+1E|00|none|Read number of available TX frequency bands|
+1E|01|band edge data|Read TX band edge frequencies|p.106
+1E|02|none|Read number of user-set TX frequency bands|
+1E|03|band edge data|Send/read user-set TX band edge frequencies|p.106

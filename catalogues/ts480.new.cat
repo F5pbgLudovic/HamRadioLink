@@ -1,0 +1,85 @@
+AC|ANTENNA TUNER CONTROL|ACP1P2P3;|AC;|P1 0: RX-AT THRU; 1: RX-AT IN; P2 0: TX-AT THRU; 1: TX-AT IN; P3 0: stop tuning / tuning stopped; 1: start tuning / tuning active
+AG|AF GAIN|AGP1P2P2P2;|AGP1;|P1 always 0; P2 000-255
+AI|AUTO INFORMATION|AIP1;|AI;|P1 0: AI OFF; 1: old AI format only; 2: extended AI format only; 3: both. IF sent every 1.5 s when old AI is on. Becomes 0 when transceiver is switched off
+AN|ANTENNA CONNECTOR SELECT|ANP1;|AN;|P1 1: ANT1; 2: ANT2
+AS|AUTO MODE PARAMETERS|ASP1P2P2P3P3P3P3P3P3P3P3P3P4;|ASP1P2P2;|P1 always 0; P2 00-31 (HF to 50 MHz, 32 points); P3 frequency Hz 11 digits; P4 mode 1 LSB 2 USB 3 CW 4 FM 5 AM 6 FSK 7 CWR 9 FSR
+BC|BEAT CANCELLER|BCP1;|BC;|P1 0: OFF; 1: BC1; 2: BC2
+BD|BAND DOWN|BD;||no parameter
+BU|BAND UP|BU;||no parameter
+BY|BUSY SIGNAL STATUS||BY;|Answer BYP1P2; P1 0 not busy 1 busy; P2 always 0 (sub-receiver not applicable)
+CA|CW AUTO ZERO-BEAT|CAP1;|CA;|P1 0: cancel / not active; 1: activate / active
+CH|MULTI CONTROL STEP|CHP1;||P1 0: 1 step up; 1: 1 step down
+CN|CTCSS TONE NUMBER|CNP1P1;|CN;|P1 00-41 (see instruction manual p33)
+CT|CTCSS FUNCTION|CTP1;|CT;|P1 0: OFF; 1: ON
+DL|DIGITAL NOISE LIMITER|DLP1P2P2;|DL;|P1 0: OFF; 1: ON; P2 00: level 1; 01: level 2; 02: level 3 (manual lists DL with this syntax)
+DN|MIC DOWN KEY|DNP1P1;||P1 00-99 steps; no P1 = 1 step down (memory channel down in memory mode)
+EX|EXTENSION MENU|EXP1P1P1P2P2P3P4P5;|EXP1P1P1P2P2P3P4;|P1 000-060 menu no; P2 always 00; P3 always 0; P4 always 0; P5 value (normally 1 digit; menu 32 35 48-52 use 2 digits); see menu table in manual
+FA|VFO A FREQUENCY|FAP1P1P1P1P1P1P1P1P1P1P1;|FA;|P1 frequency Hz 11 digits e.g. 00014195000
+FB|VFO B FREQUENCY|FBP1P1P1P1P1P1P1P1P1P1P1;|FB;|P1 frequency Hz 11 digits
+FR|RX VFO/MEMORY SELECT|FRP1;|FR;|P1 0: VFO A; 1: VFO B; 2: M.CH (FT then invalid)
+FS|FINE TUNING|FSP1;|FS;|P1 0: OFF; 1: ON
+FT|TX VFO/MEMORY SELECT|FTP1;|FT;|P1 0: VFO A; 1: VFO B; 2: M.CH (invalid when FR=2)
+FW|DSP FILTER BANDWIDTH|FWP1P1P1P1;|FW;|P1 0000-9999 Hz; CW 0050 0080 0100 0150 0200 0300 0400 0500 0600 1000 2000; FSK 0250 0500 1000 1500; SSB/FM/AM 0000 normal 0001 NAR 0002 NAR2; use SL/SH for slope tune
+GT|AGC CONSTANT|GTP1P1P1;|GT;|P1 000: OFF; 001: Fast; 002: Slow; not usable in FM (answers 3 spaces)
+ID|TRANSCEIVER ID||ID;|Answer IDP1P1P1; P1 020 = TS-480
+IF|TRANSCEIVER STATUS||IF;|Answer IFP1(11)P2(5 spaces)P3(5: RIT/XIT +/-9990 Hz)P4(RIT 0/1)P5(XIT 0/1)P6(0)P7(2: mem ch 00-99)P8(0 RX 1 TX)P9(mode)P10(FR/FT)P11(scan)P12(0 simplex 1 split)P13(0 off 1 tone 2 CTCSS)P14(2: tone no 00-42)P15(space);
+IS|IF SHIFT|ISP1P2P2P2P2;|IS;|P1 + or space: plus; -: minus; P2 0000-1100
+KS|KEYER SPEED|KSP1P1P1;|KS;|P1 010-060 WPM
+KY|TEXT TO MORSE|KYP1P2(24 chars);|KY;|P1 0 buffer available; 1 not available (answer only; space in Set); P2 24 fixed chars, spaces unused; special BT=[ AR=_ AS=< HH=# SK=> KN=] BK=\ SN=%
+LK|LOCK|LKP1P2;|LK;|P1 0: frequency lock OFF; 1: ON; P2 0: tuning control lock OFF; 1: ON
+LM|VGS-1 / KEYER RECORDING|LMP1P2;|LM;|P1 1-3 channel; P2 0 stop (set only) / inactive; 1 ready; 2 start recording; answer LMP1P2P3P3P3; P3 000-060 s remaining (voice) 000-100 % (CW)
+MC|MEMORY CHANNEL RECALL|MCP1P2P2;|MC;|P1 always 0; P2 00-99
+MD|MODE|MDP1;|MD;|P1 1 LSB; 2 USB; 3 CW; 4 FM; 5 AM; 6 FSK; 7 CWR; 9 FSR; 0 and 8 not used
+MF|MENU A/B|MFP1;|MF;|P1 0: Menu A; 1: Menu B
+MG|MIC GAIN|MGP1P1P1;|MG;|P1 000-100
+ML|TX MONITOR LEVEL|MLP1P1P1;|ML;|P1 000: monitor OFF; 001-009
+MR|MEMORY CHANNEL READ||MRP1P2P3P3;|P1 0 RX freq 1 TX freq; P2 always 0; P3 00-99; answer MRP1P2P3P3 + freq(11) mode lockout tone ctcss ... name(8)
+MW|MEMORY CHANNEL WRITE|MWP1P2P3P3P4(11)P5P6P7P8P8P9P9P10P10P10P11P12P13(9)P14P14P15P16(8);||P1 0 RX 1 TX; P3 00-99 channel; P4 freq Hz; P5 mode; P6 lockout; P7 0 off 1 tone 2 CTCSS; P8 tone no; P9 CTCSS no; name max 8 chars
+NB|NOISE BLANKER|NBP1;|NB;|P1 0: OFF; 1: ON
+NL|NB LEVEL|NLP1P1P1;|NL;|P1 001-010 (000 treated as 001, above 010 treated as 010)
+NR|NOISE REDUCTION|NRP1;|NR;|P1 0: OFF; 1: NR1; 2: NR2
+OP|IF FILTER AVAILABILITY||OP;|Answer OPP1P2P3; P1 YF-107SN installed 0/1; P2 YF-107C 0/1; P3 YF-107CN 0/1
+PA|PRE-AMPLIFIER|PAP1;|PA;|P1 0: OFF; 1: ON; answer PAP1P2; P2 always 0
+PB|VGS-1 / KEYER PLAYBACK|PBP1;|PB;|P1 0 stop; 1-3 playback CH1-3; answer PBP2P3P4; queue status
+PC|OUTPUT POWER|PCP1P1P1;|PC;|P1 TS-480HX: 005-200 (SSB/CW/FM/FSK) 005-050 (AM); TS-480SAT: 005-100 / 005-025 (AM)
+PL|SPEECH PROCESSOR LEVEL|PLP1P1P1P2P2P2;|PL;|P1 input level 000-100; P2 output level 000-100
+PR|SPEECH PROCESSOR|PRP1;|PR;|P1 0: OFF; 1: ON
+PS|POWER ON/OFF|PSP1;|PS;|P1 0: OFF (CPU active); 1: ON; 9: OFF (CPU sleep). To wake send "; ; ; ; PS1;"
+QI|STORE QUICK MEMORY|QI;||no parameter
+QR|QUICK MEMORY CHANNEL|QRP1P2;|QR;|P1 0: OFF; 1: ON; P2 0-9 channel
+RA|ATTENUATOR|RAP1P1;|RA;|P1 00: OFF; 01: ON; answer RAP1P1P2P2; P2 always 00
+RC|RIT CLEAR|RC;||no parameter
+RD|RIT DOWN / SCAN SPEED UP|RDP1P1P1P1P1;|RD;|P1 00000-99999 Hz offset; no param = 1 step down; during scan RD; reads speed (answer RDP2; 1-9), RDnnnnn; speeds up
+RG|RF GAIN|RGP1P1P1;|RG;|P1 000-100
+RL|NR LEVEL|RLP1P1;|RL;|P1 NR1: 00 = AUTO, 01-09; NR2: 00 (2 ms) - 09 (20 ms)
+RM|METER|RMP1;|RM;|P1 1: SWR; 2: COMP; 3: ALC (0 not available); answer RMP1P2P2P2P2; P2 0000-0010 dots
+RS|TRANSCEIVER STATUS||RS;|Answer RSP1; 0 normal; 1 busy configuring (M.SCR menu direct entry)
+RT|RIT|RTP1;|RT;|P1 0: OFF; 1: ON
+RU|RIT UP / SCAN SPEED DOWN|RUP1P1P1P1P1;|RU;|P1 00000-99999 Hz offset; during scan RU; reads speed
+RX|RECEIVE|RX;||Set puts transceiver in RX; answer RXP1; P1 always 0
+SC|SCAN|SCP1;|SC;|P1 0 OFF; 1 ON; 4 tone scan; 5 CTCSS scan; answer SCP2P3; P3 0 normal 1 program scan (slow down)
+SD|CW BREAK-IN DELAY|SDP1P1P1P1;|SD;|P1 0000-1000 ms step 50; 0000 = FBK (full break-in)
+SH|DSP HIGH-CUT|SHP1P1;|SH;|P1 00-13; SSB/FM 00:1000 01:1200 02:1400 03:1600 04:1800 05:2000 06:2200 07:2400 08:2600 09:2800 10:3000 11:3400 12:4000 13:5000 Hz; AM 00:2500 01:3000 02:4000 03:5000; Menu 45 ON: 00:1000 01:1500 02:2210
+SL|DSP LOW-CUT|SLP1P1;|SL;|P1 00-11; SSB/FM 00:0 01:50 02:100 03:200 04:300 05:400 06:500 07:600 08:700 09:800 10:900 11:1000 Hz; AM 00:0 01:100 02:200 03:500; Menu 45 ON: bandwidth 00:50 01:100 02:250 03:500 04:1000 05:1500 06:2400
+SM|S-METER||SMP1;|P1 always 0; answer SMP1P2P2P2P2; P2 0000-0020 (manual text "Meter readings 0000 ~ 0020")
+SQ|SQUELCH LEVEL|SQP1P2P2P2;|SQP1;|P1 always 0; P2 000-255
+SR|RESET|SRP1;||P1 1: VFO reset; 2: full reset
+SS|PROGRAM SCAN PAUSE FREQUENCY|SSP1P2P3(11);|SSP1P2;|P1 0-9 (memory channel 90-99); P2 0-4 slow-down location; P3 frequency Hz
+ST|MULTI CONTROL STEP SIZE|STP1P1;|ST;|P1 SSB/CW/FSK 00:0.5k 01:1k 02:2.5k 03:5k 04:10k; AM/FM 00:5k 01:6.25k 02:10k 03:12.5k 04:15k 05:20k 06:25k 07:30k 08:50k 09:100k
+SU|SCAN GROUP SELECT|SUP1P2P3P4P5P6P7P8P9P10P11;|SUP1;|P1 0 program scan group; 1 memory group; P2-P11 groups 0-9: 0 unselected 1-9 selected
+SV|MEMORY TRANSFER|SV;||no parameter
+TN|TONE FREQUENCY NUMBER|TNP1P1;|TN;|P1 00-42 (p32 of instruction manual)
+TO|TONE FUNCTION|TOP1;|TO;|P1 0: OFF; 1: ON
+TS|TF-SET|TSP1;|TS;|P1 0: OFF; 1: ON
+TX|TRANSMIT|TXP1;||P1 0: normal SEND (MIC); 1: DTS transmission (ANI); 2: TX tune; no P1 = 0; answer TXP2; P2 always 0
+TY|FIRMWARE TYPE||TY;|Answer TYP1P1P2; P2 0: TS-480HX 200W; 1: TS-480SAT 100W+AT; 2: Japanese 50W; 3: Japanese 20W
+UL|PLL UNLOCK||UL;|P1 0: lock; 1: unlock (answer only)
+UP|MIC UP KEY|UPP1P1;||P1 00-99; no P1 = 1 step up (memory channel up in memory mode)
+VD|VOX DELAY|VDP1P1P1P1;|VD;|P1 0000-3000 ms step 150
+VG|VOX GAIN|VGP1P1P1;|VG;|P1 000-009
+VR|VOICE1/VOICE2 KEY|VRP1;|VR;|P1 0 normal; 1 VOICE1; 2 VOICE2; 3 disable voice guide
+VV|VFO A=B|VV;||no parameter
+VX|VOX|VXP1;|VX;|P1 0: OFF; 1: ON
+XI|TX FREQUENCY, MODE, MULTI STEP||XT;|Manual prints read as "XT;" (apparent typo for XI;) and answer XTP1(11)P2P3P3; P2 mode; P3 step size per ST. Title in manual: XI
+XO|TRANSVERTER OFFSET|XOP1P2(11);|XO;|P1 0: plus; 1: minus; P2 offset frequency Hz 11 digits
+XT|XIT|XTP1;|XT;|P1 0: OFF; 1: ON
