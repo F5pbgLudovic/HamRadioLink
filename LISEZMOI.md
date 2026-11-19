@@ -42,7 +42,7 @@ La liste exacte de toutes les commandes envoyées : `commandes-CAT.txt` (fabriqu
 **Pas de spectre ni de cascade** : ces postes ne les envoient pas par CAT (FTdx10 : seulement via SCU-LAN10).
 
 ## Vérification (faite sans le poste)
-`HamRadioLink.exe --selftest=rapport.txt` : **159 447 vérifications, toutes réussies** :
+`HamRadioLink.exe --selftest=rapport.txt` : **159 229 vérifications, toutes réussies** :
 * chaque commande de chaque élément, avec chaque valeur (min / milieu / max, chaque choix, on/off), envoyée à un **poste simulé strict** écrit d'après les tableaux des manuels (nombre exact de chiffres, bornes, pas) : aucune commande refusée par `?;`, relecture identique à l'envoi ;
 * le simulateur refuse bien les mauvais formats (FA sur 8 chiffres refusé par le FTdx10, sur 9 par le FT-2000, IS hors pas, ST/CF absents du FT-2000...) ;
 * réponses → état (dont `IF;` : fréquence, mode, CLAR, V/M), réponses coupées en deux, alias (AGC AUTO = 4/5/6) ;

@@ -79,7 +79,7 @@ namespace HamRadioLink
             tip.InitialDelay = 500; tip.ReshowDelay = 200; tip.AutoPopDelay = 12000;
             Resize += delegate { Relayout(); };
             timer.Interval = 30; timer.Tick += OnTick; timer.Start();
-            Load += delegate { Restore(); try { Journal.WsjtListener.Start(); } catch { } }; FormClosed += delegate { if (cmdSrv != null) { try { cmdSrv.Dispose(); } catch { } } if (cmdSrv2 != null) { try { cmdSrv2.Dispose(); } catch { } } }; FormClosing += OnClosing; loading = false;
+            Load += delegate { Restore(); try { MicRoute.Update(); } catch { } try { Journal.WsjtListener.Start(); } catch { } }; FormClosed += delegate { MicRoute.Stop(); if (cmdSrv != null) { try { cmdSrv.Dispose(); } catch { } } if (cmdSrv2 != null) { try { cmdSrv2.Dispose(); } catch { } } }; FormClosing += OnClosing; loading = false;
         }
 
         // ============================================================ en-tête

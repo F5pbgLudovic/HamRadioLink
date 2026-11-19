@@ -29,6 +29,7 @@ namespace HamRadioLink
                 if (Environment.GetEnvironmentVariable("HRL_ONLY") == "menu") { MenuBackup(); throw new OperationCanceledException(); }
                 if (Environment.GetEnvironmentVariable("HRL_ONLY") == "log") { CatLogTest(); throw new OperationCanceledException(); }
                 if (Environment.GetEnvironmentVariable("HRL_ONLY") == "srv") { ServerTest(); throw new OperationCanceledException(); }
+                if (Environment.GetEnvironmentVariable("HRL_ONLY") == "pttall") { foreach (RadioDef d in Radios.All()) { Ctl p = d.Find("ptt"); Check(p != null && p.K == Kind.Toggle, "touche PTT (menu clic droit : micro vers le poste) absente : " + d.Key + (d.Leg != null ? " [ancien]" : "")); } throw new OperationCanceledException(); }
                 if (Environment.GetEnvironmentVariable("HRL_ONLY") == "lock") { foreach (RadioDef d in Radios.All()) LockChecks(d); throw new OperationCanceledException(); }
                 if (Environment.GetEnvironmentVariable("HRL_ONLY") == "tci") { RadioDef t = Radios.ByKey("tci"); Definitions(t); Roundtrip(t); TciChecks(t); Persistence(t); throw new OperationCanceledException(); }
                 if (Environment.GetEnvironmentVariable("HRL_ONLY") == "leg") { foreach (RadioDef d in Radios.All()) if (d.Leg != null) { foreach (string nt in d.Notes) sb.AppendLine("NOTE " + d.Key + " : " + nt); Definitions(d); Roundtrip(d); LegChecks(d); Persistence(d); LockChecks(d); } throw new OperationCanceledException(); }

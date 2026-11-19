@@ -1,4 +1,4 @@
-# HamRadioLink — par F5PBG, 2026
+﻿# HamRadioLink — par F5PBG, 2026
 
 *[English version below](#english)*
 
@@ -30,8 +30,9 @@
 - **Face avant fidèle** : afficheurs de fréquence (clic sur un chiffre, molette, saisie), vumètres (barres ↔ aiguille par clic droit), boutons, potentiomètres, molette d'accord, bandes et modes, deux récepteurs quand le poste en a deux.
 - **Config vue** : tout se déplace et se redimensionne à la souris ; **Valider**, **Retour arrière** (illimité) et **Réinit**. **Clic droit sur un élément** : la commande CAT / CI-V est visible et **modifiable** (test de lecture, bouton « Défaut »). **Ajouter** crée un élément à partir des commandes **du poste choisi**.
 - **Paramètres ⚙** : couleurs de l'interface (dont fond des touches actives, voile des verrous, bouton de connexion vert / rouge), niveau du voile, molette, vumètres, **réinitialisation de tous les verrous**, **journal des commandes**, commande manuelle. **Export / import ⇅** des réglages, dispositions et réglages du poste.
+- **Export / import ⇅ par parties** : logiciel et dispositions, réglages du poste, menu interne du poste (6 Yaesu) ; **commandes de nombreux postes contrôlées contre les manuels CAT officiels** (Yaesu, Kenwood, Icom).
 - **Verrous** par clic droit sur n'importe quel organe (une seule touche d'une rangée de modes / bandes) et **touche Lock** qui bloque tout le programme.
-- **Touche PTT** verte au repos, rouge en émission ; **clic droit = délai de sécurité TX** (jusqu'à 30 min, compte à rebours, coupure automatique).
+- **Touche PTT** verte au repos, rouge en émission ; **clic droit = délai de sécurité TX** (jusqu'à 30 min, compte à rebours, coupure automatique) ; **micro du PC vers le poste** : le même menu envoie le micro choisi sur la carte son reliée au poste (aussi dans Paramètres ⚙).
 - **Journal de trafic (bouton LOG, 1.0)** : base MariaDB au choix ou intégrée, import ADIF / partage d'une base existante, **QSO de WSJT-X reçus automatiquement** (ports réglables dans Paramètres ⚙), distance calculée à chaque contact, **DX Cluster** (échelle de la bande avec curseurs VFO A / B, clic sur un indicatif = le poste se règle, alertes sonores), **28 thèmes** aux couleurs personnalisables. Gardez une sauvegarde ADIF.
 - **Moniteur CAT** et **journal des commandes** (un fichier par jour, purgé, envoyable pour diagnostiquer).
 - **IC-7760** : fenêtre complète reprise d'[IC7760Link](https://github.com/F5pbgLudovic/IC7760Link).
@@ -95,8 +96,9 @@ Utilise le compilateur .NET Framework 4 fourni avec Windows (C# 5) : rien à ins
 - Faithful front panel per model (dual receivers, meters bar ↔ needle by right-click, knobs, tuning wheel).
 - **Layout editor** ("config vue"): move and resize everything, Apply / Undo / Reset. **Right-click any control** to see and edit its CAT / CI-V command; **Add** builds new controls from the selected radio's own command catalogue.
 - **Settings ⚙**: interface colours (active-key background, lock veil, green / red connection button), veil level, mouse wheel, meters, **reset of every lock**, **command log**, manual command. **Export / import ⇅** of settings, layouts and radio settings.
+- **Export / import ⇅ by parts**: program and layouts, radio settings, radio internal menu (6 Yaesu); **many radios' commands checked against the official CAT manuals** (Yaesu, Kenwood, Icom).
 - **Locks** by right-click on any control (a single key of a mode / band row) and a **Lock key** that blocks the whole program.
-- **PTT key** green at rest, red when transmitting; **right-click = TX safety timeout** (up to 30 min, countdown, automatic cut).
+- **PTT key** green at rest, red when transmitting; **right-click = TX safety timeout** (up to 30 min, countdown, automatic cut); **PC microphone to the rig**: the same menu sends the chosen microphone to the sound card connected to the radio (also in Settings ⚙).
 - **Traffic log (LOG button, 1.0)**: MariaDB database of your choice or embedded, ADIF import / sharing of an existing database, **QSOs from WSJT-X received automatically** (ports set in Settings ⚙), distance computed for every contact, **DX Cluster** (band scale with VFO A / B cursors, click a callsign to tune the radio, sound alerts), **28 themes** with customisable colours. Keep an ADIF backup.
 - **CAT monitor** and a **command log** (one file per day, purged, can be sent to diagnose a problem).
 - **IC-7760**: full window taken from [IC7760Link](https://github.com/F5pbgLudovic/IC7760Link).

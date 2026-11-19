@@ -50,14 +50,19 @@ namespace HamRadioLink
             this.rig = rig; this.lockCount = lockCount;
             Text = "Paramètres"; BackColor = T.Bg; ForeColor = T.Text; Font = new Font("Segoe UI", 9f); ClientSize = new Size(800, 430); StartPosition = FormStartPosition.CenterParent; FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; MinimizeBox = false; ShowInTaskbar = false;
             ListBox menu = new ListBox(); menu.SetBounds(0, 0, 190, 430); menu.BackColor = Color.FromArgb(14, 18, 26); menu.ForeColor = T.Text; menu.BorderStyle = BorderStyle.None; menu.Font = new Font("Segoe UI Semibold", 10f); menu.ItemHeight = 28; menu.IntegralHeight = false; Controls.Add(menu);
-            foreach (string s in new string[] { "  Couleurs de l'interface", "  Vumètres", "  Réglage molette souris", "  Verrous", "  Commande manuelle", "  Réinitialiser les verrous", "  Journal des commandes", "  Réglages des ports" }) menu.Items.Add(s);
-            menu.SelectedIndexChanged += delegate { switch (menu.SelectedIndex) { case 7: PortsPage(); break; case 1: Meters(); break; case 2: Wheel(); break; case 3: Locks(); break; case 4: Manual(); break; case 5: ResetLocks(); break; case 6: LogPage(); break; default: Colors(); break; } };
+            foreach (string s in new string[] { "  Couleurs de l'interface", "  Vumètres", "  Réglage molette souris", "  Verrous", "  Commande manuelle", "  Réinitialiser les verrous", "  Journal des commandes", "  Réglages des ports", "  Micro vers le poste" }) menu.Items.Add(s);
+            menu.SelectedIndexChanged += delegate { switch (menu.SelectedIndex) { case 7: PortsPage(); break; case 8: MicPage(); break; case 1: Meters(); break; case 2: Wheel(); break; case 3: Locks(); break; case 4: Manual(); break; case 5: ResetLocks(); break; case 6: LogPage(); break; default: Colors(); break; } };
             FormClosed += delegate { Cfg.Save(); };
             page.SetBounds(200, 0, 600, 430); Controls.Add(page); menu.SelectedIndex = 0;
         }
         Label Head(string t, string sub) { Label h = new Label(); h.Text = t; h.Font = new Font("Segoe UI Semibold", 12f); h.ForeColor = T.Amber; h.SetBounds(6, 8, 400, 26); page.Controls.Add(h); Label d = new Label(); d.Text = sub; d.SetBounds(6, 38, 586, 52); page.Controls.Add(d); return d; }
         Button Mk(string t, int x, int y, int w) { Button b = new Button(); b.Text = t; b.SetBounds(x, y, w, 30); b.FlatStyle = FlatStyle.Flat; b.BackColor = T.Panel2; b.ForeColor = T.Text; b.FlatAppearance.BorderColor = T.Edge; page.Controls.Add(b); return b; }
         Color Ask(Color c, string title) { using (IC7760.ColorPickForm f = new IC7760.ColorPickForm(c, title)) return f.ShowDialog(this) == DialogResult.OK ? f.Result : c; }
+        void MicPage()
+        {
+            page.Controls.Clear(); Head("Micro vers le poste", "Envoie en continu le micro du PC sur la carte son reliée au poste (aussi par clic droit sur la touche PTT). Réglage commun à tous les postes.");
+            Button b = Mk("Choisir le micro, la carte son, activer…", 6, 100, 300); b.Click += delegate { ContextMenuStrip m = new ContextMenuStrip(); m.BackColor = T.Panel2; m.ForeColor = T.Text; MicRoute.AddItems(m); m.Items.RemoveAt(0); m.Show(b, new Point(0, b.Height)); };
+        }
         void Colors()
         {
             page.Controls.Clear(); Head("Couleurs de l'interface", "Cliquez sur une couleur pour la modifier (palette 64 couleurs ou RVB). Le changement est immédiat et mémorisé.");

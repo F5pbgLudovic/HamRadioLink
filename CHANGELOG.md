@@ -24,6 +24,9 @@ HamRadioLink 1.0 : télécommande de postes radio (face avant reproduite, pilota
 - **Export / import ⇅ par parties** pour tous les postes : logiciel et dispositions, réglages du poste, **menu interne du poste** (Yaesu FT-2000, FTdx5000, FT-450D, FT-950, FT-991A, FTdx3000) ; import sans redémarrage pour les réglages du poste. Fenêtre de l'**IC-7760** à jour de la version 2.9 d'IC7760Link (export du menu interne, mémoires, import à cases) et bouton **LOG** présent aussi sur ce poste.
 - **Commandes contrôlées contre les manuels CAT officiels** : split du FT-2000 (FT2 / FT3), FT-450D, FT-950, FTdx3000, FTdx1200, FT-891, FT-991A, FT-710, FTdx101 (modes, AGC, split, mesures, délais, bornes, bandes) ; TS-480 / TS-590 / TS-890 / TS-2000 (AGC, FINE, RIT, bandes, échelles) ; Icom (ATT et préampli par modèle, MAIN = SUB en 07 B1, fréquences principale / secondaire en 25 00, DATA OFF en 1A06 00 00). Restent à refaire d'après leurs manuels : face avant du TS-990S, faces avant Elecraft K3 / K4, FTdx9000.
 
+### Micro du PC vers le poste
+- Clic droit sur la touche **PTT** (tous les postes qui en ont une) ou **Paramètres ⚙ > Micro vers le poste** (aussi pour les 19 anciens postes sans touche PTT) : le micro choisi est envoyé en continu sur la carte son d'émission du poste, en WASAPI partagé (les autres logiciels gardent le micro, rien n'est rejoué sur le PC). Réglage commun, mémorisé (`micro.*`).
+
 ### Journal de trafic (bouton LOG)
 - Fenêtre à part : liste de QSO sans limite pratique, recherche, **Filtre** (indicatif, bande, mode, pays, dates, texte libre), colonnes au choix, onglets pour plusieurs journaux, import / export ADIF, doublons, statistiques, **Suivi des diplômes** (DXCC en couleurs, WAZ, WAC, WAS, IOTA).
 - **Base MariaDB / MySQL au choix** (« Base… » avec tous les essais) ; MariaDB intégré installé automatiquement si aucun n'est présent ; **Importer / partager…** (retrouve le journal MariaDB d'un autre logiciel, copie ou partage direct, ou fichiers ADIF).
@@ -37,5 +40,5 @@ HamRadioLink 1.0 : télécommande de postes radio (face avant reproduite, pilota
 - Données dans `data\journal\` ; réglages `jn.*` dans `settings.ini`.
 
 ### Vérification
-- **Autotest** : 159 447 vérifications (commandes de chaque poste contre un simulateur strict, partage, serveur, TCI sur un vrai WebSocket simulé, anciens Yaesu, verrous, journal, délai TX) ; essai du journal sur base isolée (34 contrôles : WSJT-X, ADIF, fenêtres, thèmes, envois simulés, traitements en arrière-plan).
+- **Autotest** : 159 229 vérifications (commandes de chaque poste contre un simulateur strict, partage, serveur, TCI sur un vrai WebSocket simulé, anciens Yaesu, verrous, journal, délai TX) ; essai du journal sur base isolée (34 contrôles : WSJT-X, ADIF, fenêtres, thèmes, envois simulés, traitements en arrière-plan).
 - Essayé par l'auteur sur FT-2000 et FTdx10 réels, avec un vrai DX Cluster, de vrais contacts WSJT-X et un vrai journal. **Pas essayé en réel** : les envois vers QRZ.com, Club Log, eQSL et LoTW, les autres postes, un vrai serveur TCI, la création de paires com0com par le programme.

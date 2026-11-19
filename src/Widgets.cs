@@ -71,6 +71,7 @@ namespace HamRadioLink
                 it.Click += delegate { Cfg.SetInt("ptt.timeout." + rk, s2); Cfg.Save(); CatLog.Event(rk, "délai de sécurité TX : " + TimeoutLabel(s2)); Invalidate(); };
                 mn.Items.Add(it);
             }
+            MicRoute.AddItems(mn);
             mn.Items.Add(new ToolStripSeparator()); ToolStripMenuItem lk = new ToolStripMenuItem(locked ? "Déverrouiller la touche" : "Verrouiller la touche");
             lk.Click += delegate { Locked = !locked; Cfg.SetBool(LockKey, locked); Cfg.Save(); }; mn.Items.Add(lk);
             mn.Show(this, p);
