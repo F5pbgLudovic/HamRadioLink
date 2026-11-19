@@ -17,6 +17,22 @@ namespace HamRadioLink
             HashSet<string> keep = new HashSet<string>(new string[] { "f_scr", "fa", "fb", "sm", "l_tx", "ptt", "f_mode", "band", "md0", "f_dial", "dial", "step", "f_vfo", "fr", "ft", "rit", "xit", "clr", "rup", "rdn", "f_rx", "af", "rf", "sql", "mic", "swr" });
             List<Ctl> n = new List<Ctl>(); foreach (Ctl c in r.C) { if (drop.Contains(c.Id)) continue; if (mini && !keep.Contains(c.Id)) continue; n.Add(c); }
             r.C = n; if (noTx) { Ctl p = r.Find("ptt"); if (p != null) { p.Read = ""; p.Parse = ""; p.Hint = "Ce poste ne permet pas de lire l'état émission/réception : le voyant ne suit que les ordres envoyés d'ici."; } }
+            if (key == "ts590")   // manuel TS-590S/SG : AGC par GC (GT = constante de temps), pas de DL, RG 000-255
+            {
+                r.CatExtra = "GC|AGC TIME CONSTANT|GCP1;|GC;|P1 0 OFF; 1 SLOW; 2 FAST (manuel TS-590S/SG)"; Ctl ag = r.Find("agc"); if (ag != null) { ag.Items = "OFF=0,SLOW=1,FAST=2"; ag.Set = "GC{v};"; ag.Read = "GC;"; ag.Parse = @"^GC(?<v>[0-3]);$"; ag.Hint = "GC P1 : 0 OFF, 1 SLOW, 2 FAST (manuel TS-590S/SG) ; GT est la constante de temps."; }
+                Ctl dn = r.Find("dnl"); if (dn != null) r.C.Remove(dn); Ctl rg = r.Find("rf"); if (rg != null) rg.Max = 255;
+            }
+            if (key == "ts590" || key == "ts2000" || key == "tsb2000")   // manuels TS-590S/SG et TS-2000 : RM de 0 à 30 points, S-mètre 0 à 30
+            {
+                foreach (string mid in new[] { "swr", "comp", "alc" }) { Ctl mm = r.Find(mid); if (mm != null) mm.Max = 30; } Ctl sm = r.Find("sm"); if (sm != null) sm.Max = 30;
+            }
+            if (key == "ts590") { foreach (string k in new[] { "bu", "bd" }) { Ctl x = r.Find(k); if (x != null) r.C.Remove(x); } Ctl ks = r.Find("ks"); if (ks != null) ks.Min = 4; }   // TS-590 : BU / BD attendent un numéro de bande ; KS 4 à 60
+            if (key == "ts2000" || key == "tsb2000")   // manuel TS-2000 : pas de DL, RG 000-255, SH 00-11
+            {
+                Ctl dn2 = r.Find("dnl"); if (dn2 != null) r.C.Remove(dn2); Ctl rg2 = r.Find("rf"); if (rg2 != null) rg2.Max = 255; Ctl shh = r.Find("sh"); if (shh != null) shh.Max = 11;
+            }
+            if (key == "ts990") r.Notes.Add("face avant du TS-890 inadaptée : le TS-990S a deux récepteurs (Main / Sub) et la plupart de ses commandes portent un chiffre de bande (AG0, RG0, SQ0, GC0, NB10…), sans FR / FT (split par TB) : à refaire d'après le manuel (_hors-github\audit2-kenwood-elecraft.md, rubrique 4)");
+            if (baseKind == 1) { Ctl fn = r.Find("fine"); if (fn != null) fn.Parse = @"^FS(?<v>[01])[01]?;$"; }   // TS-890 : la réponse FS a deux chiffres (fine RX et TX)
             r.Notes.Add(note); new Bld(r).Fin(); return r;
         }
         const string KW_NO_LINK = "proc,dnl,nbl,ts,fine,ca";

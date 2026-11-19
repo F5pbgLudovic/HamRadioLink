@@ -225,7 +225,7 @@ namespace HamRadioLink
             b.Tog("cont", "CONT", 1330, 716, 110, 44, "CO00{v:4};", "CO00;", @"^CO00(?<v>\d{4});$", "0001", "0000");
             b.Tog("apf", "APF", 1446, 716, 110, 44, "CO02{v:4};", "CO02;", @"^CO02(?<v>\d{4});$", "0001", "0000");
             b.Knob("vd", "VOX DLY", rx + 388, 428, 70, 80, 0, 33, "VD{v:2};", "VD;", @"^VD(?<v>\d{2});$", "raw").Hint = "Délai VOX : numéro 00 à 33 (00 = 30 ms ... 33 = 3000 ms), 2 chiffres comme validé sur un vrai FTdx10 (le manuel imprime 4 chiffres).";
-            b.Knob("sd", "BK DLY", rx + 464, 428, 70, 80, 0, 30, "SD{v:2};", "SD;", @"^SD(?<v>\d{2});$", "raw").Hint = "Délai break-in CW : numéro 00 à 30, 2 chiffres (validé sur un vrai FTdx10).";
+            b.Knob("sd", "BK DLY", rx + 464, 428, 70, 80, 0, 33, "SD{v:2};", "SD;", @"^SD(?<v>\d{2});$", "raw").Hint = "Délai break-in CW : numéro 00 à 33 (33 = 3000 ms), 2 chiffres (format validé sur un vrai FTdx10, bornes du manuel).";
             c = b.Cho("meter", "METER", 1214, 856, 190, 66, "PO=0,COMP=1,ALC=2,VDD=3,ID=4,SWR=5", "MS{v}0;", "MS;", @"^MS(?<v>[0-5])0;$"); c.Hint = "Commutateur METER du poste (MS P1 P2 : 0 PO, 1 COMP, 2 ALC, 3 VDD, 4 ID, 5 SWR). Les mesures affichées ici viennent de RM et ne dépendent pas de ce réglage.";
             c = b.Knob("clar", "CLAR", 1562, 712, 110, 108, -9990, 9990, "CF001{v:+4};", "IF;", IF, "hz"); c.Step = 10; c.Period = 300; c.Hint = "Le décalage est lu avec IF; (réponse complète, 28 caractères) qui met aussi à jour fréquence A, mode A, CLAR RX/TX et V/M.";
             b.Fin(); return r;
@@ -305,7 +305,7 @@ namespace HamRadioLink
             b.Tog("clartx", "CLAR TX", rx + 116, 200, bw, 40, "XT{v};", "XT;", @"^XT(?<v>[01]);$").Period = 6000;
             b.Act("clr", "CLAR CLEAR", rx + 232, 200, bw, 40, "RC;");
             if (x5) { c = b.Tog("split", "SPLIT", rx + 348, 200, bw, 40, "FT{v};", "FT;", @"^FT(?<v>[01]);$", "3|1", "2|0"); c.Accent = "cyan"; c.Hint = "FTdx5000 : FT2 = émission sur la bande main, FT3 = émission sur la bande sub (split) ; la réponse FT P2 vaut 0 ou 1."; }
-            else b.Tog("split", "SPLIT", rx + 348, 200, bw, 40, "FT{v};", "FT;", @"^FT(?<v>[01]);$").Accent = "cyan";
+            else { c = b.Tog("split", "SPLIT", rx + 348, 200, bw, 40, "FT{v};", "FT;", @"^FT(?<v>[01]);$", "3|1", "2|0"); c.Accent = "cyan"; c.Hint = "FT2 / FT3 sont absolus (FT0 / FT1 sont des bascules) : SPLIT envoie FT3 (allumé) ou FT2 (éteint) ; la lecture FT; répond 1 ou 0 (manuel CAT du FT-2000)."; }
             b.Tog("txw", "TXW", rx + 464, 200, 108, 40, "TS{v};", "TS;", @"^TS(?<v>[01]);$");
             b.Act("qmb", "QMB RCL", rx, 248, bw, 40, "QR;");
             b.Act("qmbs", "QMB STO", rx + 116, 248, bw, 40, "QI;");

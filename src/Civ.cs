@@ -181,7 +181,7 @@ namespace HamRadioLink
                     if (rest.Length != 2 && rest.Length != 4) return NG; if (!(IsMode(rest.Substring(0, 2)))) return NG; md = rest.Substring(0, 2); if (rest.Length == 4) filt = rest.Substring(2); Mirror(); return OK;
                 case "07":
                     if (rest.Length == 0 || rest == "00") { sel = 0; Mirror(); return OK; }
-                    if (rest == "01") { sel = 1; Mirror(); return OK; } if (rest == "A0") { fb = fa; Mirror(); return OK; } if (rest == "B0") { string t = fa; fa = fb; fb = t; Mirror(); return OK; }
+                    if (rest == "01") { sel = 1; Mirror(); return OK; } if (rest == "A0" || rest == "B1") { fb = fa; Mirror(); return OK; } if (rest == "B0") { string t = fa; fa = fb; fb = t; Mirror(); return OK; }
                     if (rest == "D0" || rest == "D1") return OK; return NG;
                 case "0F":
                     if (rest.Length == 0) return "0F" + Get("0F", "00"); if (rest == "00" || rest == "01") { st["0F"] = rest; return OK; } if (rest == "10" || rest == "11" || rest == "12" || rest == "13") return OK; return NG;

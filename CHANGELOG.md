@@ -20,6 +20,10 @@ HamRadioLink 1.0 : télécommande de postes radio (face avant reproduite, pilota
 ### Interface
 - Titre « HamRadioLink 1.0 @F5PBG 2026 - poste ». Touche **PTT** verte / rouge avec **délai de sécurité TX** (clic droit). **Verrous** par clic droit (voile rouge réglable), touche **Lock**, vumètres barres ↔ aiguille, **Paramètres ⚙** (couleurs, molette, verrous, commande manuelle), **Export / import ⇅** (réglages, dispositions, réglages du poste).
 
+### Export / import par parties et corrections des commandes
+- **Export / import ⇅ par parties** pour tous les postes : logiciel et dispositions, réglages du poste, **menu interne du poste** (Yaesu FT-2000, FTdx5000, FT-450D, FT-950, FT-991A, FTdx3000) ; import sans redémarrage pour les réglages du poste. Fenêtre de l'**IC-7760** à jour de la version 2.9 d'IC7760Link (export du menu interne, mémoires, import à cases) et bouton **LOG** présent aussi sur ce poste.
+- **Commandes contrôlées contre les manuels CAT officiels** : split du FT-2000 (FT2 / FT3), FT-450D, FT-950, FTdx3000, FTdx1200, FT-891, FT-991A, FT-710, FTdx101 (modes, AGC, split, mesures, délais, bornes, bandes) ; TS-480 / TS-590 / TS-890 / TS-2000 (AGC, FINE, RIT, bandes, échelles) ; Icom (ATT et préampli par modèle, MAIN = SUB en 07 B1, fréquences principale / secondaire en 25 00, DATA OFF en 1A06 00 00). Restent à refaire d'après leurs manuels : face avant du TS-990S, faces avant Elecraft K3 / K4, FTdx9000.
+
 ### Journal de trafic (bouton LOG)
 - Fenêtre à part : liste de QSO sans limite pratique, recherche, **Filtre** (indicatif, bande, mode, pays, dates, texte libre), colonnes au choix, onglets pour plusieurs journaux, import / export ADIF, doublons, statistiques, **Suivi des diplômes** (DXCC en couleurs, WAZ, WAC, WAS, IOTA).
 - **Base MariaDB / MySQL au choix** (« Base… » avec tous les essais) ; MariaDB intégré installé automatiquement si aucun n'est présent ; **Importer / partager…** (retrouve le journal MariaDB d'un autre logiciel, copie ou partage direct, ou fichiers ADIF).

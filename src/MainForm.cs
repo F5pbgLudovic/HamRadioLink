@@ -263,6 +263,7 @@ namespace HamRadioLink
                 icRadio = new DarkCombo(); icRadio.SetBounds(56, 3, 300, 26); icRadio.MaxDropDownItems = 32; foreach (RadioDef r in radios) icRadio.Items.Add(r.Name); icBar.Controls.Add(icRadio);
                 icRadio.SelectedIndexChanged += delegate { if (!loading && icRadio.SelectedIndex >= 0 && icRadio.SelectedIndex != cbRadio.SelectedIndex) cbRadio.SelectedIndex = icRadio.SelectedIndex; };
                 icLock = new Btn(); icLock.Text = "Lock"; icLock.LockStyle = true; icLock.SetBounds(372, 1, 60, 30); icLock.Checked = AppLocked; icLock.Click += delegate { ToggleAppLock(); }; icBar.Controls.Add(icLock);
+                icLog = new Btn(); icLog.Text = "LOG"; icLog.Accent = T.Cyan; icLog.SetBounds(440, 1, 80, 30); icLog.Click += delegate { ShowLog(); }; icBar.Controls.Add(icLog);   // le bouton LOG existe aussi dans la fenêtre de l'IC-7760
                 Controls.Add(icBar);
             }
             bool ol = loading; loading = true; icRadio.SelectedIndex = radios.IndexOf(cur); loading = ol; icBar.Visible = true;
@@ -441,7 +442,7 @@ namespace HamRadioLink
         }
         void ShowExport()
         {
-            using (ExportDlg d = new ExportDlg(Backup.Dump(cur, rig), rig.Link != null))
+            using (ExportDlg d = new ExportDlg(cur, rig))
             {
                 d.ShowDialog(this);
                 if (d.Imported) { importing = true; Application.Restart(); }
@@ -572,13 +573,13 @@ namespace HamRadioLink
             ClientSize = FitClient(w); CenterToScreen(); UpdateCiv(); Relayout(); StartServer(); AutoConnect();
         }
         // verrou général : tout le programme est bloqué sauf la touche Lock (rouge quand verrouillé)
-        public static bool AppLocked; Btn btnLock, icLock;
+        public static bool AppLocked; Btn btnLock, icLock, icLog;
         void ToggleAppLock() { AppLocked = !AppLocked; ApplyAppLock(); }
         void ApplyAppLock()
         {
             bool l = AppLocked; if (btnLock != null) { btnLock.Checked = l; btnLock.Invalidate(); } if (icLock != null) { icLock.Checked = l; icLock.Invalidate(); }
             foreach (Control c in stage.Controls) { bool en = !l || c == btnLock || c == btnLog; if (c.Enabled != en) { c.Enabled = en; c.Invalidate(); } }
-            if (icBar != null) foreach (Control c in icBar.Controls) { bool en = !l || c == icLock; if (c.Enabled != en) c.Enabled = en; }
+            if (icBar != null) foreach (Control c in icBar.Controls) { bool en = !l || c == icLock || c == icLog; if (c.Enabled != en) c.Enabled = en; }
             if (ic != null) ic.Enabled = !l;
             foreach (Form f in Application.OpenForms) if (f != this && !(f.GetType().Namespace ?? "").StartsWith("HamRadioLink.Journal")) f.Enabled = !l;      // le journal (LOG) n'est jamais verrouillé
             Text = Text.Replace(" — VERROUILLÉ", "") + (l ? " — VERROUILLÉ" : "");
@@ -588,13 +589,13 @@ namespace HamRadioLink
         // Bouton LOG : le journal de trafic (base MariaDB), dans une fenêtre à part ; la fréquence et le mode du poste actuel sont proposés pour un nouveau QSO.
         void ShowLog()
         {
-            Journal.RigState.NameFn = delegate { return act == null ? "" : CmdServer.ModelName(act.Def); };
-            Journal.RigState.HzFn = delegate { return act == null ? 0 : act.Rig.GetL("fa"); };
+            Journal.RigState.NameFn = delegate { if (ic != null && cur != null && cur.Key == "ic7760") return ic.MainHz > 0 ? "IC-7760" : ""; return act == null ? "" : CmdServer.ModelName(act.Def); };
+            Journal.RigState.HzFn = delegate { if (ic != null && cur != null && cur.Key == "ic7760") return ic.MainHz; return act == null ? 0 : act.Rig.GetL("fa"); };
             Journal.RigState.TuneFn = delegate(long hz, string modes)
             {
                 try
                 {
-                    if (act == null || !Journal.RigState.Enabled) return; Ctl f = act.Def.Find("fa"); if (f != null) act.Rig.Set(f, hz.ToString());
+                    if (!Journal.RigState.Enabled) return; if (ic != null && cur != null && cur.Key == "ic7760") { ic.TuneTo(hz); return; } if (act == null) return; Ctl f = act.Def.Find("fa"); if (f != null) act.Rig.Set(f, hz.ToString());
                     Ctl m = act.Def.Find("md0"); if (m == null || m.ItemList == null || string.IsNullOrEmpty(modes)) return;
                     foreach (string want in modes.Split('|')) foreach (Item it in m.ItemList) if (string.Equals(it.Label, want, StringComparison.OrdinalIgnoreCase)) { act.Rig.Set(m, it.Code); return; }
                 }
@@ -602,7 +603,7 @@ namespace HamRadioLink
             };
             Journal.Hub.ShowMain = BringBack;
             Journal.Hub.LogClosed = delegate { if (!Visible && !quitting) { quitting = true; Close(); } };
-            Journal.RigState.HzBFn = delegate { return act == null ? 0 : act.Rig.GetL("fb"); };
+            Journal.RigState.HzBFn = delegate { if (ic != null && cur != null && cur.Key == "ic7760") return ic.SubHz; return act == null ? 0 : act.Rig.GetL("fb"); };
             Journal.RigState.ModeFn = delegate { try { if (act == null) return ""; Ctl m = act.Def.Find("md0"); string v = act.Rig.Get("md0"); if (m == null || v == null || m.ItemList == null) return ""; foreach (Item it in m.ItemList) if (it.Match(v)) return it.Label; } catch { } return ""; };
             Journal.Hub.Open(this);
         }

@@ -26,6 +26,7 @@ namespace HamRadioLink
                 YLegLink.NoDelay = true; CatLog.On = false;
                 if (Environment.GetEnvironmentVariable("HRL_ONLY") == "ptt") { PttTimeoutTest(); throw new OperationCanceledException(); }
                 if (Environment.GetEnvironmentVariable("HRL_ONLY") == "journal") { Journal.JournalTest.Run(Check, Info, tmp); throw new OperationCanceledException(); }   // journal (MariaDB intégré isolé)
+                if (Environment.GetEnvironmentVariable("HRL_ONLY") == "menu") { MenuBackup(); throw new OperationCanceledException(); }
                 if (Environment.GetEnvironmentVariable("HRL_ONLY") == "log") { CatLogTest(); throw new OperationCanceledException(); }
                 if (Environment.GetEnvironmentVariable("HRL_ONLY") == "srv") { ServerTest(); throw new OperationCanceledException(); }
                 if (Environment.GetEnvironmentVariable("HRL_ONLY") == "lock") { foreach (RadioDef d in Radios.All()) LockChecks(d); throw new OperationCanceledException(); }
@@ -35,7 +36,7 @@ namespace HamRadioLink
                 foreach (RadioDef d in Radios.All()) { foreach (string nt in d.Notes) sb.AppendLine("NOTE " + d.Key + " : " + nt); Definitions(d); Roundtrip(d); if (d.Civ >= 0) CivChecks(d, ++nCiv); else if (d.Bin) Y5Checks(d); else if (d.Leg != null) LegChecks(d); else if (d.Tci) TciChecks(d); else { StateMapping(d); EndToEnd(d); } Persistence(d); LockChecks(d); }
                 CustomTest(); Strictness();
                 Editors();
-                DeadReads();
+                DeadReads(); MenuBackup();
                 ShareTest(); ShareCfgTest(); ServerTest(); Com0ComTest(); CatLogTest(); PttTimeoutTest();
             }
             catch (OperationCanceledException) { }
@@ -239,10 +240,11 @@ namespace HamRadioLink
         static void CivChecks(RadioDef d, int n)
         {
             Rig rig = new Rig(); rig.Def = d; int D = d.FreqDigits; string z = new string('0', D);
-            rig.Feed("03" + (14074000L).ToString().PadLeft(D, '0') + ";"); Check(rig.GetL("fa") == 14074000, d.Key + " : réponse 03 → fréquence (" + rig.Get("fa") + ")");
-            rig.Feed("00" + (7074000L).ToString().PadLeft(D, '0') + ";"); Check(rig.GetL("fa") == 7074000, d.Key + " : trame transceive 00 → fréquence");
+            bool ms = d.Key == "ic7610" || d.Key == "ic7760" || d.Key == "ic7850" || d.Key == "ic7851" || d.Key == "ic7600" || d.Key == "ic7800"; string pf = ms ? "2500" : "03";   // IC-7610 / 785x : la fréquence principale se lit par 25 00 (03 suit la bande sélectionnée)
+            rig.Feed(pf + (14074000L).ToString().PadLeft(D, '0') + ";"); Check(rig.GetL("fa") == 14074000, d.Key + " : réponse " + pf + " → fréquence (" + rig.Get("fa") + ")");
+            if (!ms) { rig.Feed("00" + (7074000L).ToString().PadLeft(D, '0') + ";"); Check(rig.GetL("fa") == 7074000, d.Key + " : trame transceive 00 → fréquence"); }
             rig.Feed("0401" + "01;"); Check(rig.Get("md0") == "01", d.Key + " : réponse 04 → mode USB (" + rig.Get("md0") + ")");
-            rig.Feed("0300" + "1407"); rig.Feed("4000;"); Check(rig.GetL("fa") == 14074000 || D == 8, d.Key + " : réponse coupée en deux");
+            rig.Feed(pf + (ms ? "" : "00") + "1407"); rig.Feed("4000;"); Check(rig.GetL("fa") == 14074000 || D == 8, d.Key + " : réponse coupée en deux");
             if (d.Find("sm") != null) { rig.Feed("15020120;"); Check(rig.GetL("sm") == 120, d.Key + " : S-mètre"); }
             if (d.Find("ptt") != null) { rig.Feed("1C0001;"); Check(rig.Tx, d.Key + " : 1C 00 01 → émission"); rig.Feed("1C0000;"); Check(!rig.Tx, d.Key + " : 1C 00 00 → réception"); }
             rig.Feed("FB;"); rig.Feed("?;"); Check(rig.Errors == 1, d.Key + " : FB accepté, ?; compté");
@@ -420,6 +422,20 @@ namespace HamRadioLink
             Wait(delegate { return rig.Get("af") != null; }, 8000); Check(rig.Get("af") != null, "les autres lectures continuent");
             string a = rig.Ask("FA;", 1500); Check(a != null && a.StartsWith("FA"), "Ask (test de lecture de l'éditeur) : " + a);
             rig.Disconnect(); d.Find("kr").Read = d.Find("kr").DRead; d.Find("kr").Period = 2200; Info("Lectures refusées : abandonnées proprement ; Ask vérifié");
+        }
+
+        // ---- export / import par parties : menu interne (EXnnn) relu sur le poste simulé, puis remis en attente puis renvoyé
+        static void MenuBackup()
+        {
+            RadioDef d = Radios.ByKey("ft2000"); d.LoadUser(); Rig rig = new Rig(); VirtualLink vl = new VirtualLink(d); string err; rig.Connect(d, vl, out err);
+            Wait(delegate { return rig.Get("af") != null; }, 8000);
+            Backup.MenuFrom = 80; Backup.MenuTo = 100; string s = Backup.Dump(d, rig, false, false, true, null, null); Backup.MenuFrom = 1; Backup.MenuTo = 199;
+            Check(Backup.HasMenu(d) && s.Contains("[[radiomenu:ft2000]]") && s.Contains("EX085") && s.Contains("EX094"), "export du menu interne du FT-2000 simulé (EX085 / EX094 relus)");
+            Check(Backup.Parts(s).Count == 1 && Backup.Parts(s)[0] == "menu" && Backup.RadioOf(s) == "ft2000", "parties du fichier reconnues (menu seulement, poste ft2000)");
+            Check(Backup.Import(s, false, false, false) == 0, "import avec aucune partie cochée : rien d'écrit");
+            Check(Backup.Import(s, false, false, true) == 1, "import du menu seul : mis en attente"); int sent = Backup.ApplyPending(d, rig);
+            Check(sent >= 2, "menu renvoyé au poste (" + sent + " commandes)"); Check(Cfg.Get("pendingmenu.ft2000", "").Length == 0, "attente vidée après l'envoi");
+            rig.Disconnect(); Info("Export / import par parties : menu EXnnn lu, restauré, parties choisies");
         }
 
         // ---- verrous (clic droit) : sur chaque élément de chaque poste, le clic droit verrouille, un verrou bloque clic / molette, un second clic droit déverrouille

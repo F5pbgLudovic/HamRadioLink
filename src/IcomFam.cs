@@ -117,13 +117,22 @@ namespace HamRadioLink
             {
                 case "ic7000": att = "OFF=00,12 dB=12"; pre = "OFF=00,ON=01"; agc = "OFF=00,SLOW=01,MID=02,FAST=03"; break;
                 case "ic7100": att = "OFF=00,12 dB=12"; break;
-                case "ic7610": case "ic7760": case "ic7850": case "ic7851": att = "OFF=00,6 dB=06,12 dB=12,18 dB=18,24 dB=24,30 dB=30,36 dB=36,42 dB=42"; break;
-                case "ic9700": case "ic705": case "ic905": att = m.Key == "ic9700" ? "OFF=00,10 dB=10" : att; pre = "OFF=00,PRÉAMP=01,EXT=02,PRÉAMP+EXT=03"; break;
+                case "ic7610": case "ic7760": att = "OFF=00,3 dB=03,6 dB=06,9 dB=09,12 dB=12,15 dB=15,18 dB=18,21 dB=21,24 dB=24,27 dB=27,30 dB=30,33 dB=33,36 dB=36,39 dB=39,42 dB=42,45 dB=45"; break;   // ATT par pas de 3 dB jusqu'à 45 dB (manuels CI-V)
+                case "ic7850": case "ic7851": case "ic7800": att = "OFF=00,3 dB=03,6 dB=06,9 dB=09,12 dB=12,15 dB=15,18 dB=18,21 dB=21"; break;
+                case "ic7600": case "ic7700": case "ic756pro": case "ic756proii": case "ic756proiii": att = "OFF=00,6 dB=06,12 dB=12,18 dB=18"; break;
+                case "ic9700": att ="OFF=00,10 dB=10"; pre = "OFF=00,PRÉAMP=01,EXT=02,PRÉAMP+EXT=03"; break;
+                case "ic905": att = "OFF=00,10 dB=10"; pre = "OFF=00,ON=01"; break;   // IC-905 : ATT 10 dB, préampli 00 / 01 (manuel CI-V)
+                case "ic705": break;                                                    // IC-705 : préampli 00 / 01 / 02 (pas d'externe)
                 case "ic706": case "ic706mkii": case "ic706mkiig": case "ic703": case "ic718": case "ic746": case "ic78": case "ic775": case "ic707": case "ic736": case "ic737": case "ic738": pre = "OFF=00,ON=01"; break;
             }
             if (m.Brand == "Xiegu") { att = "OFF=00,ATT=20"; pre = "OFF=00,ON=01"; }
             string modes = "LSB=00,USB=01,AM=02,CW=03,RTTY=04,FM=05,CW-R=07,RTTY-R=08"; if (m.Key == "ic7100" || m.Key == "ic705" || m.Key == "ic905" || m.Key == "ic9700") modes += ",DV=17"; if (m.Key == "ic9700" || m.Key == "ic905") modes += ",DD=22";
             string fz = "^0[03](?<v>\\d{" + D + "});$", f25 = "^2501(?<v>\\d{" + D + "});$";
+            // IC-7610 / 7850 / 7851 : 25 00 = bande PRINCIPALE, 25 01 = bande SECONDAIRE (le 03 / 05 suit la bande sélectionnée : quand SUB est choisie, les deux afficheurs montreraient SUB)
+            bool mainsub = m.Key == "ic7610" || m.Key == "ic7760" || m.Key == "ic7850" || m.Key == "ic7851" || m.Key == "ic7600" || m.Key == "ic7800";
+            bool dataOff = m.Key == "ic7300" || m.Key == "ic7300mk2" || m.Key == "ic7410" || m.Key == "ic7100" || m.Key == "ic9100" || m.Key == "ic7760" || m.Key == "ic705" || m.Key == "ic905";   // DATA OFF = 1A06 00 00 (les manuels interdisent 00 01)
+            bool b1 = mainsub || m.Key == "ic756" || m.Key == "ic756pro" || m.Key == "ic756proii" || m.Key == "ic756proiii" || m.Key == "ic775";   // 07 B1 = égaliser les deux récepteurs (manuels CI-V)
+            string f2500 = "^2500(?<v>\\d{" + D + "});$";
 
             // ---- alimentation / émission
             if (Regex.IsMatch(f, "[wtepk]")) b.Frame("f_pwr", "ALIMENTATION / ÉMISSION", 10, 124, 210, 430);
@@ -141,7 +150,7 @@ namespace HamRadioLink
 
             // ---- écran
             b.Frame("f_scr", "ÉCRAN", 230, 124, 1010, 430); bool vb = f.IndexOf('v') >= 0;
-            b.Freq("fa", dual ? "PRINCIPAL" : "VFO SÉLECTIONNÉ", 244, 150, vb ? 640 : 986, 150, "05{v:" + D + "};", "03;", fz, "md0", "amber").Hint = D + " chiffres en Hz ; envoyé en BCD par CivLink (14074000 Hz = 0014074000).";
+            b.Freq("fa", dual ? "PRINCIPAL" : "VFO SÉLECTIONNÉ", 244, 150, vb ? 640 : 986, 150, mainsub ? "2500{v:" + D + "};" : "05{v:" + D + "};", mainsub ? "2500;" : "03;", mainsub ? f2500 : fz, "md0", "amber").Hint = D + " chiffres en Hz ; envoyé en BCD par CivLink (14074000 Hz = 0014074000).";
             if (vb) b.Freq("fb", dual ? "SECONDAIRE" : "VFO NON SÉLECT.", 894, 150, 336, 150, "2501{v:" + D + "};", "2501;", f25, "md0", "blue");
             if (f.IndexOf('s') >= 0) b.Meter("sm", "S", 244, 310, 480, 34, 241, "1502;", @"^1502(?<v>\d{4});$", "s", false).Hint = "0000 = S0, 0120 = S9, 0241 = S9+60 dB.";
             if (f.IndexOf('o') >= 0)
@@ -162,7 +171,7 @@ namespace HamRadioLink
             // ---- VFO
             b.Frame("f_vfo", "VFO / RIT / XIT", 1250, 124, 600, 430); const int rx = 1264; const int bw = 108;
             b.Tog("split", "SPLIT", rx, 152, bw, 40, "0F{v};", "0F;", @"^0F(?<v>[0-9A-F]{2});$", "01", "00").Period = 3000;
-            b.Act("swap", dual ? "MAIN ⇄ SUB" : "A ⇄ B", rx + 116, 152, bw, 40, "07B0;"); b.Act("a2b", "A = B", rx + 232, 152, bw, 40, "07A0;");
+            b.Act("swap", dual ? "MAIN ⇄ SUB" : "A ⇄ B", rx + 116, 152, bw, 40, "07B0;"); b.Act("a2b", dual && b1 ? "MAIN = SUB" : "A = B", rx + 232, 152, bw, 40, b1 ? "07B1;" : "07A0;");   // 07 B1 = égaliser MAIN et SUB (IC-7610 / 785x, catalogue du manuel)
             if (f.IndexOf('x') >= 0)
             {
                 b.Tog("rit", "RIT", rx, 200, bw, 40, "2101{v};", "2101;", @"^2101(?<v>0[01]);$", "01", "00").Period = 6000;
@@ -170,7 +179,7 @@ namespace HamRadioLink
                 b.Act("ritclr", "RIT/XIT RAZ", rx + 232, 200, bw, 40, "2100000000;");
             }
             if (dual) b.Row("vsel", "BANDE ACTIVE", rx, 248, 224, 40, 1, "MAIN=D0,SUB=D1", "07{v};", "", "");
-            if (f.IndexOf('d') >= 0) b.Cho("data", "DATA", rx + 232, 248, bw, 40, "OFF=00,DATA=01", "1A06{v}01;", "1A06;", @"^1A06(?<v>0[01])").Hint = "Le filtre est remis sur FIL1 à chaque changement (1A 06 données + filtre).";
+            if (f.IndexOf('d') >= 0) b.Cho("data", "DATA", rx + 232, 248, bw, 40, dataOff ? "OFF=0000|00,DATA=0101|01" : "OFF=00,DATA=01", dataOff ? "1A06{v};" : "1A06{v}01;", "1A06;", @"^1A06(?<v>0[01])").Hint = "Le filtre est remis sur FIL1 à chaque changement (1A 06 données + filtre).";
             if (f.IndexOf('k') >= 0) { b.Knob("ks", "VITESSE", rx, 300, 80, 90, 0, 255, "140C{v:4};", "140C;", @"^140C(?<v>\d{4});$", "raw"); b.Knob("kp", "TONALITÉ", rx + 90, 300, 80, 90, 0, 255, "1409{v:4};", "1409;", @"^1409(?<v>\d{4});$", "raw"); }
             if (f.IndexOf('c') >= 0) { b.Knob("nbl", "NB niv.", rx + 180, 300, 80, 90, 0, 255, "1412{v:4};", "1412;", @"^1412(?<v>\d{4});$", "pct"); b.Knob("nrl", "NR niv.", rx + 270, 300, 80, 90, 0, 255, "1406{v:4};", "1406;", @"^1406(?<v>\d{4});$", "pct"); }
 

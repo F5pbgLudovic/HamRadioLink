@@ -44,7 +44,7 @@ namespace HamRadioLink
         public CatalogSim(RadioDef def, List<string> bad, List<string> seen, Dictionary<string, string> s)
         {
             Def = def; Bad = bad; Seen = seen; S = s; IdAnswer = def.IdAnswer; S["tx"] = "0"; S["ps"] = "1"; Kw = def.Catalog != null && def.Catalog.StartsWith("ts");
-            foreach (string line in Catalogs.D[def.Catalog].Split('\n'))
+            foreach (string line in (Catalogs.D[def.Catalog] + "\n" + (def.CatExtra ?? "")).Split('\n'))
             {
                 string[] p = line.TrimEnd('\r').Split('|'); if (p.Length < 4 || p[0].Length < 2 || p[0].Length > 5 || p[0][0] == '#') continue;
                 Ent e = new Ent(); e.Cmd = p[0]; e.Name = p[1]; e.SetF = p[2]; e.ReadF = p[3]; bool v1 = false, v2 = false;

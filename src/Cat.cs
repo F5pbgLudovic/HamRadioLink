@@ -171,7 +171,7 @@ namespace HamRadioLink
     // Une radio : liste de ses éléments et paramètres de liaison
     public class RadioDef
     {
-        public string Key, Name, Catalog, CivCat, IdCmd = "ID;", IdAnswer = ""; public int Civ = -1; public bool Bin, Stop2, Tci; public LM Leg; public int DefBaud = 38400, FreqDigits = 9; public long MaxFreq = 75000000;
+        public string Key, Name, Catalog, CivCat, IdCmd = "ID;", IdAnswer = "", CatExtra = ""; public int Civ = -1; public bool Bin, Stop2, Tci; public LM Leg; public int DefBaud = 38400, FreqDigits = 9; public long MaxFreq = 75000000;
         public string Init = "AI0;";                   // envoyé à la connexion
         public List<Ctl> C = new List<Ctl>(); public List<string> Notes = new List<string>();
         public string IdValue { get { string a = IdAnswer ?? ""; if (a.StartsWith("ID")) a = a.Substring(2); else if (a.StartsWith("1900")) a = a.Substring(4); return a.TrimEnd(';'); } }

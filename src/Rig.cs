@@ -97,6 +97,13 @@ namespace HamRadioLink
             return got;
         }
 
+        // Comme Ask, mais n'accepte que la réponse commençant par « prefix » (les relectures périodiques du poste ne sont pas prises pour la réponse) ; « ?; » = refusé
+        public string AskPrefix(string cmd, string prefix, int timeoutMs)
+        {
+            ManualResetEvent ev = new ManualResetEvent(false); string got = null; Action<string, bool> h = delegate(string s, bool tx) { if (!tx && got == null && s != null && (s.StartsWith(prefix) || s.Trim() == "?;")) { got = s; ev.Set(); } };
+            Log += h; try { Raw(cmd); ev.WaitOne(timeoutMs); } finally { Log -= h; }
+            return got != null && got.StartsWith(prefix) ? got : null;
+        }
         // ------------------------------------------------------------- boucle
         void Loop()
         {

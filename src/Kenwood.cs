@@ -35,7 +35,7 @@ namespace HamRadioLink
                 c = b.Tog("ptt", "ÉMISSION (PTT)", 24, 306, 182, 54, "{v};", "IF;", @"^IF(?<fa>\d{11}).{15}(?<v>[01])[1-9]", "TX0|1", "RX|0"); c.Hint = "TS-480 : TX0; émet (micro), RX; revient en réception. L'état est lu dans la réponse à IF; (caractère P8).";
             }
             c.Accent = "red"; c.Period = 250;
-            b.Tog("fine", "FINE", 24, 370, 86, 40, "FS{v};", "FS;", @"^FS(?<v>[01]);$");
+            b.Tog("fine", "FINE", 24, 370, 86, 40, "FS{v};", "FS;", @"^FS(?<v>[01])[01]?;$");
             b.Tog("ts", "TF-SET", 120, 370, 86, 40, "TS{v};", "TS;", @"^TS(?<v>[01]);$");
 
             // ---- écran
@@ -49,7 +49,7 @@ namespace HamRadioLink
             }
             else
             {
-                b.Meter("sm", "S", 244, 310, 480, 34, 30, "SM0;", @"^SM0(?<v>\d{4});$", "s", false).Hint = "SM0 : 0000 à 0030 environ (le manuel indique 0000-0020 à vérifier).";
+                b.Meter("sm", "S", 244, 310, 480, 34, 20, "SM0;", @"^SM0(?<v>\d{4});$", "s", false).Hint = "SM0 : 0000 à 0020 (manuel TS-480, p. 20).";
                 b.Meter("swr", "SWR", 244, 348, 480, 34, 10, "RM1;", @"^RM1(?<v>\d{4});$", "pct", true);
                 b.Meter("comp", "COMP", 736, 310, 494, 34, 10, "RM2;", @"^RM2(?<v>\d{4});$", "pct", true);
                 b.Meter("alc", "ALC", 736, 348, 494, 34, 10, "RM3;", @"^RM3(?<v>\d{4});$", "pct", true);
@@ -67,12 +67,12 @@ namespace HamRadioLink
             // ---- VFO
             b.Frame("f_vfo", "VFO / RIT / XIT", 1250, 124, 600, 430);
             const int rx = 1264; const int bw = 108;
-            b.Row("fr", "RX", rx, 152, 280, 40, 1, t890 ? "A=0,B=1,MEM=3" : "A=0,B=1,MEM=2", "FR{v};", "FR;", @"^FR(?<v>[0-3]);$");
-            b.Row("ft", "TX", rx + 292, 152, 280, 40, 1, t890 ? "A=0,B=1,MEM=3" : "A=0,B=1,MEM=2", "FT{v};", "FT;", @"^FT(?<v>[0-3]);$").Hint = "FR ≠ FT = émission sur l'autre VFO (split).";
+            b.Row("fr", "RX", rx, 152, 280, 40, 1, t890 ? "A=0,B=1" : "A=0,B=1,MEM=2", "FR{v};", "FR;", @"^FR(?<v>[0-3]);$");
+            b.Row("ft", "TX", rx + 292, 152, 280, 40, 1, t890 ? "A=0,B=1" : "A=0,B=1,MEM=2", "FT{v};", "FT;", @"^FT(?<v>[0-3]);$").Hint = "FR ≠ FT = émission sur l'autre VFO (split).";
             b.Tog("rit", "RIT", rx, 200, bw, 40, "RT{v};", "RT;", @"^RT(?<v>[01]);$").Period = 6000;
             b.Tog("xit", "XIT", rx + 116, 200, bw, 40, "XT{v};", "XT;", @"^XT(?<v>[01]);$").Period = 6000;
             b.Act("clr", "RIT/XIT RAZ", rx + 232, 200, bw, 40, "RC;");
-            b.Act("rup", "RIT ▲ 10 Hz", rx + 348, 200, bw, 40, t890 ? "RU00010;" : "RU00010;"); b.Act("rdn", "RIT ▼ 10 Hz", rx + 464, 200, 108, 40, "RD00010;");
+            b.Act("rup", t890 ? "RIT ▲" : "RIT ▲ 10 Hz", rx + 348, 200, bw, 40, t890 ? "RU;" : "RU00010;"); b.Act("rdn", t890 ? "RIT ▼" : "RIT ▼ 10 Hz", rx + 464, 200, 108, 40, t890 ? "RD;" : "RD00010;");   // TS-890 : RUnnnnn; FIXE le décalage, RU; fait un cran (manuel p. 58)
             b.Act("bu", "BAND ▲", rx, 248, bw, 40, "BU;"); b.Act("bd", "BAND ▼", rx + 116, 248, bw, 40, "BD;");
             if (!t890) { b.Act("a2b", "A=B", rx + 232, 248, bw, 40, "VV;"); b.Tog("ca", "CW ZERO-BEAT", rx + 348, 248, 224, 40, "CA{v};", "CA;", @"^CA(?<v>[01]);$"); }
             b.Knob("ks", "SPEED", rx, 300, 80, 90, t890 ? 4 : 10, 60, "KS{v:3};", "KS;", @"^KS(?<v>\d{3});$", "wpm");

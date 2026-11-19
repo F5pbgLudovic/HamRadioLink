@@ -171,24 +171,33 @@ namespace HamRadioLink
         }
     }
 
-    // Export / import : réglages du logiciel, dispositions de tous les postes et réglages du poste courant (relevés en direct)
+    // Export / import par parties : réglages du logiciel et dispositions, réglages du poste (relevés en direct), menu interne du poste (Yaesu à menus « EXnnn »)
     public static class Backup
     {
         static readonly string[] noRadio = { "ptt", "tune", "tuner", "poff", "pon", "power_on", "pwr_off" };
-        public static string Dump(RadioDef cur, Rig rig)
+        // postes dont le menu interne se lit / s'écrit par EXnnn (3 chiffres), d'après les catalogues des manuels
+        static readonly string[] menuRadios = { "ft2000", "ftdx5000", "ft450", "ft950", "ft991a", "ftdx3000" };
+        public static int MenuFrom = 1, MenuTo = 199;   // plage des menus lus (le test la réduit)
+        public static bool HasMenu(RadioDef r) { return r != null && Array.IndexOf(menuRadios, r.Key) >= 0; }
+
+        public static string Dump(RadioDef cur, Rig rig) { return Dump(cur, rig, true, true, false, null, null); }
+        public static string Dump(RadioDef cur, Rig rig, bool app, bool radio, bool menu, Action<string> say, Func<bool> cancelled)
         {
-            StringBuilder sb = new StringBuilder(); sb.AppendLine("# HamRadioLink " + MainForm.Version + " - sauvegarde " + DateTime.Now.ToString("yyyy-MM-dd HH:mm"));
-            sb.AppendLine("[[settings.ini]]"); sb.Append(Cfg.Dump());
-            try
+            StringBuilder sb = new StringBuilder(); sb.AppendLine("# HamRadioLink " + MainForm.Version + " - sauvegarde " + DateTime.Now.ToString("yyyy-MM-dd HH:mm") + (cur != null ? " - poste " + cur.Key : ""));
+            if (app)
             {
-                foreach (string f in Directory.GetFiles(Cfg.Dir, "*.ini"))
+                sb.AppendLine("[[settings.ini]]"); sb.Append(Cfg.Dump());
+                try
                 {
-                    string n = Path.GetFileName(f); if (n.Equals("settings.ini", StringComparison.OrdinalIgnoreCase)) continue;
-                    sb.AppendLine("[[" + n + "]]"); foreach (string l in File.ReadAllLines(f, Encoding.UTF8)) if (l.Trim().Length > 0) sb.AppendLine(l);
+                    foreach (string f in Directory.GetFiles(Cfg.Dir, "*.ini"))
+                    {
+                        string n = Path.GetFileName(f); if (n.Equals("settings.ini", StringComparison.OrdinalIgnoreCase)) continue;
+                        sb.AppendLine("[[" + n + "]]"); foreach (string l in File.ReadAllLines(f, Encoding.UTF8)) if (l.Trim().Length > 0) sb.AppendLine(l);
+                    }
                 }
+                catch { }
             }
-            catch { }
-            if (rig.Link != null && cur != null)
+            if (radio && rig.Link != null && cur != null)
             {
                 sb.AppendLine("[[radio:" + cur.Key + "]]");
                 foreach (Ctl c in cur.C)
@@ -199,16 +208,43 @@ namespace HamRadioLink
                     else if (c.K == Kind.Choice) { foreach (Item it in c.ItemList) if (it.Match(v)) { sb.AppendLine(c.Id + "=" + it.Code); break; } }
                 }
             }
+            if (menu && rig.Link != null && HasMenu(cur)) { sb.AppendLine("[[radiomenu:" + cur.Key + "]]"); ReadMenu(rig, sb, say, cancelled ?? delegate { return false; }); }
             return sb.ToString();
         }
-        // écrit les fichiers, retourne le nombre de blocs ; les réglages du poste sont gardés en attente (appliqués à la prochaine connexion)
-        public static int Import(string text)
+
+        // Lit les menus 001 à 199 : la réponse brute (ex. « EX0850; ») est gardée telle quelle et renvoyée telle quelle à la restauration. Arrêt après 20 numéros muets de suite (ou dès le menu 030 si le poste ne répond à aucun).
+        static void ReadMenu(Rig rig, StringBuilder sb, Action<string> say, Func<bool> cancelled)
+        {
+            int miss = 0, got = 0;
+            for (int n = MenuFrom; n <= MenuTo && !cancelled(); n++)
+            {
+                string pre = "EX" + n.ToString("000"); if (say != null) say("Menu " + n.ToString("000") + " (" + got + " lus)…");
+                string a = rig.AskPrefix(pre + ";", pre, 700); if (a == null) a = rig.AskPrefix(pre + ";", pre, 700);
+                if (a != null && a.StartsWith(pre) && a.Length > pre.Length) { sb.AppendLine(a.Trim()); got++; miss = 0; } else { miss++; if (got == 0 ? n - MenuFrom >= 29 : miss >= 20) break; }
+            }
+        }
+
+        // Parties présentes dans un fichier : "app", "radio", "menu"
+        public static List<string> Parts(string text)
+        {
+            List<string> l = new List<string>();
+            foreach (string raw in text.Replace("\r\n", "\n").Split('\n')) { string s = raw.Trim(); if (!(s.StartsWith("[[") && s.EndsWith("]]"))) continue; string n = s.Substring(2, s.Length - 4); string p = n.StartsWith("radiomenu:") ? "menu" : n.StartsWith("radio:") ? "radio" : "app"; if (!l.Contains(p)) l.Add(p); }
+            return l;
+        }
+        // Poste d'origine du menu / des réglages (ex. « ft2000 »), vide si inconnu
+        public static string RadioOf(string text) { System.Text.RegularExpressions.Match m = System.Text.RegularExpressions.Regex.Match(text, @"\[\[radio(?:menu)?:([^\]]+)\]\]"); return m.Success ? m.Groups[1].Value : ""; }
+
+        public static int Import(string text) { return Import(text, true, true, true); }
+        // écrit les fichiers (app) et garde les réglages / le menu du poste en attente (appliqués à la prochaine connexion, ou tout de suite par ApplyPending) ; retourne le nombre de blocs
+        public static int Import(string text, bool app, bool radio, bool menu)
         {
             int n = 0; string name = null; StringBuilder body = new StringBuilder();
             Action flush = delegate
             {
                 if (name == null) return;
-                if (name.StartsWith("radio:")) { Cfg.Set("pending." + name.Substring(6), Enc(body.ToString())); n++; }
+                if (name.StartsWith("radiomenu:")) { if (menu) { Cfg.Set("pendingmenu." + name.Substring(10), Enc(body.ToString())); n++; } }
+                else if (name.StartsWith("radio:")) { if (radio) { Cfg.Set("pending." + name.Substring(6), Enc(body.ToString())); n++; } }
+                else if (!app) { }
                 else if (name == "settings.ini") { if (Cfg.Import(body.ToString()) > 0) n++; }
                 else if (name.EndsWith(".ini") && name == Path.GetFileName(name)) { try { File.WriteAllText(Path.Combine(Cfg.Dir, name), body.ToString().Replace("\n", "\r\n"), Encoding.UTF8); n++; } catch { } }
                 body.Length = 0;
@@ -222,49 +258,99 @@ namespace HamRadioLink
             flush(); Cfg.Save(); return n;
         }
         static string Enc(string s) { return Uri.EscapeDataString(s); }
-        // applique les réglages en attente du poste (après connexion) ; retourne le nombre envoyé
+        // applique les réglages et le menu en attente du poste (après connexion) ; retourne le nombre de commandes envoyées
         public static int ApplyPending(RadioDef cur, Rig rig)
         {
-            string k = "pending." + cur.Key, e = Cfg.Get(k, ""); if (e.Length == 0) return 0; Cfg.Set(k, ""); Cfg.Save(); int n = 0;
-            foreach (string l in Uri.UnescapeDataString(e).Replace("\r\n", "\n").Split('\n'))
+            int n = 0; string k = "pending." + cur.Key, e = Cfg.Get(k, "");
+            if (e.Length > 0)
             {
-                int i = l.IndexOf('='); if (i <= 0) continue; Ctl c = cur.Find(l.Substring(0, i)); if (c == null || !c.HasCat || c.Set.Length == 0 || Array.IndexOf(noRadio, c.Id) >= 0) continue; string v = l.Substring(i + 1);
-                if (c.K == Kind.Toggle) rig.Set(c, v == "1" ? c.OnSend : c.OffSend); else if (c.K == Kind.Knob || c.K == Kind.Choice) rig.Set(c, v); else continue; n++;
+                Cfg.Set(k, ""); Cfg.Save();
+                foreach (string l in Uri.UnescapeDataString(e).Replace("\r\n", "\n").Split('\n'))
+                {
+                    int i = l.IndexOf('='); if (i <= 0) continue; Ctl c = cur.Find(l.Substring(0, i)); if (c == null || !c.HasCat || c.Set.Length == 0 || Array.IndexOf(noRadio, c.Id) >= 0) continue; string v = l.Substring(i + 1);
+                    if (c.K == Kind.Toggle) rig.Set(c, v == "1" ? c.OnSend : c.OffSend); else if (c.K == Kind.Knob || c.K == Kind.Choice) rig.Set(c, v); else continue; n++;
+                }
+            }
+            string km = "pendingmenu." + cur.Key, em = Cfg.Get(km, "");
+            if (em.Length > 0 && HasMenu(cur))
+            {
+                Cfg.Set(km, ""); Cfg.Save();
+                foreach (string l in Uri.UnescapeDataString(em).Replace("\r\n", "\n").Split('\n')) { string s = l.Trim(); if (s.StartsWith("EX") && s.EndsWith(";") && s.Length > 6) { rig.Raw(s + "{wait:150}"); n++; } }
             }
             return n;
         }
     }
 
+    // Petite fenêtre : cases à cocher des parties à exporter / importer
+    public class PartsDlg : Form
+    {
+        readonly CheckBox[] cb;
+        public PartsDlg(string title, string intro, string[] labels, bool[] on, bool[] enabled)
+        {
+            Text = title; BackColor = T.Bg; ForeColor = T.Text; Font = new Font("Segoe UI", 9f); FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; MinimizeBox = false; ShowInTaskbar = false; StartPosition = FormStartPosition.CenterParent;
+            Label l = new Label(); l.SetBounds(12, 10, 456, 44); l.Text = intro; Controls.Add(l); cb = new CheckBox[labels.Length]; int y = 60;
+            for (int i = 0; i < labels.Length; i++) { cb[i] = new CheckBox(); cb[i].SetBounds(16, y, 450, 40); cb[i].Text = labels[i]; cb[i].Checked = on[i] && enabled[i]; cb[i].Enabled = enabled[i]; cb[i].ForeColor = enabled[i] ? T.Text : T.Dim; Controls.Add(cb[i]); y += 44; }
+            Button ok = new Button(); ok.Text = "OK"; ok.SetBounds(262, y + 6, 100, 30); ok.FlatStyle = FlatStyle.Flat; ok.BackColor = T.Panel2; ok.ForeColor = T.Text; ok.DialogResult = DialogResult.OK; Controls.Add(ok); AcceptButton = ok;
+            Button no = new Button(); no.Text = "Annuler"; no.SetBounds(370, y + 6, 100, 30); no.FlatStyle = FlatStyle.Flat; no.BackColor = T.Panel2; no.ForeColor = T.Text; no.DialogResult = DialogResult.Cancel; Controls.Add(no); CancelButton = no;
+            ClientSize = new Size(480, y + 48);
+        }
+        public bool Checked(int i) { return cb[i].Checked; }
+    }
+
     public class ExportDlg : Form
     {
-        public bool Imported; readonly string dump;
-        public ExportDlg(string dump, bool connected)
+        public bool Imported; readonly RadioDef cur; readonly Rig rig; readonly bool connected; Label status; Button b1, b2, b3; volatile bool cancel;
+        public ExportDlg(RadioDef cur, Rig rig)
         {
-            this.dump = dump; Text = "Export / import"; BackColor = T.Bg; ForeColor = T.Text; ClientSize = new Size(400, 150); StartPosition = FormStartPosition.CenterParent; Font = new Font("Segoe UI", 9f);
+            this.cur = cur; this.rig = rig; connected = rig != null && rig.Link != null; Text = "Export / import"; BackColor = T.Bg; ForeColor = T.Text; ClientSize = new Size(420, 170); StartPosition = FormStartPosition.CenterParent; Font = new Font("Segoe UI", 9f);
             FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; MinimizeBox = false; ShowInTaskbar = false;
-            Label l = new Label(); l.SetBounds(12, 10, 376, 54); Controls.Add(l);
-            l.Text = "Exporter : enregistre les réglages du logiciel, la disposition de tous les postes" + (connected ? " et les réglages du poste connecté" : " (poste non connecté : réglages du poste non inclus)") + ".\nImporter : restaure un fichier (le logiciel redémarre).";
-            Button b1 = B("Exporter…", 12, 80, 120); b1.Click += delegate { Export(); }; Button b2 = B("Importer…", 142, 80, 120); b2.Click += delegate { Open(); }; Button b3 = B("Annuler", 272, 80, 116); b3.Click += delegate { Close(); }; CancelButton = b3;
+            Label l = new Label(); l.SetBounds(12, 10, 396, 70); Controls.Add(l);
+            l.Text = "Exporter : choisissez les parties à enregistrer (logiciel et dispositions, réglages du poste" + (HasMenuPart() ? ", menu interne du poste" : "") + ").\nImporter : choisissez les parties à restaurer ; les réglages du poste sont envoyés au poste connecté (ou à la prochaine connexion).";
+            b1 = B("Exporter…", 12, 96, 120); b1.Click += delegate { Export(); }; b2 = B("Importer…", 142, 96, 120); b2.Click += delegate { Open(); }; b3 = B("Annuler", 292, 96, 116); b3.Click += delegate { cancel = true; Close(); }; CancelButton = b3;
+            status = new Label(); status.SetBounds(12, 138, 396, 24); status.ForeColor = T.Dim; Controls.Add(status);
         }
+        bool HasMenuPart() { return Backup.HasMenu(cur); }
         Button B(string t, int x, int y, int w) { Button b = new Button(); b.Text = t; b.SetBounds(x, y, w, 34); b.FlatStyle = FlatStyle.Flat; b.BackColor = T.Panel2; b.ForeColor = T.Text; b.FlatAppearance.BorderColor = T.Edge; Controls.Add(b); return b; }
         void Export()
         {
-            using (SaveFileDialog d = new SaveFileDialog())
-            {
-                d.Filter = "Sauvegarde HamRadioLink (*.ini)|*.ini|Tous les fichiers|*.*"; d.FileName = "HamRadioLink-config-" + DateTime.Now.ToString("yyyy-MM-dd") + ".ini";
-                if (d.ShowDialog(this) != DialogResult.OK) return;
-                try { File.WriteAllText(d.FileName, dump.Replace("\r\n", "\n").Replace("\n", "\r\n"), Encoding.UTF8); MessageBox.Show(this, "Configuration exportée :\n" + d.FileName, "Export"); Close(); } catch (Exception ex) { MessageBox.Show(this, ex.Message, "Erreur"); }
-            }
+            bool menu = HasMenuPart() && connected;
+            using (PartsDlg p = new PartsDlg("Exporter", "Parties à enregistrer dans le fichier :", new[] { "Réglages du logiciel et dispositions de tous les postes", "Réglages du poste connecté (relevés en direct)" + (connected ? "" : " — poste non connecté"), "Menu interne du poste (EXnnn, une minute environ)" + (!HasMenuPart() ? " — non géré pour ce poste" : connected ? "" : " — poste non connecté") },
+                new[] { true, true, false }, new[] { true, connected, menu })) { if (p.ShowDialog(this) != DialogResult.OK) return; bool a = p.Checked(0), r = p.Checked(1), m = p.Checked(2); if (!a && !r && !m) return; Save(a, r, m); }
         }
+        void Save(bool a, bool r, bool m)
+        {
+            string file; using (SaveFileDialog d = new SaveFileDialog())
+            {
+                d.Filter = "Sauvegarde HamRadioLink (*.ini)|*.ini|Tous les fichiers|*.*"; d.FileName = "HamRadioLink-config-" + DateTime.Now.ToString("yyyy-MM-dd") + ".ini"; if (d.ShowDialog(this) != DialogResult.OK) return; file = d.FileName;
+            }
+            b1.Enabled = b2.Enabled = false; cancel = false;
+            System.Threading.Thread th = new System.Threading.Thread(delegate()
+            {
+                string s = null, err = null;
+                try { s = Backup.Dump(cur, rig, a, r, m, delegate(string t) { Say(t); }, delegate { return cancel; }); File.WriteAllText(file, s.Replace("\r\n", "\n").Replace("\n", "\r\n"), Encoding.UTF8); } catch (Exception ex) { err = ex.Message; }
+                try { BeginInvoke(new Action(delegate { if (err != null) MessageBox.Show(this, err, "Erreur"); else { MessageBox.Show(this, "Configuration exportée :\n" + file, "Export"); Close(); } })); } catch { }
+            }); th.IsBackground = true; th.Start();
+        }
+        void Say(string t) { try { BeginInvoke(new Action(delegate { status.Text = t; })); } catch { } }
         void Open()
         {
             using (OpenFileDialog d = new OpenFileDialog())
             {
                 d.Filter = "Sauvegarde HamRadioLink (*.ini)|*.ini|Tous les fichiers|*.*"; if (d.ShowDialog(this) != DialogResult.OK) return;
                 string txt; try { txt = File.ReadAllText(d.FileName, Encoding.UTF8); } catch (Exception ex) { MessageBox.Show(this, ex.Message, "Erreur"); return; }
-                if (MessageBox.Show(this, "Remplacer la configuration par ce fichier et redémarrer le logiciel ?\nLes réglages du poste (s'il y en a) seront renvoyés dès la prochaine connexion.", "Importer", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK) return;
-                if (Backup.Import(txt) == 0) { MessageBox.Show(this, "Aucun réglage valide dans ce fichier.", "Importer"); return; }
-                Imported = true; DialogResult = DialogResult.OK; Close();
+                List<string> parts = Backup.Parts(txt); if (parts.Count == 0) { MessageBox.Show(this, "Aucun réglage valide dans ce fichier.", "Importer"); return; }
+                string from = Backup.RadioOf(txt); bool same = from.Length == 0 || (cur != null && from == cur.Key);
+                using (PartsDlg p = new PartsDlg("Importer", "Parties à restaurer depuis ce fichier" + (from.Length > 0 ? " (poste d'origine : " + from + ")" : "") + " :",
+                    new[] { "Réglages du logiciel et dispositions (le logiciel redémarre)", "Réglages du poste" + (same ? "" : " — fichier d'un autre poste : non proposé"), "Menu interne du poste (EXnnn)" + (same ? "" : " — fichier d'un autre poste : non proposé") },
+                    new[] { true, true, false }, new[] { parts.Contains("app"), parts.Contains("radio") && same, parts.Contains("menu") && same && Backup.HasMenu(cur) }))
+                {
+                    if (p.ShowDialog(this) != DialogResult.OK) return; bool a = p.Checked(0), r = p.Checked(1), m = p.Checked(2); if (!a && !r && !m) return;
+                    if (m && MessageBox.Show(this, "Le menu interne du poste va être réécrit (valeurs relevées lors de l'export). Continuer ?", "Importer", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning) != DialogResult.OK) return;
+                    if (Backup.Import(txt, a, r, m) == 0) { MessageBox.Show(this, "Rien à restaurer dans les parties choisies.", "Importer"); return; }
+                    if (a) { Imported = true; DialogResult = DialogResult.OK; Close(); return; }   // le logiciel redémarre (les réglages du poste suivent à la prochaine connexion)
+                    int sent = connected && cur != null ? Backup.ApplyPending(cur, rig) : 0;
+                    MessageBox.Show(this, sent > 0 ? sent + " commandes envoyées au poste." : "Les réglages du poste seront envoyés à la prochaine connexion.", "Importer"); Close();
+                }
             }
         }
     }
