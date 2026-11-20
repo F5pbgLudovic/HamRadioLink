@@ -50,8 +50,8 @@ namespace HamRadioLink
             this.rig = rig; this.lockCount = lockCount;
             Text = "Paramètres"; BackColor = T.Bg; ForeColor = T.Text; Font = new Font("Segoe UI", 9f); ClientSize = new Size(800, 430); StartPosition = FormStartPosition.CenterParent; FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; MinimizeBox = false; ShowInTaskbar = false;
             ListBox menu = new ListBox(); menu.SetBounds(0, 0, 190, 430); menu.BackColor = Color.FromArgb(14, 18, 26); menu.ForeColor = T.Text; menu.BorderStyle = BorderStyle.None; menu.Font = new Font("Segoe UI Semibold", 10f); menu.ItemHeight = 28; menu.IntegralHeight = false; Controls.Add(menu);
-            foreach (string s in new string[] { "  Couleurs de l'interface", "  Vumètres", "  Réglage molette souris", "  Verrous", "  Commande manuelle", "  Réinitialiser les verrous", "  Journal des commandes", "  Réglages des ports", "  Micro vers le poste" }) menu.Items.Add(s);
-            menu.SelectedIndexChanged += delegate { switch (menu.SelectedIndex) { case 7: PortsPage(); break; case 8: MicPage(); break; case 1: Meters(); break; case 2: Wheel(); break; case 3: Locks(); break; case 4: Manual(); break; case 5: ResetLocks(); break; case 6: LogPage(); break; default: Colors(); break; } };
+            foreach (string s in new string[] { "  Couleurs de l'interface", "  Vumètres", "  Réglage molette souris", "  Verrous", "  Commande manuelle", "  Réinitialiser les verrous", "  Journal des commandes", "  Réglages des ports", "  Micro vers le poste", "  Bouton TUNE" }) menu.Items.Add(s);
+            menu.SelectedIndexChanged += delegate { switch (menu.SelectedIndex) { case 7: PortsPage(); break; case 8: MicPage(); break; case 9: TunePage(); break; case 1: Meters(); break; case 2: Wheel(); break; case 3: Locks(); break; case 4: Manual(); break; case 5: ResetLocks(); break; case 6: LogPage(); break; default: Colors(); break; } };
             FormClosed += delegate { Cfg.Save(); };
             page.SetBounds(200, 0, 600, 430); Controls.Add(page); menu.SelectedIndex = 0;
         }
@@ -129,6 +129,23 @@ namespace HamRadioLink
             Button cl = Mk("Fermer", 500, 380, 90); cl.Click += delegate { Close(); };
         }
         // journal des commandes : un fichier par jour, les plus vieux sont supprimés
+        void TunePage()
+        {
+            page.Controls.Clear(); Head("Bouton TUNE", "Émet une tonalité de 1500 Hz sur la carte son d'émission du poste (celle de « Micro vers le poste »), avec le PTT par CAT ou le VOX du poste. Réglages communs à tous les postes.");
+            Label l1 = new Label(); l1.Text = "Niveau de la tonalité (%)"; l1.SetBounds(6, 104, 220, 24); page.Controls.Add(l1);
+            NumericUpDown n1 = new NumericUpDown(); n1.Minimum = 1; n1.Maximum = 100; n1.Value = TuneMic.Level; n1.SetBounds(230, 101, 70, 24); n1.BackColor = T.Panel2; n1.ForeColor = T.Text; page.Controls.Add(n1);
+            n1.ValueChanged += delegate { Cfg.SetInt("tune.niveau", (int)n1.Value); Cfg.Save(); };
+            Label l2 = new Label(); l2.Text = "Durée de l'émission (5 à 60 s)"; l2.SetBounds(6, 138, 220, 24); page.Controls.Add(l2);
+            NumericUpDown n2 = new NumericUpDown(); n2.Minimum = 5; n2.Maximum = 60; n2.Value = TuneMic.Seconds; n2.SetBounds(230, 135, 70, 24); n2.BackColor = T.Panel2; n2.ForeColor = T.Text; page.Controls.Add(n2);
+            n2.ValueChanged += delegate { Cfg.SetInt("tune.duree", (int)n2.Value); Cfg.Save(); };
+            CheckBox vx = new CheckBox(); vx.Text = "VOX du poste (tonalité seule, sans PTT par CAT)"; vx.SetBounds(6, 172, 560, 24); vx.ForeColor = T.Text; vx.Checked = TuneMic.Vox; page.Controls.Add(vx);
+            vx.CheckedChanged += delegate { Cfg.SetBool("tune.vox", vx.Checked); Cfg.Save(); };
+            Button c1 = Mk("Couleur au repos…", 6, 214, 200), c2 = Mk("Couleur pendant le TUNE…", 216, 214, 220), c3 = Mk("Couleurs par défaut (vert / rouge)", 6, 254, 300);
+            c1.BackColor = TuneMic.ColOff; c2.BackColor = TuneMic.ColOn;
+            c1.Click += delegate { Color c = Ask(TuneMic.ColOff, "TUNE : couleur au repos"); Cfg.SetInt("tune.coff", Color.FromArgb(255, c).ToArgb()); Cfg.Save(); c1.BackColor = c; TuneMic.Refresh(); };
+            c2.Click += delegate { Color c = Ask(TuneMic.ColOn, "TUNE : couleur pendant le TUNE"); Cfg.SetInt("tune.con", Color.FromArgb(255, c).ToArgb()); Cfg.Save(); c2.BackColor = c; TuneMic.Refresh(); };
+            c3.Click += delegate { Cfg.SetInt("tune.coff", 0); Cfg.SetInt("tune.con", 0); Cfg.Save(); c1.BackColor = TuneMic.ColOff; c2.BackColor = TuneMic.ColOn; TuneMic.Refresh(); };
+        }
         void LogPage()
         {
             page.Controls.Clear(); Head("Journal des commandes", "Enregistre les commandes envoyées, les réponses du poste, les erreurs et les événements (connexion, partage, paires com0com, serveur) dans UN fichier par jour (dossier « logs » à côté du programme). Les fichiers plus vieux que la durée choisie sont supprimés.");
@@ -179,7 +196,7 @@ namespace HamRadioLink
     // Export / import par parties : réglages du logiciel et dispositions, réglages du poste (relevés en direct), menu interne du poste (Yaesu à menus « EXnnn »)
     public static class Backup
     {
-        static readonly string[] noRadio = { "ptt", "tune", "tuner", "poff", "pon", "power_on", "pwr_off" };
+        static readonly string[] noRadio = { "ptt", "tune", "tunemic", "tuner", "poff", "pon", "power_on", "pwr_off" };
         // postes dont le menu interne se lit / s'écrit par EXnnn (3 chiffres), d'après les catalogues des manuels
         static readonly string[] menuRadios = { "ft2000", "ftdx5000", "ft450", "ft950", "ft991a", "ftdx3000" };
         public static int MenuFrom = 1, MenuTo = 199;   // plage des menus lus (le test la réduit)

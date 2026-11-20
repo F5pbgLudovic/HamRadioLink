@@ -75,7 +75,24 @@ namespace HamRadioLink
                 // Section « alimentation / émission » : la touche ÉMISSION (PTT) gagne en HAUTEUR (pas en largeur) ; les touches situées sous elle descendent
         // d'autant, sans changer de forme, pour occuper l'espace libre en bas du cadre ; l'espace restant en bas égale la marge de gauche (disposition symétrique).
         // Idempotent : une seconde application ne change plus rien.
-        public static void Harmonize(RadioDef r)
+        public static void Harmonize(RadioDef r) { Harmonize0(r); AddTune(r); }
+        // Bouton TUNE (local, sans commande CAT) ajouté à tous les postes : 190 x 62 (taille de VOX SOURCE du FT-2000), le plus bas et le plus à droite possible sans recouvrir un autre bouton
+        static void AddTune(RadioDef r)
+        {
+            if (r.Find("tunemic") != null) return;
+            const int w = 190, h = 62; int px = -1, py = -1;
+            for (int y = 980 - h - 6; px < 0 && y >= 124; y -= 6) for (int x = 1860 - w - 6; x >= 6; x -= 6) if (TuneFree(r, x, y, w, h)) { px = x; py = y; break; }
+            if (px < 0) { px = 1860 - w - 6; py = 980 - h - 6; }
+            Ctl t = new Ctl(); t.K = Kind.Action; t.Id = "tunemic"; t.Label = t.DLabel = "TUNE"; t.Local = true; t.X = t.DX = px; t.Y = t.DY = py; t.W = t.DW = w; t.H = t.DH = h;
+            t.DSet = t.DRead = t.DParse = t.DItems = ""; t.DOnVal = "1"; t.DOffVal = "0";
+            t.Tip = "Tonalité de 1500 Hz sur la carte son d'émission du poste, avec PTT (ou VOX). Réglages : Paramètres ⚙ > Bouton TUNE."; r.C.Add(t);
+        }
+        static bool TuneFree(RadioDef r, int x, int y, int w, int h)
+        {
+            foreach (Ctl c in r.C) if (c.K != Kind.Frame && !c.Hidden && x < c.X + c.W + 2 && x + w + 2 > c.X && y < c.Y + c.H + 2 && y + h + 2 > c.Y) return false;
+            return true;
+        }
+        public static void Harmonize0(RadioDef r)
         {
             Ctl p = r.Find("ptt"); if (p == null || p.K != Kind.Toggle) return; Ctl fr = null;
             foreach (Ctl c in r.C) if (c.K == Kind.Frame && c.X <= p.X && c.Y <= p.Y && c.X + c.W >= p.X + p.W && c.Y + c.H >= p.Y + p.H && (fr == null || c.W * c.H < fr.W * fr.H)) fr = c;

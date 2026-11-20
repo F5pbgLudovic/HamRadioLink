@@ -1,0 +1,66 @@
+using System;
+using System.Drawing;
+using System.Windows.Forms;
+
+namespace HamRadioLink
+{
+    // Bouton TUNE : tonalité de 1500 Hz envoyée sur la carte son d'émission du poste (la même que « Micro vers le poste »),
+    // PTT par CAT (ou VOX du poste), pendant 5 s à 1 min. Réglages dans Paramètres ⚙ > TUNE ; couleurs repos / émission aussi.
+    static class TuneMic
+    {
+        public static event Action Changed;
+        static TuneTone tone; static Rig rig; static Ctl ptt; static bool owned; static DateTime until; static Timer tm;
+        public static int Level { get { return Math.Max(1, Math.Min(100, Cfg.GetInt("tune.niveau", 30))); } }
+        public static int Seconds { get { return Math.Max(5, Math.Min(60, Cfg.GetInt("tune.duree", 10))); } }
+        public static bool Vox { get { return Cfg.GetBool("tune.vox", false); } }
+        // 0 = couleur par défaut (comme la touche PTT : vert au repos, rouge en émission)
+        public static Color ColOff { get { int v = Cfg.GetInt("tune.coff", 0); return v != 0 ? Color.FromArgb(v) : Color.FromArgb(T.Green.R * 40 / 100, T.Green.G * 60 / 100, T.Green.B * 45 / 100); } }
+        public static Color ColOn { get { int v = Cfg.GetInt("tune.con", 0); return v != 0 ? Color.FromArgb(v) : Color.FromArgb(T.Red.R * 80 / 100, T.Red.G * 55 / 100, T.Red.B * 55 / 100); } }
+        public static bool ActiveFor(Rig r) { return tone != null && rig == r; }
+        public static int Left { get { return Math.Max(0, (int)Math.Ceiling((until - DateTime.UtcNow).TotalSeconds)); } }
+        public static void Refresh() { Fire(); }
+        static void Fire() { Action a = Changed; if (a != null) a(); }
+
+        public static void Toggle(Rig r)
+        {
+            if (tone != null) { bool same = rig == r; Stop("TUNE arrêté"); if (same) return; }
+            Start(r);
+        }
+
+        static void Start(Rig r)
+        {
+            if (r == null || r.Def == null) return;
+            if (MicRoute.CardId.Length == 0) { MessageBox.Show("TUNE : choisissez d'abord la carte son d'émission du poste (Paramètres > Micro vers le poste, ou clic droit sur la touche PTT).", "TUNE"); return; }
+            Ctl p = r.Def.Find("ptt"); bool pttOk = p != null && p.K == Kind.Toggle;
+            if (!Vox)
+            {
+                if (r.Link == null) { MessageBox.Show("TUNE : connectez d'abord le poste (ou choisissez « VOX du poste » dans Paramètres > TUNE).", "TUNE"); return; }
+                if (!pttOk) { MessageBox.Show("Ce poste n'a pas de touche PTT : choisissez « VOX du poste » dans Paramètres > TUNE.", "TUNE"); return; }
+            }
+            rig = r; ptt = pttOk ? p : null; owned = false;
+            if (!Vox) { owned = !r.Tx; if (owned) { r.Set(ptt, ptt.OnSend); r.PttButtonStart(); } }
+            tone = new TuneTone(MicRoute.CardId, 1500, Level / 100f); tone.Start();
+            until = DateTime.UtcNow.AddSeconds(Seconds);
+            if (tm == null) { tm = new Timer(); tm.Interval = 200; tm.Tick += delegate { Tick(); }; }
+            tm.Start(); CatLog.Event("tune", "TUNE : émission " + Seconds + " s, niveau " + Level + " %, " + (Vox ? "VOX du poste" : "PTT par CAT")); Fire();
+        }
+
+        static void Tick()
+        {
+            TuneTone t = tone; if (t == null) { tm.Stop(); return; }
+            if (t.Error != null) { Stop("TUNE : carte son d'émission indisponible (" + t.Error + ")"); return; }
+            if (!Vox && rig.Link == null) { Stop("TUNE arrêté (poste déconnecté)"); return; }
+            if (DateTime.UtcNow >= until) { Stop("TUNE terminé"); return; }
+            Fire();
+        }
+
+        public static void Stop(string why)
+        {
+            TuneTone t = tone; if (t == null) return;
+            tone = null; if (tm != null) tm.Stop();
+            try { t.Stop(); } catch { }
+            try { if (owned && ptt != null && rig != null && rig.Link != null) { rig.Set(ptt, ptt.OffSend); rig.PttButtonStop(); } } catch { }
+            owned = false; if (why != null) CatLog.Event("tune", why); Fire();
+        }
+    }
+}

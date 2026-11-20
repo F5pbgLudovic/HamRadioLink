@@ -1,4 +1,4 @@
-# HamRadioLink 1.0 — télécommande de postes radio
+# HamRadioLink 1.1 — télécommande de postes radio
 
 Programme Windows portable (un seul .exe, rien à installer) qui reproduit la face avant d'un poste radio et le pilote par CAT, comme si on était devant.
 Projet indépendant : il ne dépend d aucun autre logiciel de pilotage de poste.
@@ -42,7 +42,7 @@ La liste exacte de toutes les commandes envoyées : `commandes-CAT.txt` (fabriqu
 **Pas de spectre ni de cascade** : ces postes ne les envoient pas par CAT (FTdx10 : seulement via SCU-LAN10).
 
 ## Vérification (faite sans le poste)
-`HamRadioLink.exe --selftest=rapport.txt` : **159 229 vérifications, toutes réussies** :
+`HamRadioLink.exe --selftest=rapport.txt` : **163 753 vérifications, toutes réussies** :
 * chaque commande de chaque élément, avec chaque valeur (min / milieu / max, chaque choix, on/off), envoyée à un **poste simulé strict** écrit d'après les tableaux des manuels (nombre exact de chiffres, bornes, pas) : aucune commande refusée par `?;`, relecture identique à l'envoi ;
 * le simulateur refuse bien les mauvais formats (FA sur 8 chiffres refusé par le FTdx10, sur 9 par le FT-2000, IS hors pas, ST/CF absents du FT-2000...) ;
 * réponses → état (dont `IF;` : fréquence, mode, CLAR, V/M), réponses coupées en deux, alias (AGC AUTO = 4/5/6) ;
@@ -105,3 +105,6 @@ Le poste **Icom IC-7760** reprend à l'identique la fenêtre d'IC7760Link (casca
 
 ## Vumètres, verrous, paramètres, export / import pour tous les postes
 Vumètres barres/aiguille (clic droit), verrous (clic droit, cadre rouge), fenêtre **Paramètres ⚙** (couleurs, vumètres, molette, verrous, commande manuelle) et **Export/import ⇅** (réglages, dispositions, réglages du poste). Le poste virtuel est disponible pour tous les postes.
+
+## Bouton TUNE (1.1)
+En bas à droite de la face avant : un clic émet une tonalité de 1500 Hz sur la carte son d'émission du poste (choisie dans Paramètres ⚙ > Micro vers le poste) avec le PTT par CAT ou le VOX du poste, 5 à 60 s ; second clic = arrêt. Niveau, durée, VOX et couleurs : Paramètres ⚙ > Bouton TUNE. Détail : `AIDE.md` (français), `HELP.md` (English).

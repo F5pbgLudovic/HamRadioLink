@@ -40,7 +40,7 @@ namespace HamRadioLink
 
     public class MainForm : Form
     {
-        public const string Version = "1.0";
+        public const string Version = "1.1";
         const int DesignW = 1860, DesignH = 944; const double Ratio = DesignW / (double)DesignH;
         readonly List<RadioDef> radios = Radios.All(); RadioDef cur; Rig rig = new Rig();      // cur / rig / widgets = poste ACTIF (plusieurs postes peuvent être connectés en même temps)
         readonly Panel stage = new Panel(); readonly ToolTip tip = new ToolTip();
@@ -79,7 +79,7 @@ namespace HamRadioLink
             tip.InitialDelay = 500; tip.ReshowDelay = 200; tip.AutoPopDelay = 12000;
             Resize += delegate { Relayout(); };
             timer.Interval = 30; timer.Tick += OnTick; timer.Start();
-            Load += delegate { Restore(); try { MicRoute.Update(); } catch { } try { Journal.WsjtListener.Start(); } catch { } }; FormClosed += delegate { MicRoute.Stop(); if (cmdSrv != null) { try { cmdSrv.Dispose(); } catch { } } if (cmdSrv2 != null) { try { cmdSrv2.Dispose(); } catch { } } }; FormClosing += OnClosing; loading = false;
+            Load += delegate { Restore(); try { MicRoute.Update(); } catch { } try { Journal.WsjtListener.Start(); } catch { } }; FormClosed += delegate { TuneMic.Stop(null); MicRoute.Stop(); if (cmdSrv != null) { try { cmdSrv.Dispose(); } catch { } } if (cmdSrv2 != null) { try { cmdSrv2.Dispose(); } catch { } } }; FormClosing += OnClosing; loading = false;
         }
 
         // ============================================================ en-tête
@@ -370,7 +370,7 @@ namespace HamRadioLink
         // ============================================================ connexion
         void ToggleConnect()
         {
-            if (rig.Link != null) { rig.Disconnect(); act.Port = null; act.Shares = false; btnConnect.Checked = false; btnConnect.Text = "CONNECTER"; UpdateSessUi(); return; }
+            if (rig.Link != null) { bool lostRig = !rig.Connected && rig.Status.StartsWith("Plus de réponse"); rig.Disconnect(); act.Port = null; act.Shares = false; btnConnect.Checked = false; btnConnect.Text = "CONNECTER"; UpdateSessUi(); if (!lostRig) return; }
             ILink link; int i = cbIface.SelectedIndex;
             if (cur.Tci && (i == 0 || i == 1)) { Warn("Ce poste se commande en TCI : choisissez « TCI » (serveur d'ExpertSDR3 ou de Thetis) ou « Poste virtuel » dans Liaison.", "Liaison"); return; }
             if (!cur.Tci && i == 3) { Warn("La liaison TCI ne sert qu'au « Poste commandé en TCI » (liste Poste). Pour un autre poste, choisissez Port COM, CAT sur TCP ou Poste virtuel.", "Liaison"); return; }
@@ -487,6 +487,9 @@ namespace HamRadioLink
             else if (rig.Connected) { st = "Connecté — " + (rig.Link != null ? rig.Link.Name : "") + (rig.SeenId.Length > 0 ? "  (" + (cur.Civ >= 0 ? "identifiant " : "ID") + rig.SeenId + ")" : "") + (rig.Errors > 0 ? "   ?; reçus : " + rig.Errors + " (dernier : " + rig.LastError + ")" : ""); }
             if (notice != null && Environment.TickCount - noticeUntil < 0) { st = notice; col = T.Amber; } lbStatus.Text = st; lbStatus.ForeColor = col;
             if (rig.Link == null && btnConnect.Checked) { btnConnect.Checked = false; btnConnect.Text = "CONNECTER"; }
+            // poste qui ne répond plus : bouton rouge « CONNECTER » (un clic relance la connexion) ; s'il répond de nouveau : « DÉCONNECTER »
+            else if (rig.Link != null && !rig.Connected && rig.Status.StartsWith("Plus de réponse")) { if (btnConnect.Text != "CONNECTER") { btnConnect.Checked = false; btnConnect.Text = "CONNECTER"; btnConnect.Invalidate(); } }
+            else if (rig.Link != null && rig.Connected && btnConnect.Text == "CONNECTER") { btnConnect.Checked = true; btnConnect.Text = "DÉCONNECTER"; btnConnect.Invalidate(); }
         }
 
         bool IsLocked(string id) { foreach (HW w in widgets) if (w.Def.Id == id) return w.Locked; return false; }

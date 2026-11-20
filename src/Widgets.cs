@@ -187,6 +187,9 @@ namespace HamRadioLink
     {
         bool hot, down; long flash;
         public override void Sync() { Invalidate(); }
+        Action tuneCb;
+        protected override void OnHandleCreated(EventArgs e) { base.OnHandleCreated(e); tuneCb = delegate { Invalidate(); }; TuneMic.Changed += tuneCb; }
+        protected override void OnHandleDestroyed(EventArgs e) { if (tuneCb != null) TuneMic.Changed -= tuneCb; tuneCb = null; base.OnHandleDestroyed(e); }
         protected override void Leaving() { hot = false; down = false; Invalidate(); }
         protected override void OnMouseEnter(EventArgs e) { hot = true; Invalidate(); base.OnMouseEnter(e); }
         protected override void Down(MouseEventArgs e) { if (e.Button == MouseButtons.Left) { down = true; Invalidate(); } }
@@ -208,6 +211,7 @@ namespace HamRadioLink
                 Rig.Set(Def, it[n].Code); return;
             }
             if (!was || !inside || e.Button != MouseButtons.Left) return;
+            if (Def.Id == "tunemic") { TuneMic.Toggle(Rig); Invalidate(); return; }
             if (Def.K == Kind.Toggle) { bool turnOn = !Rig.IsOn(Def); Rig.Set(Def, turnOn ? Def.OnSend : Def.OffSend); if (Def.Id == "ptt") { if (turnOn) Rig.PttButtonStart(); else Rig.PttButtonStop(); } }
             else if (Def.K == Kind.Action)
             {
@@ -217,12 +221,13 @@ namespace HamRadioLink
             }
         }
         // touche PTT : pendant une émission lancée par la touche avec un délai de sécurité, le compte à rebours remplace le nom
-        string Lbl() { if (Def.Id == "ptt" && Def.K == Kind.Toggle && Ready && Rig.PttByButton) { int l = Rig.PttLeft; if (l >= 0) return "\u25CF TX  " + (l / 60) + ":" + (l % 60).ToString("00"); } return Def.Label; }
+        string Lbl() { if (Def.Id == "tunemic" && TuneMic.ActiveFor(Rig)) return "● TUNE  " + TuneMic.Left; if (Def.Id == "ptt" && Def.K == Kind.Toggle && Ready && Rig.PttByButton) { int l = Rig.PttLeft; if (l >= 0) return "\u25CF TX  " + (l / 60) + ":" + (l % 60).ToString("00"); } return Def.Label; }
         int Cur(Item[] it) { string v = St(Def.Id); for (int i = 0; i < it.Length; i++) if (it[i].Match(v ?? "\u0001")) return i; return -1; }
         protected override void Draw(Graphics g)
         {
             g.Clear(Parent != null ? Parent.BackColor : T.Panel);
             bool lk = Locked && !HW.Edit; bool on = Ready && Def.K == Kind.Toggle && Rig.IsOn(Def); bool flashing = Def.K == Kind.Action && Environment.TickCount - flash < 180;
+            bool tmx = Def.Id == "tunemic"; if (tmx) on = TuneMic.ActiveFor(Rig);
             Color acc = Accent(T.Amber);
             RectangleF r = new RectangleF(0.5f, 0.5f, Width - 2, Height - 2);
             Color top = on || flashing ? ControlPaint.Light(T.OnBg, 0.12f) : Color.FromArgb(46, 55, 70), bot = on || flashing ? T.OnBg : Color.FromArgb(28, 34, 45);
@@ -231,6 +236,7 @@ namespace HamRadioLink
                 Color pc = on ? Color.FromArgb(T.Red.R * 80 / 100, T.Red.G * 55 / 100, T.Red.B * 55 / 100) : Color.FromArgb(T.Green.R * 40 / 100, T.Green.G * 60 / 100, T.Green.B * 45 / 100);
                 top = ControlPaint.Light(pc, 0.12f); bot = ControlPaint.Dark(pc, 0.12f);
             }
+            if (tmx) { Color pc = on ? TuneMic.ColOn : TuneMic.ColOff; top = ControlPaint.Light(pc, 0.12f); bot = ControlPaint.Dark(pc, 0.12f); }
             if (hot) { top = ControlPaint.Light(top, 0.15f); bot = ControlPaint.Light(bot, 0.1f); }
             if (down) { Color t = top; top = bot; bot = t; }
             using (GraphicsPath p = T.Round(r, 5 * T.Scale))

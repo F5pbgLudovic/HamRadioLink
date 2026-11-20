@@ -1,5 +1,17 @@
 # Historique des versions
 
+## 1.1 — 2026-11-20
+
+### Bouton TUNE
+- **Bouton TUNE sur les 125 postes**, en bas à droite de la face avant (190 × 62, déplaçable en vue de configuration) : tonalité de 1500 Hz envoyée sur la carte son d'émission du poste (celle de « Micro vers le poste »), PTT par CAT ou VOX du poste, 5 à 60 s ; « ● TUNE » et compte à rebours pendant l'émission, second clic = arrêt (arrêt aussi si le poste est déconnecté).
+- **Paramètres ⚙ > Bouton TUNE** : niveau (1 à 100 %), durée, case « VOX du poste », couleur au repos (vert) et pendant le TUNE (rouge), retour aux couleurs par défaut.
+
+### Connexion
+- Quand le poste ne répond plus (« Plus de réponse du poste »), le bouton passe à **CONNECTER** sur fond rouge ; un clic relance la connexion ; si le poste répond de nouveau, il redevient « DÉCONNECTER ».
+
+### Vérification
+- Autotest : 163 753 vérifications (bouton TUNE présent et dans la fenêtre pour chaque poste). **Pas essayé en réel** : l'émission de TUNE sur un vrai poste.
+
 ## 1.0 — 2026-11-19 (première version publiée)
 
 HamRadioLink 1.0 : télécommande de postes radio (face avant reproduite, pilotage CAT), serveur de commande IP, partage du poste, TCI, et **journal de trafic** intégré (bouton LOG).
