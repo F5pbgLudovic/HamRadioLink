@@ -72,6 +72,7 @@ namespace HamRadioLink
                 Ctl ms = r.Find("meter"); if (ms != null) { ms.Set = "MS{v};"; ms.Read = "MS;"; ms.Parse = @"^MS(?<v>[0-5]);$"; ms.Items = cat == "ft991a" ? "COMP=0,ALC=1,PO=2,SWR=3,ID=4,VDD=5" : "COMP=0,ALC=1,PO=2,SWR=3,ID=4"; }
                 foreach (string k in new[] { "vd", "sd" }) { Ctl dl = r.Find(k); if (dl != null) { dl.Set = dl.Set.Replace("{v:2}", "{v:4}"); dl.Parse = @"^" + k.ToUpperInvariant() + @"(?<v>\d{4});$"; dl.Min = 30; dl.Max = 3000; dl.Step = 10; dl.Fmt = "ms"; dl.Hint = "4 chiffres en ms, 0030 à 3000 (manuel CAT du poste)."; } }
             }
+            if (cat == "ft991a") Extra991(r);
             if (cat == "ft710") { Ctl pl = r.Find("procl"); if (pl != null) pl.Min = 1; }
             if (cat == "ft950") { Ctl pr = r.Find("proc"); if (pr != null) { pr.Set = "PR{v};"; pr.Read = "PR;"; pr.Parse = @"^PR(?<v>[0-2]);$"; } Ctl ml = r.Find("monil"); if (ml != null) { ml.Min = 1; ml.Max = 255; } }
             if (cat == "ftdx3000")
@@ -80,6 +81,25 @@ namespace HamRadioLink
                 if (rf != null) { if (key == "ftdx1200") { rf.Items = "AUTO=0|4|5|6,15 kHz=1,6 kHz=2,3 kHz=3"; rf.Parse = @"^RF0(?<v>[0-6]);$"; } else { rf.Items = "AUTO=0|4|5|6|9|A,15 kHz=1,6 kHz=2,3 kHz=3,600 Hz=4|7,300 Hz=5|8"; rf.Parse = @"^RF0(?<v>[0-9A]);$"; } }
                 Ctl ml = r.Find("monil"); if (ml != null) { ml.Min = 1; ml.Max = 100; }
             }
+        }
+
+        // FT-991A (manuel CAT 1711-D) : bandes 144 / 430 MHz (BS 15 / 16), DT GAIN (menu 073), égaliseur micro (PR1), CTCSS / DCS (CT, CN), AMS du C4FM (menu 090)
+        // Le C4FM n'a pas d'autre commande CAT (ni GM ni X) : l'écran propre à ce mode n'est pas reproduit.
+        static void Extra991(RadioDef r)
+        {
+            Ctl bd = r.Find("band"); if (bd != null && !bd.Items.Contains("144=")) { bd.Items += ",144=15,430=16"; bd.Hint = "Manuel : BS P1 = 00 (1,8 MHz) à 11 (GEN), 15 = 144 MHz, 16 = 430 MHz. Pas de lecture : la bande allumée vient de la fréquence."; }
+            Bld b = new Bld(r); Ctl c;
+            c = b.Knob("dtg", "DT GAIN", 424, 902, 94, 66, 0, 100, "EX073{v:3};", "EX073;", @"^EX073(?<v>\d{3});$", "raw"); c.Accent = "amber"; c.Hint = "DT GAIN : niveau du signal envoyé en modes DATA (menu 073 DATA OUT LEVEL, 0 à 100). Sert à régler l'entrée audio des modes numériques en DATA-USB / DATA-LSB.";
+            c = b.Tog("meq", "MIC EQ", 524, 906, 94, 52, "PR1{v};", "PR1;", @"^PR1(?<v>[0-2]);$", "1", "0"); c.Hint = "Égaliseur paramétrique du micro (PR P1 = 1). Le manuel donne P2 = 1 arrêt / 2 marche ; même convention que PROC ici : si le bouton agit à l'envers, mettez allumé = 2 et éteint = 1.";
+            string tones = "67.0 69.3 71.9 74.4 77.0 79.7 82.5 85.4 88.5 91.5 94.8 97.4 100.0 103.5 107.2 110.9 114.8 118.8 123.0 127.3 131.8 136.5 141.3 146.2 151.4 156.7 159.8 162.2 165.5 167.9 171.3 173.8 177.3 179.9 183.5 186.2 189.9 192.8 196.6 199.5 203.5 206.5 210.7 218.1 225.7 229.1 233.6 241.8 250.3 254.1";
+            string dcs = "023 025 026 031 032 036 043 047 051 053 054 065 071 072 073 074 114 115 116 122 125 131 132 134 143 145 152 155 156 162 165 172 174 205 212 223 225 226 243 244 245 246 251 252 255 261 263 265 266 271 274 306 311 315 325 331 332 343 346 351 356 364 365 371 411 412 413 423 431 432 445 446 452 454 455 462 464 465 466 503 506 516 523 526 532 546 565 606 612 624 627 631 632 654 662 664 703 712 723 731 732 734 743 754";
+            System.Text.StringBuilder t1 = new System.Text.StringBuilder(), t2 = new System.Text.StringBuilder(); int i = 0;
+            foreach (string s in tones.Split(' ')) t1.Append(i > 0 ? "," : "").Append(s).Append(" Hz=").Append((i++).ToString("000"));
+            i = 0; foreach (string s in dcs.Split(' ')) t2.Append(i > 0 ? "," : "").Append("DCS ").Append(s).Append("=").Append((i++).ToString("000"));
+            c = b.Cho("ctcss", "CTCSS / DCS", 1414, 856, 200, 60, "ARRÊT=0,CTCSS ENC/DEC=1,CTCSS ENC=2,DCS ENC/DEC=3,DCS ENC=4", "CT0{v};", "CT0;", @"^CT0(?<v>[0-4]);$"); c.Hint = "CT P1 P2 : sous-porteuse CTCSS ou code DCS (modes FM). ENC = émission seulement, ENC/DEC = émission et squelch à la réception.";
+            c = b.Cho("ctone", "FRÉQ. CTCSS", 1620, 856, 200, 60, t1.ToString(), "CN00{v};", "CN00;", @"^CN00(?<v>\d{3});$"); c.Hint = "CN P2 = 0 : numéro de la fréquence CTCSS (tableau 1 du manuel, 67,0 à 254,1 Hz).";
+            c = b.Cho("dcsc", "CODE DCS", 1414, 924, 200, 40, t2.ToString(), "CN01{v};", "CN01;", @"^CN01(?<v>\d{3});$"); c.Hint = "CN P2 = 1 : numéro du code DCS (tableau 2 du manuel, 023 à 754).";
+            c = b.Cho("ams", "C4FM TX (AMS)", 1620, 924, 200, 40, "AUTO (AMS)=0,MANUEL=1,DN voix+données=2,VW voix large=3,ANALOGIQUE=4", "EX090{v};", "EX090;", @"^EX090(?<v>[0-4]);$"); c.Hint = "Menu 090 AMS TX MODE : choix du mode d'émission C4FM. Le manuel CAT n'offre rien d'autre pour le C4FM (pas de GM, pas d'écran propre).";
         }
 
         static RadioDef YaesuModel(string key, string name, string cat, string id, int digits, long maxHz, int baud, string modes)
@@ -98,6 +118,10 @@ namespace HamRadioLink
                 c.Set = c.Set.Replace("{v:9}", "{v:" + d + "}"); c.Parse = c.Parse.Replace(@"\d{9}", @"\d{" + d + "}").Replace("000;$", "(?:000)?;$");
                 if (c.Items.Contains("PSK=E")) c.Items = modes;
             }
+            // pas de commande CF dans le catalogue : le décalage du clarifier s'écrit avec RC puis RU / RD (comme le FT-2000) et se lit avec IF
+            Ctl cl = r.Find("clar");
+            if (cl != null && !cs.Valid("CF001+0010;") && cs.Valid("RU0010;") && cs.Valid("RD0010;") && cs.Valid("RC;"))
+            { cl.Set = "RC;{p:RU:4:;}{n:RD:4:;}"; cl.Min = -9999; cl.Max = 9999; cl.Hint = "Pas de commande CF sur ce poste : le décalage s'écrit avec RC; puis RU (plus) ou RD (moins), par pas de 10 Hz ; il est lu avec IF; qui met aussi à jour fréquence A, mode A, CLAR RX/TX."; }
             FixYaesu(r, cat, key);
             List<Ctl> keep = new List<Ctl>();
             foreach (Ctl c in r.C)

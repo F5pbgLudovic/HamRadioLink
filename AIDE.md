@@ -126,3 +126,8 @@ Ce logiciel envoie des commandes à votre poste, y compris pour **émettre**. Es
 - **Vue config** : le bloc LIAISON est masqué ; **Aligner** donne la même taille aux boutons et potentiomètres de même forme d'une section (Retour arrière pour annuler).
 - **Bouton MENU** (postes Yaesu FT-2000, FTdx5000, FT-450, FT-950, FT-991A, FTdx3000) : table des menus du poste (commande EX). « Télécharger les valeurs du poste » à la première utilisation ; double-clic ou clic sur une valeur pour la modifier (relecture de contrôle) ; clic droit : renommer un menu, définir ses valeurs possibles. **Attention : chaque valeur modifiée est envoyée immédiatement au poste.**
 - **LOG** : boutons ronds − / + / ↺ de zoom du texte (liste, réglette du cluster, trames du bas), bouton ↔ pour ajuster les colonnes, bouton QRZCQ, 12 nouveaux thèmes.
+
+## 4 octies. Nouveautés de la 1.3 (FT-991A)
+- **FT-991A** : boutons de bande **144** et **430 MHz** ; potentiomètre **CLAR** (pas de 10 Hz) ; potentiomètre **DT GAIN** (menu 073, niveau des modes DATA) ; bouton **MIC EQ** (égaliseur du micro) ; **CTCSS / DCS** (mode, fréquence CTCSS, code DCS) ; **C4FM TX (AMS)** (menu 090).
+- Le reste du C4FM (GM, écran propre) n'a pas de commande CAT : non reproduit. Rien de tout cela n'est encore essayé sur un vrai FT-991A : en cas d'écart (ex. MIC EQ à l'envers), clic droit en vue config pour corriger.
+- Le potentiomètre CLAR par RC / RU / RD est aussi rendu aux autres postes Yaesu dont le catalogue n'a pas la commande CF.

@@ -116,7 +116,8 @@ namespace HamRadioLink
             Ent f; ents.TryGetValue("FA", out f); int digits = f != null && f.Set != null ? f.Set.Count - 2 : 9;
             string fa = st.ContainsKey("FA") ? st["FA"].Substring(2).TrimEnd(';') : "014074000".Substring(9 - digits);
             string md = st.ContainsKey("MD0") ? st["MD0"] : "MD02"; md = md.TrimEnd(';'); string m = md.Substring(md.Length - 1);
-            return "IF000" + fa + "+0000" + "00" + m + "0" + "0" + "00" + "0;";
+            string cl; if (!st.TryGetValue("CLAR", out cl)) cl = "+0000";
+            return "IF000" + fa + cl + "00" + m + "0" + "0" + "00" + "0;";
         }
         // ---- particularités Kenwood : réponses dont la forme diffère de l'envoi (TS-480 : IF, SM0, RM, BY, RA, PA ; TS-890 : SM, BY, TX/RX si AI actif)
         string Kenwood(string cmd, string c2, Ent e)
@@ -143,6 +144,8 @@ namespace HamRadioLink
             string c2; Ent e = Find(cmd, out c2); if (e == null) return Fail(cmd);
             if (Kw) { string k = Kenwood(cmd, c2, e); if (k != null) return k; }
             if (c2 == "IF" && cmd.Length == 2) return Compose();
+            if (c2 == "EX" && cmd.Length == 5) { string xv; if (st.TryGetValue("EXV" + cmd.Substring(2), out xv)) return "EX" + cmd.Substring(2) + xv + ";"; if (cmd == "EX073") return "EX073050;"; if (cmd == "EX090") return "EX0901;"; }
+            if (c2 == "EX" && cmd.Length > 5 && e.SetRx != null && e.SetRx.IsMatch(cmd)) { st["EXV" + cmd.Substring(2, 3)] = cmd.Substring(5); return ""; }
             if (c2 == "SM" && cmd.Length == 3) return "SM" + cmd[2] + Wob(90, 40).ToString("000") + ";";
             if (c2 == "RM" && cmd.Length == 3) { int n = cmd[2] - '0'; int v = n == 1 ? Wob(90, 40) : (Tx ? Wob(120, 30) : 0); return "RM" + cmd[2] + v.ToString("000") + "000;"; }
             if (c2 == "BY" && cmd.Length == 2) return "BY00;";
@@ -159,6 +162,7 @@ namespace HamRadioLink
                 if (e.Read != null && !e.Variable) { string k = KeyOf(e, cmd); st[k] = cmd + ";"; S[k.ToLowerInvariant()] = cmd.Substring(k.Length); }
                 if (c2 == "TX" || c2 == "MX") S["tx"] = cmd[2] == '0' ? "0" : "1";
                 if (c2 == "PS") S["ps"] = cmd.Substring(2);
+                if (c2 == "RU" && cmd.Length == 6) st["CLAR"] = "+" + cmd.Substring(2); if (c2 == "RD" && cmd.Length == 6) st["CLAR"] = "-" + cmd.Substring(2); if (c2 == "RC") st["CLAR"] = "+0000";
                 return "";
             }
             return Fail(cmd);

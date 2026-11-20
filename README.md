@@ -37,6 +37,7 @@
 - **Échelles et étalonnage (1.2, tous les postes)** : puissance max par poste, vumètres Po (en watts), SWR (1 à ∞), ALC (bleu puis rouge), COMP (dB), Id (A), Vdd (V), étalonnés par quelques mesures (Paramètres ⚙ > Réglage S-mètre puissance / autres S-mètres / Width, CONT, RF PWR) ; le FT-2000 / FT-2000D est livré avec un étalonnage et une disposition d'origine.
 - **Menu interne du poste (1.2, postes Yaesu à commande EX)** : bouton **MENU**, table des menus avec noms et valeurs possibles du manuel (FT-2000 complet, FT-950, FT-991A, FTdx3000), valeurs lues dans le poste et modifiables (relecture de contrôle, confirmation pour les menus critiques, bandeau d'avertissement), noms et listes corrigeables par clic droit.
 - **Vue config (1.2)** : bouton **Aligner** (même taille pour les boutons de même forme d'une section, Retour arrière pour annuler) ; **journal** : zoom du texte par zone (− / + / ↺), colonnes ajustables (↔), bouton QRZCQ, 40 thèmes.
+- **FT-991A (1.3)** : bandes 144 / 430 MHz, CLAR, DT GAIN, MIC EQ, CTCSS / DCS, AMS du C4FM.
 - **Moniteur CAT** et **journal des commandes** (un fichier par jour, purgé, envoyable pour diagnostiquer).
 - **IC-7760** : fenêtre complète reprise d'[IC7760Link](https://github.com/F5pbgLudovic/IC7760Link).
 

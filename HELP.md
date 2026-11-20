@@ -111,3 +111,8 @@ This software sends commands to your radio, **including transmit**. Try the virt
 - **Vue config**: the LIAISON block is hidden; **Aligner** gives the same size to look-alike buttons and knobs of a section (Retour arrière undoes it).
 - **MENU button** (Yaesu FT-2000, FTdx5000, FT-450, FT-950, FT-991A, FTdx3000): the radio's menu table (EX command). Use "Télécharger les valeurs du poste" first; click a value to change it (read-back check); right-click to rename a menu or define its possible values. **Warning: every changed value is sent to the radio immediately.**
 - **LOG**: round − / + / ↺ text zoom buttons (list, cluster ruler, bottom frames), ↔ column fit button, QRZCQ button, 12 new themes.
+
+## 4 octies. What's new in 1.3 (FT-991A)
+- **FT-991A**: **144** and **430 MHz** band buttons; **CLAR** knob (10 Hz steps); **DT GAIN** knob (menu 073, DATA-mode level); **MIC EQ** button (microphone equalizer); **CTCSS / DCS** (mode, CTCSS frequency, DCS code); **C4FM TX (AMS)** (menu 090).
+- The rest of C4FM (GM, dedicated screen) has no CAT command: not reproduced. None of this has been tried on a real FT-991A yet: if something differs (e.g. MIC EQ reversed), right-click in config view to fix it.
+- The CLAR knob through RC / RU / RD is also restored on other Yaesu radios whose catalog lacks the CF command.

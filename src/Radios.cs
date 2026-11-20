@@ -150,7 +150,7 @@ namespace HamRadioLink
         const string BANDS = "1.8=00,3.5=01,5=02,7=03,10=04,14=05,18=06,21=07,24.5=08,28=09,50=10,GEN=11";
         public static readonly long[] BandLo = { 1800000, 3500000, 5250000, 7000000, 10100000, 14000000, 18068000, 21000000, 24890000, 28000000, 50000000 };
         public static readonly long[] BandHi = { 2000000, 3999999, 5499999, 7299999, 10149999, 14349999, 18168000, 21449999, 24989999, 29699999, 54000000 };
-        public static string BandCode(long f) { for (int i = 0; i < BandLo.Length; i++) if (f >= BandLo[i] && f <= BandHi[i]) return i.ToString("00"); return "11"; }
+        public static string BandCode(long f) { for (int i = 0; i < BandLo.Length; i++) if (f >= BandLo[i] && f <= BandHi[i]) return i.ToString("00"); if (f >= 144000000 && f <= 148000000) return "15"; if (f >= 430000000 && f <= 450000000) return "16"; return "11"; }
 
         // =====================================================================================  FTdx10
         // Source : « FTDX10 CAT Operation Reference Manual » 2308-F (E:\...\Yeasu\FTdx10\FTDX10_CAT_OM_ENG_2308-F.pdf)

@@ -1,5 +1,9 @@
 # Historique des versions
 
+## 1.3 — 2026-11-20
+
+- **FT-991A** (remarques d'un utilisateur) : boutons de bande **144** et **430 MHz** ; potentiomètre **CLAR** (RC / RU / RD, par pas de 10 Hz, lu avec IF) ; potentiomètre **DT GAIN** (menu 073) ; bouton **MIC EQ** (PR1) ; **CTCSS / DCS** (mode, fréquence CTCSS 67,0 à 254,1 Hz, code DCS) ; **C4FM TX (AMS)** (menu 090). Le reste du C4FM (GM, écran propre) n'a pas de commande CAT : non reproduit. Le potentiomètre CLAR par RC / RU / RD est aussi rendu aux autres postes dont le catalogue n'a pas la commande CF.
+
 ## 1.2 — 2026-11-20
 
 - **Étendu à tous les postes** : échelles des vumètres d'émission (Po en watts, SWR 1 à ∞, ALC bleu / rouge, COMP en dB, Id en A, Vdd en V) avec puissance max par poste, étalonnage du wattmètre, des autres vumètres, de Width / CONT / RF PWR (Paramètres), bouton **Aligner** et bloc LIAISON masqué en vue config, zoom du texte du LOG, **menu interne du poste** (bouton MENU, commande EX) pour les 6 postes Yaesu qui le permettent (FT-2000 : 149 menus ; FT-950, FT-991A, FTdx3000 : noms et valeurs possibles du manuel ; FT-450, FTdx5000 : numéros seuls), avec bandeau rouge d'avertissement.
