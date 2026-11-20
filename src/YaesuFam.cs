@@ -7,7 +7,7 @@ namespace HamRadioLink
     {
         // Postes Yaesu « famille FTdx10 » : la face avant du FTdx10 sert de modèle ; chaque élément dont une commande n'existe pas
         // (ou n'a pas le bon format) dans le catalogue officiel du poste est retiré. Le nombre de chiffres de la fréquence et les
-        // modes sont adaptés. Rien n'est essayé sur un vrai poste : tout se corrige par clic droit en « config vue ».
+        // modes sont adaptés. Rien n'est essayé sur un vrai poste : tout se corrige par clic droit en « vue config ».
         const string MODES_NEW = "LSB=1,USB=2,CW-U=3,FM=4,AM=5,RTTY-L=6,CW-L=7,DATA-L=8,RTTY-U=9,DATA-FM=A,FM-N=B,DATA-U=C,AM-N=D,PSK=E,DATA-FM-N=F";
         const string MODES_991 = "LSB=1,USB=2,CW-U=3,FM=4,AM=5,RTTY-L=6,CW-L=7,DATA-L=8,RTTY-U=9,DATA-FM=A,FM-N=B,DATA-U=C,AM-N=D,C4FM=E";   // FT-991A : E = C4FM, pas de F
         const string MODES_891 = "LSB=1,USB=2,CW-U=3,FM=4,AM=5,RTTY-L=6,CW-L=7,DATA-L=8,RTTY-U=9,FM-N=B,DATA-U=C,AM-N=D";   // FT-891 : pas de A, E ni F

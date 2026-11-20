@@ -195,7 +195,9 @@ namespace HamRadioLink.Journal
     // curseurs du VFO A (rouge) et du VFO B (bleu). Automatique = bande du VFO A, ou bande choisie à la main.
     public class ClusterStrip : Panel
     {
-        readonly ComboBox band; readonly Ruler ruler; readonly Label state;
+        readonly ComboBox band; readonly Ruler ruler; readonly Label state; readonly ZoomPair zp;
+        // zoom du texte de la réglette (bande, indicatifs, état), propre à cette zone
+        public void ApplyZoom() { float z = LogZoom.Factor("cl"); ruler.Zoom = z; Font fb = new Font(Ui.Normal.FontFamily, Ui.Normal.Size * z); band.Font = fb; state.Font = fb; state.Height = (int)Math.Ceiling(fb.Height * 2.2); }
         public ClusterStrip()
         {
             Dock = DockStyle.Right; Width = 200; Font = Ui.Normal;
@@ -203,7 +205,8 @@ namespace HamRadioLink.Journal
             band.SelectedIndexChanged += delegate { Fill(); };
             state = new Label { Dock = DockStyle.Bottom, Height = 34, ForeColor = SystemColors.GrayText };
             ruler = new Ruler { Dock = DockStyle.Fill };
-            Controls.Add(ruler); Controls.Add(band); Controls.Add(state);
+            zp = new ZoomPair { Dock = DockStyle.Top, Height = 26, Right = true }; zp.Step += delegate(int d) { LogZoom.Step("cl", d); ApplyZoom(); };
+            Controls.Add(ruler); Controls.Add(zp); Controls.Add(band); Controls.Add(state); ApplyZoom();
             DxCluster.Changed += Fill; Disposed += delegate { DxCluster.Changed -= Fill; };
             System.Windows.Forms.Timer t = new System.Windows.Forms.Timer { Interval = 700 }; t.Tick += delegate { Fill(); }; t.Start(); Disposed += delegate { t.Dispose(); };
             Fill();
@@ -226,6 +229,7 @@ namespace HamRadioLink.Journal
     {
         double lo, hi, vlo, vhi, a, bb; List<Spot> spots = new List<Spot>(); string key = ""; readonly List<KeyValuePair<RectangleF, Spot>> hits = new List<KeyValuePair<RectangleF, Spot>>();
         bool drag; int dragY; double dragLo; bool moved;
+        public float Zoom { set { Font f0 = Font; Font = value == 1f ? Ui.Mono : new Font("Consolas", 9.5f * value); if (f0 != null && f0 != Ui.Mono) f0.Dispose(); key = ""; Invalidate(); } }
         public Ruler() { DoubleBuffered = true; Font = Ui.Mono; ResizeRedraw = true; Theme.Changed += Redo; Disposed += delegate { Theme.Changed -= Redo; }; }
         void Redo() { Invalidate(); }
         public void Set(double lo, double hi, List<Spot> s, double a, double b)
@@ -271,16 +275,16 @@ namespace HamRadioLink.Journal
             Graphics g = e.Graphics; g.Clear(Theme.Get("lb.grid.back")); hits.Clear(); if (hi <= lo) return;
             using (Pen axis = new Pen(Theme.Mix(Theme.Get("lb.tool.text"), Theme.Get("lb.grid.back"), 0.5))) using (Brush txt = new SolidBrush(Theme.Get("lb.tool.text"))) using (Brush spot = new SolidBrush(Theme.Get("lb.spot")))
             {
-                int x0 = 52; g.DrawLine(axis, x0, 10, x0, Height - 10);
+                float zf = Font.Size / 9.5f; int x0 = (int)(52 * zf), lh = Math.Max(13, Font.Height - 2); g.DrawLine(axis, x0, 10, x0, Height - 10);
                 double span = vhi - vlo, step = span > 1000 ? 100 : span > 300 ? 50 : span > 100 ? 10 : span > 40 ? 5 : span > 15 ? 1 : 0.5;
-                for (double f = Math.Ceiling(vlo / step) * step; f <= vhi; f += step) { float y = Y(f); g.DrawLine(axis, x0 - 5, y, x0, y); g.DrawString(f.ToString(step < 1 ? "0.0" : "0", CultureInfo.InvariantCulture), Font, txt, 0, y - 7); }
+                for (double f = Math.Ceiling(vlo / step) * step; f <= vhi; f += step) { float y = Y(f); g.DrawLine(axis, x0 - 5, y, x0, y); g.DrawString(f.ToString(step < 1 ? "0.0" : "0", CultureInfo.InvariantCulture), Font, txt, 0, y - lh / 2f); }
                 Cursor1(g, a, Color.Red, "A"); Cursor1(g, bb, Color.DeepSkyBlue, "B");
                 List<Spot> o = new List<Spot>(spots); o.Sort((p, q) => p.Khz.CompareTo(q.Khz)); float prev = -100;
                 foreach (Spot s in o)
                 {
-                    if (s.Khz < vlo || s.Khz > vhi) continue; float y = Y(s.Khz), ty = Math.Max(y - 7, prev + 13); prev = ty;
-                    g.DrawLine(axis, x0, y, x0 + 8, y); g.DrawLine(axis, x0 + 8, y, x0 + 14, ty + 7); g.DrawString(s.Call, Font, spot, x0 + 15, ty);
-                    hits.Add(new KeyValuePair<RectangleF, Spot>(new RectangleF(x0 + 8, ty, Width - x0 - 8, 13), s));
+                    if (s.Khz < vlo || s.Khz > vhi) continue; float y = Y(s.Khz), ty = Math.Max(y - lh / 2f, prev + lh); prev = ty;
+                    g.DrawLine(axis, x0, y, x0 + 8, y); g.DrawLine(axis, x0 + 8, y, x0 + 14, ty + lh / 2f); g.DrawString(s.Call, Font, spot, x0 + 15, ty);
+                    hits.Add(new KeyValuePair<RectangleF, Spot>(new RectangleF(x0 + 8, ty, Width - x0 - 8, lh), s));
                 }
 
             }
@@ -323,17 +327,19 @@ namespace HamRadioLink.Journal
     // Fenêtre des trames du cluster (partie basse du journal) ; les boutons Cluster et Alerte sont en haut à droite, par-dessus le texte.
     public class ClusterFrames : Panel
     {
-        readonly TextBox tb; readonly TabButton bCl, bAl;
+        readonly TextBox tb; readonly TabButton bCl, bAl; readonly ZoomPair zp;
         public ClusterFrames()
         {
             Dock = DockStyle.Bottom; Height = 120;
             tb = new TextBox { Dock = DockStyle.Fill, Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical, Font = Ui.Mono, WordWrap = false };
             bAl = new TabButton("Alerte", 80) { Anchor = AnchorStyles.Top | AnchorStyles.Right }; bAl.Clicked = delegate { using (AlertForm f = new AlertForm()) f.ShowDialog(FindForm()); };
             bCl = new TabButton("Aucun cluster", 150) { Anchor = AnchorStyles.Top | AnchorStyles.Right }; bCl.Clicked = ClusterMenu;
-            Controls.Add(tb); Controls.Add(bAl); Controls.Add(bCl); bAl.BringToFront(); bCl.BringToFront();
-            Layout += delegate { bAl.Location = new Point(Width - bAl.Width - 24, 2); bCl.Location = new Point(bAl.Left - bCl.Width - 4, 2); };
+            zp = new ZoomPair { Width = 56 }; zp.Step += delegate(int d) { LogZoom.Step("bot", d); ApplyZoom(); };
+            Controls.Add(tb); Controls.Add(bAl); Controls.Add(bCl); Controls.Add(zp); bAl.BringToFront(); bCl.BringToFront(); zp.BringToFront(); ApplyZoom();
+            Layout += delegate { zp.Location = new Point(Width - zp.Width - 22, 0); bAl.Location = new Point(zp.Left - bAl.Width - 4, 2); bCl.Location = new Point(bAl.Left - bCl.Width - 4, 2); };
             DxCluster.Changed += Fill; Disposed += delegate { DxCluster.Changed -= Fill; }; Fill();
         }
+        public void ApplyZoom() { Font f0 = tb.Font; tb.Font = new Font("Consolas", 9.5f * LogZoom.Factor("bot")); if (f0 != null && f0 != Ui.Mono) f0.Dispose(); }
         // Bouton « cluster actif » : son nom ; un clic liste les clusters enregistrés (se connecter / changer / déconnecter).
         void ClusterMenu()
         {

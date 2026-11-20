@@ -7,7 +7,7 @@ namespace HamRadioLink
     {
         // Autres Kenwood et Elecraft (CAT ASCII « XX...; » de la famille Kenwood). Seuls les catalogues du TS-480 et du TS-890 sont analysés :
         // chaque poste reprend la face avant de l'un des deux, réduite aux fonctions qu'il possède, et ses commandes sont contrôlées contre ce catalogue.
-        // Ni les manuels de ces postes, ni le matériel n'ont servi : tout se corrige par clic droit en « config vue » ou par « Ajouter ».
+        // Ni les manuels de ces postes, ni le matériel n'ont servi : tout se corrige par clic droit en « vue config » ou par « Ajouter ».
         // base : 0 = TS-480, 1 = TS-890 ; rm : identifiants d'éléments retirés (le poste ne les a pas) ; mini : face avant réduite (anciens postes)
         static RadioDef Kw(string key, string name, int baud, int baseKind, string id, long maxHz, string rm, bool mini, bool noTx)
         {

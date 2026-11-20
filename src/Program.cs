@@ -11,10 +11,11 @@ namespace HamRadioLink
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Cfg.Load(); Theme.Load(); HW.WheelPct = Math.Max(1, Math.Min(10, Cfg.GetInt("wheelpct", 2)));
+            Cfg.Load(); Theme.Load(); HW.WheelPct = Math.Max(1, Math.Min(10, Cfg.GetInt("wheelpct", 1)));
             Application.ThreadException += delegate(object s, System.Threading.ThreadExceptionEventArgs e) { Log(e.Exception); };
             AppDomain.CurrentDomain.UnhandledException += delegate(object s, UnhandledExceptionEventArgs e) { Log(e.ExceptionObject as Exception); };
             foreach (string a in args) if (a.StartsWith("--dump=") || a.StartsWith("--selftest=")) Journal.WsjtListener.Disabled = true;
+            foreach (string a in args) if (a.StartsWith("--dump=") || a.StartsWith("--selftest=") || a.StartsWith("--shot=")) Updater.Disabled = true;
             foreach (string a in args) if (a.StartsWith("--dump=")) { SelfTest.Dump(a.Substring(7)); return; }
             foreach (string a in args) if (a.StartsWith("--selftest=")) { Environment.Exit(SelfTest.Run(a.Substring(11))); return; }
             string radio = null; bool virt = false; string shot = null;

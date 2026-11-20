@@ -90,7 +90,7 @@ namespace HamRadioLink
         public string Items = "", DItems = "";         // choix : "LSB=1,USB=2,AUTO=4|5|6"
         public string OnVal = "1", OffVal = "0", DOnVal = "1", DOffVal = "0";   // bascule : OnVal peut contenir des alias "1|2"
         public int Min, Max = 255, DMin, DMax = 255, Step = 1;   // curseur (Step : pas des valeurs envoyées)
-        public string Fmt = "raw";                     // affichage : raw, pct, sgn, hz, wpm, pitch10, pitch50, w
+        public string DFmt; public string Fmt = "raw";                     // affichage : raw, pct, sgn, hz, wpm, pitch10, pitch50, w
         public int Rows = 1;                           // choix en ligne : nombre de rangées
         public bool Row, Local, TxOnly, NoPoll, Hidden, Custom; public int Period = 2200;   // Local : réglage interne, aucune commande CAT
         public string Ref = "";                        // freq : id du mode ; dial : id de la fréquence ; meter : unité
@@ -110,7 +110,7 @@ namespace HamRadioLink
         }
         Item[] items; string itemsSrc;
         public Item[] ItemList { get { if (items == null || itemsSrc != Items) { items = Item.ParseList(Items); itemsSrc = Items; } return items; } }
-        public void ResetCat() { Set = DSet; Read = DRead; Parse = DParse; Items = DItems; OnVal = DOnVal; OffVal = DOffVal; Min = DMin; Max = DMax; Label = DLabel; }
+        public void ResetCat() { Set = DSet; Read = DRead; Parse = DParse; Items = DItems; OnVal = DOnVal; OffVal = DOffVal; Min = DMin; Max = DMax; Label = DLabel; if (DFmt != null) Fmt = DFmt; }
         public void ResetPos() { X = DX; Y = DY; W = DW; H = DH; }
         public bool IsOn(string v) { if (v == null) return false; foreach (string s in OnVal.Split('|')) if (s == v) return true; return false; }
         public string OnSend { get { return OnVal.Split('|')[0]; } }
@@ -177,7 +177,7 @@ namespace HamRadioLink
         public string IdValue { get { string a = IdAnswer ?? ""; if (a.StartsWith("ID")) a = a.Substring(2); else if (a.StartsWith("1900")) a = a.Substring(4); return a.TrimEnd(';'); } }
         public Ctl Find(string id) { foreach (Ctl c in C) if (c.Id == id) return c; return null; }
         string F(string k) { return Path.Combine(Cfg.Dir ?? ".", Key + "." + k + ".ini"); }
-        // ---- éléments ajoutés par l'utilisateur (bouton « Ajouter » de la config vue) : data\<poste>.custom.ini
+        // ---- éléments ajoutés par l'utilisateur (bouton « Ajouter » de la vue config) : data\<poste>.custom.ini
         // La liste est remplacée (jamais modifiée en place) : le moteur de lecture peut la parcourir en même temps.
         public void AddCtl(Ctl c) { List<Ctl> n = new List<Ctl>(C); n.Add(c); C = n; }
         public void RemoveCtl(Ctl c) { List<Ctl> n = new List<Ctl>(C); n.Remove(c); C = n; }
@@ -231,7 +231,7 @@ namespace HamRadioLink
                         switch (p[1])
                         {
                             case "Set": c.Set = v; break; case "Read": c.Read = v; break; case "Parse": c.Parse = v; break; case "Items": c.Items = v; break;
-                            case "OnVal": c.OnVal = v; break; case "OffVal": c.OffVal = v; break; case "Label": c.Label = v; break;
+                            case "Fmt": if (c.DFmt == null) c.DFmt = c.Fmt; c.Fmt = v; break; case "OnVal": c.OnVal = v; break; case "OffVal": c.OffVal = v; break; case "Label": c.Label = v; break;
                             case "Min": int.TryParse(v, out c.Min); break; case "Max": int.TryParse(v, out c.Max); break;
                         }
                     }
@@ -255,7 +255,7 @@ namespace HamRadioLink
                     if (c.Parse != c.DParse) sb.AppendLine(c.Id + "\tParse\t" + Esc(c.Parse)); if (c.Items != c.DItems) sb.AppendLine(c.Id + "\tItems\t" + Esc(c.Items));
                     if (c.OnVal != c.DOnVal) sb.AppendLine(c.Id + "\tOnVal\t" + Esc(c.OnVal)); if (c.OffVal != c.DOffVal) sb.AppendLine(c.Id + "\tOffVal\t" + Esc(c.OffVal));
                     if (c.Min != c.DMin) sb.AppendLine(c.Id + "\tMin\t" + c.Min); if (c.Max != c.DMax) sb.AppendLine(c.Id + "\tMax\t" + c.Max);
-                    if (c.Label != c.DLabel) sb.AppendLine(c.Id + "\tLabel\t" + Esc(c.Label));
+                    if (c.Label != c.DLabel) sb.AppendLine(c.Id + "\tLabel\t" + Esc(c.Label)); if (c.DFmt != null && c.Fmt != c.DFmt) sb.AppendLine(c.Id + "\tFmt\t" + Esc(c.Fmt));
                 }
                 if (sb.Length == 0) { if (File.Exists(F("cat"))) File.Delete(F("cat")); } else File.WriteAllText(F("cat"), sb.ToString(), Encoding.UTF8);
             }

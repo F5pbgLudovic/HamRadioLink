@@ -36,10 +36,10 @@ namespace HamRadioLink
     }
 
     // ------------------------------------------------------------------ base des éléments de la face avant
-    // En « config vue », tous se déplacent à la souris (coin bas-droit = taille) et le clic droit ouvre l'éditeur de commande CAT.
+    // En « vue config », tous se déplacent à la souris (coin bas-droit = taille) et le clic droit ouvre l'éditeur de commande CAT.
     public abstract class HW : Control
     {
-        public static bool Edit; public static int HeaderH = 118, Shift = 36; public static int WheelPct = 2, VeilPct = 67;      // VeilPct : opacité (10 à 100 %) du voile posé sur un organe verrouillé
+        public static bool Edit; public static int HeaderH = 118, Shift = 36; public static int WheelPct = 1, VeilPct = 67;      // VeilPct : opacité (10 à 100 %) du voile posé sur un organe verrouillé
         public static int VeilAlpha { get { return (int)Math.Round(Math.Max(10, Math.Min(100, VeilPct)) * 2.55); } }
         // verrou (clic droit sur un bouton ou un potentiomètre ; Ctrl + clic droit pour un choix) : bloque l'action, mémorisé par poste
         bool locked; public bool Locked { get { return locked; } set { if (locked != value) { locked = value; Invalidate(); } } }
@@ -159,6 +159,7 @@ namespace HamRadioLink
         protected string St(string id) { return Rig != null ? Rig.Get(id) : null; }
         public static string FmtVal(Ctl c, int v, Rig rig)
         {
+            string kt = rig != null ? MeterCal.KnobText(rig.Def, c, v) : null; if (kt != null) return kt;   // Width en Hz, RF PWR en watts (étalonnage)
             switch (c.Fmt)
             {
                 case "pct": return (c.Max > 0 ? (int)Math.Round(v * 100.0 / c.Max) : v) + "%";
@@ -212,6 +213,7 @@ namespace HamRadioLink
             }
             if (!was || !inside || e.Button != MouseButtons.Left) return;
             if (Def.Id == "tunemic") { TuneMic.Toggle(Rig); Invalidate(); return; }
+            if (Def.Id == "menu" && Rig != null) { RigMenu.Open(Rig, FindForm()); return; }
             if (Def.K == Kind.Toggle) { bool turnOn = !Rig.IsOn(Def); Rig.Set(Def, turnOn ? Def.OnSend : Def.OffSend); if (Def.Id == "ptt") { if (turnOn) Rig.PttButtonStart(); else Rig.PttButtonStop(); } }
             else if (Def.K == Kind.Action)
             {
@@ -333,18 +335,21 @@ namespace HamRadioLink
     public class HKnob : HW
     {
         int val, dragY, dragV; bool dragging;
-        public override void Sync() { if (dragging || !Ready) return; string s = St(Def.Id); int v; if (s != null && int.TryParse(s, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out v) && v != val) { val = v; Invalidate(); } }
-        int Clamp(int v) { if (v < Def.Min) v = Def.Min; if (v > Def.Max) v = Def.Max; int st = Math.Max(1, Def.Step); if (st > 1) v = (int)Math.Round(v / (double)st) * st; if (v < Def.Min) v = Def.Min; if (v > Def.Max) v = Def.Max; return v; }
+        int calVer = -1;
+        public override void Sync() { if (calVer != MeterCal.Ver) { calVer = MeterCal.Ver; Invalidate(); } if (dragging || !Ready) return; string s = St(Def.Id); int v; if (s != null && int.TryParse(s, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out v) && v != val) { val = v; Invalidate(); } }
+        int Mx { get { return Rig != null && Rig.Def != null ? MeterCal.KnobMax(Rig.Def, Def) : Def.Max; } }   // pleine échelle du bouton (étalonnage RF PWR : valeur du poste correspondant à la puissance max)
+        int Clamp(int v) { int mx = Mx; if (v < Def.Min) v = Def.Min; if (v > mx) v = mx; int st = Math.Max(1, Def.Step); if (st > 1) v = (int)Math.Round(v / (double)st) * st; if (v < Def.Min) v = Def.Min; if (v > mx) v = mx; return v; }
         void User(int v) { v = Clamp(v); if (v == val) return; val = v; Invalidate(); if (Ready) Rig.Set(Def, v.ToString()); }
         protected override void Down(MouseEventArgs e) { Focus(); if (e.Button == MouseButtons.Left) { dragging = true; dragY = e.Y; dragV = val; Capture = true; } }
+        bool Fine { get { return Def.Id == "clar" && Def.Fmt == "hz" && Def.Step >= 1; } }   // CLAR : un cran de souris (3 pixels, 1 cran de molette) = un pas de 10 Hz
         protected override void Moving(MouseEventArgs e)
         {
-            if (!dragging) return; double sens = (Control.ModifierKeys & Keys.Shift) != 0 ? 0.25 : 1.0;
-            User(dragV + (int)((dragY - e.Y) * sens * (Def.Max - Def.Min) / (150.0 * T.Scale)));
+            if (!dragging) return; if (Fine) { int nst = (int)((dragY - e.Y) / (((Control.ModifierKeys & Keys.Shift) != 0 ? 12.0 : 3.0) * T.Scale)); User(dragV + nst * Math.Max(1, Def.Step)); return; } double sens = (Control.ModifierKeys & Keys.Shift) != 0 ? 0.25 : 1.0;
+            User(dragV + (int)((dragY - e.Y) * sens * (Mx - Def.Min) / (150.0 * T.Scale)));
         }
         protected override void Up(MouseEventArgs e) { dragging = false; Capture = false; }
         protected override void DblClick(MouseEventArgs e) { if (Def.Min < 0 && Def.Max > 0) User(0); }
-        protected override void Wheel(MouseEventArgs e) { int s = Math.Max(Math.Max(1, Def.Step), (int)Math.Round((Def.Max - Def.Min) * WheelPct / 100.0)); if ((Control.ModifierKeys & Keys.Shift) != 0) s = Math.Max(Math.Max(1, Def.Step), s / 4); User(val + (e.Delta > 0 ? s : -s)); }
+        protected override void Wheel(MouseEventArgs e) { if (Fine) { User(val + (e.Delta > 0 ? 1 : -1) * Math.Max(1, Def.Step)); return; } int s = Math.Max(Math.Max(1, Def.Step), (int)Math.Round((Mx - Def.Min) * WheelPct / 100.0)); if ((Control.ModifierKeys & Keys.Shift) != 0) s = Math.Max(Math.Max(1, Def.Step), s / 4); User(val + (e.Delta > 0 ? s : -s)); }
         protected override void Draw(Graphics g)
         {
             g.Clear(Parent != null ? Parent.BackColor : T.Panel); float k = T.Scale;
@@ -353,7 +358,7 @@ namespace HamRadioLink
             using (Brush b = new SolidBrush(Color.FromArgb(18, 22, 30))) g.FillEllipse(b, r.X + 3 * k, r.Y + 3 * k, d - 6 * k, d - 6 * k);
             RectangleF ar = new RectangleF(r.X + 1.5f * k, r.Y + 1.5f * k, d - 3 * k, d - 3 * k);
             using (Pen p = new Pen(Color.FromArgb(52, 62, 78), 4f * k)) { p.StartCap = LineCap.Round; p.EndCap = LineCap.Round; g.DrawArc(p, ar, 135, 270); }
-            double t = Def.Max > Def.Min ? (val - Def.Min) / (double)(Def.Max - Def.Min) : 0; bool center = Def.Min < 0 && Def.Max > 0;
+            int mxd = Mx; double t = mxd > Def.Min ? Math.Max(0, Math.Min(1, (val - Def.Min) / (double)(mxd - Def.Min))) : 0; bool center = Def.Min < 0 && Def.Max > 0;
             using (Pen p = new Pen(acc, 4f * k))
             {
                 p.StartCap = LineCap.Round; p.EndCap = LineCap.Round;
@@ -374,17 +379,20 @@ namespace HamRadioLink
     // ------------------------------------------------------------------ bargraphe
     public class HMeter : HW
     {
-        double val, peak; int peakTick; int shown = -1; string txt = "";
+        double val, peak; int peakTick; int shown = -1; string txt = ""; Sc sc; int scVer = -1;
+        double F(double x) { return sc != null ? sc.Frac(x) : x / Math.Max(1, Def.Max); }
+        public static int HoldMs { get { return Math.Max(500, Math.Min(20000, Cfg.GetInt("meter.hold", 10000))); } }
         static readonly string[] sT = { "1", "3", "5", "7", "9", "+20", "+40", "+60" }; static readonly double[] sP = { 0.07, 0.19, 0.31, 0.43, 0.5, 0.67, 0.83, 1.0 };
         public override void Sync()
         {
             if (!Ready) return; string s = St(Def.Id); int v = 0; if (s != null) int.TryParse(s, out v); if (Def.TxOnly && !Rig.Tx) v = 0;
             double nv = Math.Max(0, Math.Min(Def.Max, v)); int tick = Environment.TickCount;
-            if (nv >= peak) { peak = nv; peakTick = tick; } else if (tick - peakTick > 900) peak = Math.Max(nv, peak - Def.Max * 0.02);
-            if (Math.Abs(nv - val) > 0.01 || peak != nv || v != shown) { val = nv; shown = v; txt = Text2(v); Invalidate(); }
+            if (nv >= peak) { peak = nv; peakTick = tick; } else if (tick - peakTick > HoldMs) peak = Math.Max(nv, peak - Def.Max * 0.02);
+            if (Math.Abs(nv - val) > 0.01 || peak != nv || v != shown || scVer != MeterCal.Ver) { scVer = MeterCal.Ver; sc = Rig != null ? MeterCal.Scale(Rig.Def, Def) : null; val = nv; shown = v; txt = Text2(peak > nv + 0.01 ? (int)Math.Round(peak) : v); Invalidate(); }
         }
         string Text2(int v)
         {
+            if (sc != null) return sc.Text(v);
             if (Def.Fmt == "s") { double f = v / (double)Def.Max; if (f <= 0.5) return "S" + (int)Math.Round(f / 0.5 * 9); return "S9+" + (int)Math.Round((f - 0.5) / 0.5 * 60); }
             return Def.Max > 0 ? (int)Math.Round(v * 100.0 / Def.Max) + "%" : v.ToString();
         }
@@ -403,9 +411,9 @@ namespace HamRadioLink
             float apexY = Math.Min(Height * 0.42f, 16 * k) + 1.5f; float sag = Math.Max(2f, (Height - apexY - 4 * k) * 0.55f);
             double th = Math.Max(0.06, Math.Min(0.5, 2 * Math.Atan(2 * sag / wA))); float R = (wA / 2) / (float)Math.Sin(th); float cx = x0 + wA / 2, py = apexY + R;
             Func<float, double, PointF> P = delegate(float r, double a) { return new PointF(cx + r * (float)Math.Sin(a), py - r * (float)Math.Cos(a)); };
-            double hotF = Def.Fmt == "s" ? 0.5 : 0.8; float a0 = (float)(-90 - th * 180 / Math.PI), sw = (float)(2 * th * 180 / Math.PI); RectangleF rc = new RectangleF(cx - R, py - R, 2 * R, 2 * R);
-            using (Pen p = new Pen(Color.FromArgb(235, 235, 235), Math.Max(1f, 1.6f * k))) g.DrawArc(p, rc, a0, (float)(sw * hotF));
-            using (Pen p = new Pen(T.Red, Math.Max(1.5f, 2.6f * k))) g.DrawArc(p, rc, a0 + (float)(sw * hotF), (float)(sw * (1 - hotF)));
+            double hotF = sc != null ? (sc.NoHot ? 2.0 : sc.Hot) : Def.Fmt == "s" ? 0.5 : 0.8; float a0 = (float)(-90 - th * 180 / Math.PI), sw = (float)(2 * th * 180 / Math.PI); RectangleF rc = new RectangleF(cx - R, py - R, 2 * R, 2 * R);
+            using (Pen p = new Pen(sc != null && sc.BlueRed ? T.Blue : Color.FromArgb(235, 235, 235), Math.Max(1f, 1.6f * k))) g.DrawArc(p, rc, a0, (float)(sw * Math.Min(1.0, hotF)));
+            using (Pen p = new Pen(T.Red, Math.Max(1.5f, 2.6f * k))) g.DrawArc(p, rc, a0 + (float)(sw * Math.Min(1.0, hotF)), (float)(sw * Math.Max(0.0, 1 - hotF)));
             double prev = 0;
             for (int i = 0; i <= tt.Length; i++)
             {
@@ -419,8 +427,8 @@ namespace HamRadioLink
                 using (Pen p = new Pen(c, Math.Max(1f, 1.4f * k))) g.DrawLine(p, P(R, a), P(R + 5 * k, a));
                 PointF pt = P(R + 6 * k, a); SizeF sz = g.MeasureString(tt[i], T.Fn("Segoe UI", 6.5f)); using (Brush b = new SolidBrush(c)) g.DrawString(tt[i], T.Fn("Segoe UI", 6.5f), b, pt.X - sz.Width / 2 + 1, pt.Y - sz.Height + 1);
             }
-            double fr = Math.Max(0, Math.Min(1, val / Math.Max(1, Def.Max))), ang = -th + 2 * th * fr;
-            if (!(Def.TxOnly && !(Ready && Rig.Tx))) { double pf = Math.Max(0, Math.Min(1, peak / Math.Max(1, Def.Max))), pa = -th + 2 * th * pf; if (pf > fr + 0.02) using (Pen p = new Pen(T.Red, Math.Max(1f, 1.6f * k))) g.DrawLine(p, P(R - 6 * k, pa), P(R + 2 * k, pa)); }
+            double fr = Math.Max(0, Math.Min(1, F(val))), ang = -th + 2 * th * fr;
+            if (!(Def.TxOnly && !(Ready && Rig.Tx))) { double pf = Math.Max(0, Math.Min(1, F(peak))), pa = -th + 2 * th * pf; if (pf > fr + 0.02) using (Pen p = new Pen(T.Red, Math.Max(1f, 1.6f * k))) g.DrawLine(p, P(R - 6 * k, pa), P(R + 2 * k, pa)); }
             double ca = Math.Cos(ang); float r0 = (float)((py - (Height - 3 * k)) / Math.Max(0.2, ca));
             using (Pen p = new Pen(Color.White, Math.Max(1.5f, 2f * k))) { p.StartCap = LineCap.Round; p.EndCap = LineCap.Round; g.DrawLine(p, P(r0, ang), P(R + 3 * k, ang)); }
             g.ResetClip(); bool dim = Def.TxOnly && !(Ready && Rig.Tx);
@@ -431,21 +439,23 @@ namespace HamRadioLink
         {
             g.Clear(Parent != null ? Parent.BackColor : T.Panel);
             if (!anInit && Rig != null && Rig.Def != null) { anInit = true; Analog = Cfg.GetBool("analog." + Rig.Def.Key + "." + Def.Id, Cfg.GetBool("analog.all", false)); }
-            if (Analog) { DrawAnalog(g, Def.Fmt == "s" ? sT : new string[] { "0", "25", "50", "75", "100" }, Def.Fmt == "s" ? sP : new double[] { 0, 0.25, 0.5, 0.75, 1 }); return; }
+            if (sc == null && Rig != null && scVer != MeterCal.Ver) { scVer = MeterCal.Ver; sc = MeterCal.Scale(Rig.Def, Def); }
+            if (Analog) { DrawAnalog(g, sc != null ? sc.Ticks : Def.Fmt == "s" ? sT : new string[] { "0", "25", "50", "75", "100" }, sc != null ? sc.Pos : Def.Fmt == "s" ? sP : new double[] { 0, 0.25, 0.5, 0.75, 1 }); return; }
             float k = T.Scale; int tw = (int)(60 * k), lw = (int)(70 * k);
             Rectangle bar = new Rectangle(lw, (int)(3 * k), Width - lw - tw - (int)(4 * k), (int)(Math.Min(14, Height * 0.42f) * k) + 4);
             bool tx = Ready && Rig.Tx; bool dim = Def.TxOnly && !tx;
             using (Brush b = new SolidBrush(T.Dim)) g.DrawString(Def.Label, T.Fn("Segoe UI Semibold", 8f), b, 0, 2 * k);
             using (Brush b = new SolidBrush(Color.FromArgb(8, 10, 14))) g.FillRectangle(b, bar);
-            int seg = Math.Max(3, (int)(4 * k)), gap = Math.Max(1, (int)k); int n = Math.Max(1, bar.Width / (seg + gap)); double frac = val / Math.Max(1, Def.Max); int lit = (int)Math.Round(frac * n);
+            int seg = Math.Max(3, (int)(4 * k)), gap = Math.Max(1, (int)k); int n = Math.Max(1, bar.Width / (seg + gap)); double frac = F(val); int lit = (int)Math.Round(frac * n);
             Color cool = Def.Accent == "blue" ? T.Blue : T.Green;
             for (int i = 0; i < n; i++)
             {
                 double p = (i + 0.5) / n; Color c = (Def.Fmt == "s" ? p > 0.5 : p > 0.8) ? (p > 0.9 ? T.Red : T.Amber) : cool; if (Def.Fmt == "s" && p > 0.5) c = p > 0.84 ? T.Red : T.Amber;
+                if (sc != null) { c = sc.NoHot || p <= sc.Hot ? (sc.BlueRed ? T.Blue : cool) : (sc.BlueRed || p > 0.9 ? T.Red : T.Amber); }
                 if (i >= lit) c = Color.FromArgb(34, c); using (Brush b = new SolidBrush(c)) g.FillRectangle(b, bar.X + i * (seg + gap), bar.Y + 1, seg, bar.Height - 2);
             }
-            if (!dim) { int px = bar.X + (int)(peak / Math.Max(1, Def.Max) * (bar.Width - 2)); using (Pen p = new Pen(Color.FromArgb(220, 255, 255, 255))) g.DrawLine(p, px, bar.Y, px, bar.Bottom); }
-            string[] tt = Def.Fmt == "s" ? sT : new string[] { "0", "25", "50", "75", "100" }; double[] tp = Def.Fmt == "s" ? sP : new double[] { 0, 0.25, 0.5, 0.75, 1 };
+            if (!dim) { int px = bar.X + (int)(Math.Max(0, Math.Min(1, F(peak))) * (bar.Width - 2)); using (Pen p = new Pen(Color.FromArgb(220, 255, 255, 255))) g.DrawLine(p, px, bar.Y, px, bar.Bottom); }
+            string[] tt = sc != null ? sc.Ticks : Def.Fmt == "s" ? sT : new string[] { "0", "25", "50", "75", "100" }; double[] tp = sc != null ? sc.Pos : Def.Fmt == "s" ? sP : new double[] { 0, 0.25, 0.5, 0.75, 1 };
             for (int i = 0; i < tt.Length; i++)
             {
                 int x = bar.X + (int)(tp[i] * (bar.Width - 1)); using (Pen p = new Pen(T.Edge)) g.DrawLine(p, x, bar.Bottom, x, bar.Bottom + 2);

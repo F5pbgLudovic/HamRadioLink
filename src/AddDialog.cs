@@ -7,13 +7,13 @@ using System.Windows.Forms;
 
 namespace HamRadioLink
 {
-    // Fenêtre « Ajouter » de la config vue : choisir un type d'élément et une commande CAT parmi toutes celles connues du programme
+    // Fenêtre « Ajouter » de la vue config : choisir un type d'élément et une commande CAT parmi toutes celles connues du programme
     // (éléments de tous les postes + catalogues des manuels). Le résultat est un Ctl prêt à être placé ; le clic droit permet ensuite de l'ajuster.
     public class AddDialog : Form
     {
-        class Entry
+        public class Entry
         {
-            public string Origin, Name, Set = "", Read = "", Parse = "", Items = "", On = "1", Off = "0", Fmt = "raw", Hint = ""; public int Min, Max = 255, Step = 1; public bool FromCtl;
+            public string Origin, Name, Set = "", Read = "", Parse = "", Items = "", On = "1", Off = "0", Fmt = "raw", Hint = ""; public int Min, Max = 255, Step = 1; public bool FromCtl, Meter; public override string ToString() { return FromCtl ? Name : Name + "   [" + (Set.Length > 0 ? Set : Read) + "]"; }
         }
         public Ctl Result;
         readonly List<Entry> all = new List<Entry>(); readonly List<Entry> shown = new List<Entry>();
@@ -34,7 +34,7 @@ namespace HamRadioLink
             Button ok = new Button(); ok.Text = "Ajouter"; ok.SetBounds(760, 598, 80, 30); Skin(ok); ok.Click += delegate { Make(); };
             Button ca = new Button(); ca.Text = "Annuler"; ca.SetBounds(848, 598, 80, 30); Skin(ca); ca.DialogResult = DialogResult.Cancel; CancelButton = ca;
             Controls.Add(ok); Controls.Add(ca);
-            Collect(current); Fill(); tbFind.TextChanged += delegate { Fill(); };
+            Collect(current, all); Fill(); tbFind.TextChanged += delegate { Fill(); };
             lv.SelectedIndexChanged += delegate { Entry e = Sel(); if (e != null) { lbInfo.Text = (e.FromCtl ? "Élément existant : tout est repris (envoi, lecture, réponse, valeurs)." : "Modèle fabriqué d'après le format du manuel : à vérifier / ajuster par clic droit (valeur = dernier groupe de paramètres).") + (e.Hint.Length > 0 ? "\n" + e.Hint : ""); if (tbName.Text.Length == 0 || tbName.Tag as string == "auto") { tbName.Text = e.Name; tbName.Tag = "auto"; } } };
             tbName.KeyPress += delegate { tbName.Tag = "user"; };
         }
@@ -49,13 +49,18 @@ namespace HamRadioLink
             switch (d.Key) { case "ftdx10": return "ftdx101"; case "ft2000": return "ft950"; case "ftdx5000": return "ftdx3000"; }
             return null;
         }
-        void Collect(RadioDef cur)
+        // commande de mesure du signal reçu (S-mètre) : d'après son nom au manuel
+        public static bool IsSName(Entry e) { return Regex.IsMatch(e.Name ?? "", @"(?i)\bs[-\s]?m[eè]tre?\b|\bs[-\s]?meter|\bsmeter|\bs[-\s]?level|niveau s\b"); }
+        // un S-mètre s'affiche avec l'échelle S1…S9+60 : format « s »
+        public static bool IsS(Entry e) { return e.Meter && (e.Fmt == "s" || IsSName(e) || e.FromCtl && Regex.IsMatch(e.Name ?? "", @"(?i)^s\b|\bs[-\s]?m")); }
+        public static List<Entry> Entries(RadioDef cur) { List<Entry> l = new List<Entry>(); Collect(cur, l); return l; }
+        static void Collect(RadioDef cur, List<Entry> all)
         {
             HashSet<string> seen = new HashSet<string>();
             foreach (Ctl c in cur.C)
             {
                 if (!c.HasCat || c.Hidden || (c.Set.Length == 0 && c.Read.Length == 0)) continue; string k = c.Set + "|" + c.Read; if (!seen.Add(k)) continue;
-                Entry e = new Entry(); e.FromCtl = true; e.Origin = cur.Name + " · " + c.K; e.Name = c.Label; e.Set = c.Set; e.Read = c.Read; e.Parse = c.Parse; e.Items = c.Items; e.On = c.OnVal; e.Off = c.OffVal; e.Min = c.Min; e.Max = c.Max; e.Fmt = c.Fmt; e.Step = c.Step; e.Hint = c.Hint; all.Add(e);
+                Entry e = new Entry(); e.FromCtl = true; e.Origin = cur.Name + " · " + c.K; e.Name = c.Label; e.Set = c.Set; e.Read = c.Read; e.Parse = c.Parse; e.Items = c.Items; e.On = c.OnVal; e.Off = c.OffVal; e.Min = c.Min; e.Max = c.Max; e.Fmt = c.Fmt; e.Step = c.Step; e.Hint = c.Hint; e.Meter = c.K == Kind.Meter; all.Add(e);
             }
             if (cur.Civ >= 0)
             {
@@ -65,7 +70,7 @@ namespace HamRadioLink
                 {
                     string[] p = line.TrimEnd('\r').Split('|'); if (p.Length < 4 || p[0].Length != 2) continue;
                     string k = p[0] + p[1].Replace(" ", ""); if (!seen.Add("V|" + k)) continue;
-                    Entry e = new Entry(); e.Origin = org; e.Name = k + " — " + p[3]; CivTemplate(e, k, p[2], cur.FreqDigits); all.Add(e);
+                    Entry e = new Entry(); e.Origin = org; e.Name = k + " — " + p[3]; CivTemplate(e, k, p[2], cur.FreqDigits); e.Meter = IsSName(e); all.Add(e);
                 }
             }
             else
@@ -76,7 +81,7 @@ namespace HamRadioLink
                     {
                         string[] p = line.TrimEnd('\r').Split('|'); if (p.Length < 4 || p[2].Length == 0 && p[3].Length == 0) continue;
                         string k = "C|" + p[2] + "|" + p[3]; if (!seen.Add(k)) continue;
-                        Entry e = new Entry(); e.Origin = "Catalogue " + cat.ToUpperInvariant() + (cat == cur.Catalog ? "" : " (modèle voisin)"); e.Name = p[0] + " — " + p[1]; Template(e, p[2], p[3]); all.Add(e);
+                        Entry e = new Entry(); e.Origin = "Catalogue " + cat.ToUpperInvariant() + (cat == cur.Catalog ? "" : " (modèle voisin)"); e.Name = p[0] + " — " + p[1]; Template(e, p[2], p[3]); e.Meter = IsSName(e); all.Add(e);
                     }
             }
             all.Sort(delegate(Entry a, Entry b) { if (a.FromCtl != b.FromCtl) return a.FromCtl ? -1 : 1; return string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase); });

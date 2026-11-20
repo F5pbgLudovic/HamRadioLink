@@ -52,6 +52,7 @@ namespace HamRadioLink.Journal
             string vis = App.Cfg.Get("lb.cols", "");
             if (vis.Length > 0) { List<string> v = new List<string>(vis.Split(',')); foreach (ColDef c in cols) c.Visible = v.Contains(c.Title); if (App.Cfg.Get("lb.clcol", "") != "1") { foreach (ColDef c in cols) if (c.Title == "Club Log sent") c.Visible = true; App.Cfg.Set("lb.clcol", "1"); }
             if (App.Cfg.Get("lb.qrzcol", "") != "1") { foreach (ColDef c in cols) if (c.Title == "QRZ.com sent") c.Visible = true; App.Cfg.Set("lb.qrzcol", "1"); } }
+            foreach (string kv in App.Cfg.Get("lb.colw", "").Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries)) { int q = kv.LastIndexOf('='), wv; if (q > 0 && int.TryParse(kv.Substring(q + 1), out wv)) foreach (ColDef c in cols) if (c.Title == kv.Substring(0, q)) c.Width = Math.Max(20, wv); }   // largeurs mémorisées (à 100 % de zoom)
 
             MenuStrip ms = new ClickMenuStrip();
             ToolStripMenuItem file = M("File", M("Fenêtre de télécommande", (s, e) => { Action a = Hub.ShowMain; if (a != null) a(); }), new ToolStripSeparator(), M("Open database...", (s, e) => OpenDb()), M("Importer / partager une base...", (s, e) => OpenSetup()), M("Réglages des ports...", (s, e) => { using (PortsForm f = new PortsForm()) f.ShowDialog(this); }), M("Moteur MariaDB...",(s, e) => { using (EngineForm f = new EngineForm()) f.ShowDialog(this); }), M("New log...", (s, e) => NewLog("")), M("Import ADIF...", (s, e) => ImportAdif()), M("Export ADIF (selection or all)...", (s, e) => ExportAdif()), new ToolStripSeparator(), M("Exit", (s, e) => Close()));
@@ -71,12 +72,13 @@ namespace HamRadioLink.Journal
             ToolStrip ts = new ClickToolStrip { GripStyle = ToolStripGripStyle.Hidden, ImageScalingSize = new Size(1, 1) };
             ts.Items.Add(B("Add", (s, e) => AddQso())); ts.Items.Add(B("Delete", (s, e) => DeleteSelected()));
             ts.Items.Add(new ToolStripSeparator());
-            ts.Items.Add(B("QRZ.com", (s, e) => OpenQrz())); ts.Items.Add(B("Awards Tracking", (s, e) => ShowAwards(0)));
+            ts.Items.Add(B("QRZ.com", (s, e) => OpenQrz())); ts.Items.Add(B("QRZCQ", (s, e) => OpenQrzCq())); ts.Items.Add(B("Awards Tracking", (s, e) => ShowAwards(0)));
             ts.Items.Add(new ToolStripSeparator());
             search = new TextBox { Width = 130 }; ts.Items.Add(new ToolStripControlHost(search));
             search.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { SetFilter(PeerLog.QuickWhere(search.Text)); e.SuppressKeyPress = true; } };
             ts.Items.Add(B("Filter", (s, e) => AdvancedFilter())); ts.Items.Add(B("All", (s, e) => { search.Text = ""; SetFilter(""); }));
             ts.Items.Add(B("▲", (s, e) => { if (grid.RowCount > 0) { grid.FirstDisplayedScrollingRowIndex = 0; foreach (DataGridViewColumn c in grid.Columns) if (c.Visible) { grid.CurrentCell = grid[c.Index, 0]; break; } grid.ClearSelection(); grid.Rows[0].Selected = true; } }));   // remonter tout en haut
+            ts.Items.Add(B("↔", (s, e) => FitColumns()));   // ajuste la largeur de chaque colonne à son contenu
 
             grid = new DataGridView
             {
@@ -122,16 +124,16 @@ namespace HamRadioLink.Journal
             lblCount = new ToolStripStatusLabel("0") { BorderSides = ToolStripStatusLabelBorderSides.All, Spring = true, TextAlign = ContentAlignment.MiddleRight };
             status.Items.AddRange(new ToolStripItem[] { lblFilter, lblDb, lblCount });
 
-            logTabs = new LogTabs(); logTabs.TabSelected += SwitchLog; logTabs.AddClicked += () => NewLog(""); logTabs.RenameRequested += RenameLog; logTabs.RemoveRequested += RemoveLog; logTabs.DeleteRequested += DeleteLog;
+            logTabs = new LogTabs(); logTabs.ZoomStep += d => { LogZoom.Step("main", d); ApplyZoomMain(); }; logTabs.ZoomReset += () => { LogZoom.ResetAll(); ApplyZoomMain(); strip.ApplyZoom(); frames.ApplyZoom(); }; logTabs.TabSelected += SwitchLog; logTabs.AddClicked += () => NewLog(""); logTabs.RenameRequested += RenameLog; logTabs.RemoveRequested += RemoveLog; logTabs.DeleteRequested += DeleteLog;
             strip = new ClusterStrip(); frames = new ClusterFrames();
             strip.Width = Math.Max(120, App.Cfg.GetInt("cl.w", 200)); frames.Height = Math.Max(50, App.Cfg.GetInt("cl.h", 120));
             splitS = new Splitter { Dock = DockStyle.Right, Width = 4, MinSize = 120, MinExtra = 300, BackColor = Color.Black }; splitF = new Splitter { Dock = DockStyle.Bottom, Height = 4, MinSize = 50, MinExtra = 100, BackColor = Color.Black };
             splitS.SplitterMoved += (s, e) => { App.Cfg.Set("cl.w", strip.Width.ToString()); App.Cfg.Save(); }; splitF.SplitterMoved += (s, e) => { App.Cfg.Set("cl.h", frames.Height.ToString()); App.Cfg.Save(); };
             Controls.Add(grid); Controls.Add(splitF); Controls.Add(frames); Controls.Add(splitS); Controls.Add(strip); Controls.Add(logTabs); Controls.Add(ms); Controls.Add(status);
-            toolStrip = ts; statusBar = status; grid.ColumnDisplayIndexChanged += (s, e) => FixLast(); ApplyLanguage(); ApplyTheme(); Theme.Changed += ApplyTheme; FormClosed += (s, e) => Theme.Changed -= ApplyTheme;
+            toolStrip = ts; statusBar = status; grid.ColumnDisplayIndexChanged += (s, e) => FixLast(); grid.ColumnWidthChanged += (s, e) => { if (applyingZoom || stretching) return; ColDef cd = e.Column.Tag as ColDef; if (cd != null) cd.Width = Math.Max(20, (int)Math.Round(e.Column.Width / LogZoom.Factor("main"))); StretchLast(); }; grid.SizeChanged += (s, e) => StretchLast(); grid.RowsAdded += (s, e) => StretchLast(); grid.RowsRemoved += (s, e) => StretchLast(); ApplyLanguage(); ApplyTheme(); Theme.Changed += ApplyTheme; FormClosed += (s, e) => Theme.Changed -= ApplyTheme;
             FormClosing += (s, e) => { SaveCols(); };
             DxCluster.SpotClicked += OnSpotClicked; FormClosed += (s, e) => DxCluster.SpotClicked -= OnSpotClicked;
-            ApplyCluster(); Shown += (s, e) => { DxCluster.AutoStart(); if (App.Log == null) OpenDb(); else Reload(); };
+            ApplyZoomMain(); ApplyCluster(); Shown += (s, e) => { DxCluster.AutoStart(); if (App.Log == null) OpenDb(); else Reload(); };
         }
 
         // Clic sur un indicatif de la réglette : la fenêtre « Ajouter » la plus récente reprend l'indicatif, comme si on l'avait tapé
@@ -261,6 +263,24 @@ namespace HamRadioLink.Journal
             f.Show(this);
         }
 
+        // Zoom du texte de la liste des contacts (boutons ronds − / + tout à droite de la ligne des boutons) : taille de la police, hauteur des lignes et de l'en-tête
+        float gridBase = 0, cellBase = 0; int zoomApplied = -1; bool applyingZoom, stretching;
+        void ApplyZoomMain()
+        {
+            if (gridBase == 0) { gridBase = grid.Font.Size; cellBase = grid.DefaultCellStyle.Font != null ? grid.DefaultCellStyle.Font.Size : Ui.Mono.Size; }
+            int zp = LogZoom.Get("main"); float z = zp / 100f;
+            Font gf = grid.Font; grid.Font = new Font(gf.FontFamily, gridBase * z); if (gf != null && !object.ReferenceEquals(gf, Font)) { /* police héritée : rien à libérer */ }
+            FontFamily fam = grid.DefaultCellStyle.Font != null ? grid.DefaultCellStyle.Font.FontFamily : Ui.Mono.FontFamily; grid.DefaultCellStyle.Font = new Font(fam, cellBase * z);
+            applyingZoom = true; foreach (DataGridViewColumn c in grid.Columns) { ColDef cd = c.Tag as ColDef; if (cd != null) c.Width = Math.Max(24, (int)Math.Round(cd.Width * z)); } applyingZoom = false;   // les colonnes s'écartent comme le texte : on voit le même contenu
+            int h = (int)Math.Ceiling(grid.DefaultCellStyle.Font.GetHeight()) + 6; grid.RowTemplate.Height = h; grid.ColumnHeadersHeight = Math.Max(22, (int)Math.Ceiling(grid.Font.GetHeight()) + 8);
+            if (zoomApplied != zp && grid.RowCount > 0)
+            {
+                int rc = grid.RowCount, first = Math.Max(0, grid.FirstDisplayedScrollingRowIndex), sel = grid.CurrentCell != null ? grid.CurrentCell.RowIndex : -1, col = grid.CurrentCell != null ? grid.CurrentCell.ColumnIndex : -1;
+                grid.RowCount = 0; grid.RowCount = rc;
+                try { if (first < rc) grid.FirstDisplayedScrollingRowIndex = first; if (sel >= 0 && sel < rc && col >= 0) grid.CurrentCell = grid[col, sel]; } catch { }
+            }
+            zoomApplied = zp; StretchLast(); grid.Invalidate();
+        }
         // Couleurs du Logbook (View > Colors) : fond, liste, en-tetes, cluster, carte de bande.
         void ApplyTheme()
         {
@@ -271,7 +291,7 @@ namespace HamRadioLink.Journal
             DataGridViewCellStyle d = grid.DefaultCellStyle; d.BackColor = Theme.Get("lb.grid.back"); d.ForeColor = Theme.Get("lb.grid.text"); d.SelectionBackColor = Theme.Get("lb.grid.sel"); d.SelectionForeColor = Theme.Get("lb.grid.seltext");
             DataGridViewCellStyle h = grid.ColumnHeadersDefaultCellStyle; h.BackColor = Theme.Get("lb.head.back"); h.ForeColor = Theme.Get("lb.head.text"); h.SelectionBackColor = Theme.Get("lb.head.back"); h.SelectionForeColor = Theme.Get("lb.head.text");
             
-            grid.Invalidate(); Invalidate(true);
+            grid.Invalidate(); Invalidate(true); if (gridBase != 0 && IsHandleCreated) BeginInvoke(new Action(ApplyZoomMain));
         }
         // Menu Thèmes : un clic applique le thème à toutes les fenêtres du journal (et le mémorise)
         ColorsForm colorsWin;
@@ -289,11 +309,31 @@ namespace HamRadioLink.Journal
 
         // ---------- colonnes ----------
         // La derniere colonne (dans l'ordre affiche) occupe toujours le reste de la largeur, jusqu'au bord, quoi qu'on deplace.
+        // Toutes les colonnes sont redimensionnables à la souris (y compris la dernière) ; plus de colonne « étirée » automatiquement.
         void FixLast()
         {
-            DataGridViewColumn last = null; int mx = -1;
-            foreach (DataGridViewColumn c in grid.Columns) { c.AutoSizeMode = DataGridViewAutoSizeColumnMode.None; if (c.DisplayIndex > mx) { mx = c.DisplayIndex; last = c; } }
-            if (last != null) { last.MinimumWidth = 70; last.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill; }
+            foreach (DataGridViewColumn c in grid.Columns) { c.AutoSizeMode = DataGridViewAutoSizeColumnMode.None; c.MinimumWidth = 24; c.Resizable = DataGridViewTriState.True; }
+            grid.AllowUserToResizeColumns = true; StretchLast();
+        }
+        // La dernière colonne (dans l'ordre affiché, par ex. « Commentaire ») va toujours jusqu'au bord droit de la liste : elle prend au moins la largeur restante,
+        // et garde sa propre largeur (réglable à la souris) si elle est plus grande.
+        void StretchLast()
+        {
+            if (stretching || grid == null || grid.Columns.Count == 0 || grid.ClientSize.Width < 50) return;
+            DataGridViewColumn last = null; int sum = 0;
+            foreach (DataGridViewColumn c in grid.Columns) { if (!c.Visible) continue; if (last == null || c.DisplayIndex > last.DisplayIndex) last = c; }
+            if (last == null) return;
+            foreach (DataGridViewColumn c in grid.Columns) if (c.Visible && c != last) sum += c.Width;
+            int vs = 0; foreach (Control k in grid.Controls) { VScrollBar v = k as VScrollBar; if (v != null && v.Visible) vs = v.Width; }
+            ColDef cd = last.Tag as ColDef; int own = cd != null ? (int)Math.Round(cd.Width * LogZoom.Factor("main")) : 24;
+            int want = Math.Max(Math.Max(24, own), grid.ClientSize.Width - vs - sum - 1);
+            if (last.Width != want) { stretching = true; try { last.Width = want; } finally { stretching = false; } }
+        }
+        // Bouton ↔ : chaque colonne prend la largeur de son contenu affiché et de son titre, pour que tout soit lisible
+        void FitColumns()
+        {
+            grid.AutoResizeColumns(DataGridViewAutoSizeColumnsMode.DisplayedCells);
+            foreach (DataGridViewColumn c in grid.Columns) c.Width += 12; StretchLast();
         }
         void BuildGridColumns() { BuildGridColumnsRaw(); FixLast(); }
         void BuildGridColumnsRaw()
@@ -302,13 +342,13 @@ namespace HamRadioLink.Journal
             foreach (ColDef c in cols)
             {
                 if (!c.Visible) continue;
-                DataGridViewTextBoxColumn col = new DataGridViewTextBoxColumn { HeaderText = c.Title, Width = c.Width, SortMode = DataGridViewColumnSortMode.Programmatic, Tag = c };
+                DataGridViewTextBoxColumn col = new DataGridViewTextBoxColumn { HeaderText = c.Title, Width = (int)Math.Round(c.Width * LogZoom.Factor("main")), MinimumWidth = 24, Resizable = DataGridViewTriState.True, SortMode = DataGridViewColumnSortMode.Programmatic, Tag = c };
                 if (c.Right) col.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
                 grid.Columns.Add(col);
             }
         }
 
-        void SaveCols() { List<string> v = new List<string>(); foreach (ColDef c in cols) if (c.Visible) v.Add(c.Title); App.Cfg.Set("lb.cols", string.Join(",", v.ToArray())); App.Cfg.Save(); }
+        void SaveCols() { List<string> v = new List<string>(), w = new List<string>(); foreach (ColDef c in cols) { if (c.Visible) v.Add(c.Title); w.Add(c.Title + "=" + c.Width); } App.Cfg.Set("lb.cols", string.Join(",", v.ToArray())); App.Cfg.Set("lb.colw", string.Join(";", w.ToArray())); App.Cfg.Save(); }
 
         void ChooseColumns()
         {
@@ -492,6 +532,7 @@ namespace HamRadioLink.Journal
             }
         }
 
+        void OpenQrzCq() { List<Qso> s = Selected(); string c = s.Count > 0 ? s[0].S("COL_CALL") : search.Text.Trim(); if (c.Length > 0) try { Process.Start("https://www.qrzcq.com/call/" + Uri.EscapeDataString(c)); } catch { } }
         void OpenQrz() { List<Qso> s = Selected(); string c = s.Count > 0 ? s[0].S("COL_CALL") : search.Text.Trim(); if (c.Length > 0) try { Process.Start("https://www.qrz.com/db/" + Uri.EscapeDataString(c)); } catch { } }
 
         // Importer / partager : l'assistant qui retrouve les journaux MariaDB d'un autre logiciel (copie ou partage direct), installe le MariaDB intégré si besoin, importe un fichier ADIF.

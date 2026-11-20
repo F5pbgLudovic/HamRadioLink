@@ -71,7 +71,7 @@ namespace HamRadioLink.Journal
                     using (ColorsForm cf = new ColorsForm()) { cf.StartPosition = FormStartPosition.Manual; cf.Location = new Point(-3000, 0); cf.Show(); Skin.ApplyAll(); Pump(400); Snap(cf, Path.Combine(dir, "couleurs.png")); cf.Close(); }
                     using (ColorPicker cp = new ColorPicker("Fond des fenêtres", Theme.C(0x20C997))) { cp.StartPosition = FormStartPosition.Manual; cp.Location = new Point(-3000, 0); cp.Show(); Skin.ApplyAll(); Pump(400); Snap(cp, Path.Combine(dir, "selecteur.png")); cp.Close(); }
                     Theme.ResetTheme(1); check(saved && Theme.All[1].Back == orig && App.Cfg.Get(Theme.Key(1, false, 0), "") == "", "Couleurs du thème : personnalisée, mémorisée par thème, puis rétablie");
-                    Theme.Set(0); Skin.ApplyAll(); check(Theme.All.Count >= 28, "Thèmes : " + Theme.All.Count + " thèmes disponibles, appliqués aux fenêtres sans erreur");
+                    Theme.Set(0); Skin.ApplyAll(); check(Theme.All.Count >= 40, "Thèmes : " + Theme.All.Count + " thèmes disponibles, appliqués aux fenêtres sans erreur");
                     lb.Close();
                 }
                 using (DbForm f = new DbForm())

@@ -75,7 +75,32 @@ namespace HamRadioLink
                 // Section « alimentation / émission » : la touche ÉMISSION (PTT) gagne en HAUTEUR (pas en largeur) ; les touches situées sous elle descendent
         // d'autant, sans changer de forme, pour occuper l'espace libre en bas du cadre ; l'espace restant en bas égale la marge de gauche (disposition symétrique).
         // Idempotent : une seconde application ne change plus rien.
-        public static void Harmonize(RadioDef r) { Harmonize0(r); AddTune(r); }
+        // Disposition d'origine du FT-2000 / FT-2000D : celle validée sur le poste de l'utilisateur (id, x, y, largeur, hauteur) ; appliquée aussi comme positions « par défaut »
+        const string Ft2000Layout = "poff,152,148,56,42;onoff,24,148,118,42;tuner,24,192,182,54;tunego,24,248,182,54;vox,24,304,86,40;mox,120,304,86,40;dual,894,490,120,58;nar,1027,490,120,58;narb,1125,490,120,58;clarrx,1684,716,108,40;clartx,1684,772,108,40;clr,1568,772,108,40;nbl,324,887,94,96;dnrl,424,887,94,96;procl,524,887,94,96;monil,624,887,94,96;voxg,724,887,94,96;notch,1449,718,108,40;cont,1566,716,108,40;dnf,1217,718,108,40;clar,1680,594,110,112";
+        static void UserDefaults(RadioDef r)
+        {
+            if (r.Key != "ft2000") return;
+            foreach (string it in Ft2000Layout.Split(';'))
+            {
+                string[] p = it.Split(','); Ctl c = r.Find(p[0]); if (c == null) continue;
+                c.X = c.DX = int.Parse(p[1]); c.Y = c.DY = int.Parse(p[2]); c.W = c.DW = int.Parse(p[3]); c.H = c.DH = int.Parse(p[4]);
+            }
+        }
+        public static void Harmonize(RadioDef r) { Harmonize0(r); AddTune(r); UserDefaults(r); AddMenuBtn(r); }
+        // FT-2000 : bouton « MENU » (local) à droite de METER, de la même taille ; il ouvre la table des menus 001 à 149 du poste
+        static void AddMenuBtn(RadioDef r)
+        {
+            if (!RigMenu.Applies(r) || r.Find("menu") != null) return; Ctl m = r.Find("meter"); const int w = 190, h = 62; int px = -1, py = -1;
+            if (r.Key == "ft2000" && m != null) { px = m.X + m.W + 10; py = m.Y; }                 // FT-2000 : à droite de METER, de la même taille
+            else
+            {
+                // autres postes : le plus bas et le plus à droite possible sans recouvrir un autre bouton (comme TUNE)
+                for (int y = 980 - h - 6; px < 0 && y >= 124; y -= 6) for (int x = 1860 - w - 6; x >= 6; x -= 6) if (TuneFree(r, x, y, w, h)) { px = x; py = y; break; }
+                if (px < 0) { px = 6; py = 980 - h - 6; }
+            }
+            Ctl t = new Ctl(); t.K = Kind.Action; t.Id = "menu"; t.Label = t.DLabel = "MENU"; t.Local = true; t.X = t.DX = px; t.Y = t.DY = py; t.W = t.DW = (r.Key == "ft2000" && m != null) ? m.W : w; t.H = t.DH = (r.Key == "ft2000" && m != null) ? m.H : h;
+            t.DSet = t.DRead = t.DParse = t.DItems = ""; t.DOnVal = "1"; t.DOffVal = "0"; t.Tip = "Menu interne du poste (commande EX) : valeurs lues dans le poste, modifiables. Clic droit sur une ligne : noms et valeurs possibles."; r.C.Add(t);
+        }
         // Bouton TUNE (local, sans commande CAT) ajouté à tous les postes : 190 x 62 (taille de VOX SOURCE du FT-2000), le plus bas et le plus à droite possible sans recouvrir un autre bouton
         static void AddTune(RadioDef r)
         {

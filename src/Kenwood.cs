@@ -6,7 +6,7 @@ namespace HamRadioLink
     public static partial class Radios
     {
         // Postes Kenwood TS-480 (HX/SAT) et TS-890S. Sources : « TS-480 PC Control Command » et « TS-890S PC Command » (E:\...\kenwood\).
-        // Catalogues dans catalogues\ts480.new.cat / ts890.new.cat. Jamais essayé sur un vrai poste : tout se corrige par clic droit en « config vue ».
+        // Catalogues dans catalogues\ts480.new.cat / ts890.new.cat. Jamais essayé sur un vrai poste : tout se corrige par clic droit en « vue config ».
         static RadioDef Ts480() { return Kenwood(false); }
         static RadioDef Ts890() { return Kenwood(true); }
 

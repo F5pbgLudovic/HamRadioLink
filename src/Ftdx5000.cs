@@ -48,8 +48,8 @@ namespace HamRadioLink
             b.Led("l_mem", "MEM", 1010, 266, 112, 22, "vm", "1|2|3|4", "amber");
             b.Led("l_rxant", "ANT RX A", 1126, 266, 112, 22, "rxant", "1", "amber");
             b.Led("l_rxantb", "ANT RX B", 1010, 292, 112, 22, "rxantb", "1", "amber");
-            // mesures d'émission : lues pour le galvanomètre, visibles seulement en « config vue »
-            string hid = "Mesure lue pour l'aiguille du compteur (visible seulement en config vue).";
+            // mesures d'émission : lues pour le galvanomètre, visibles seulement en « vue config »
+            string hid = "Mesure lue pour l'aiguille du compteur (visible seulement en vue config).";
             c = b.Meter("po", "Po", 372, 400, 140, 26, 255, "RM5;", @"^RM5(?<v>\d{3});$", "pct", true); c.Hidden = true; c.Hint = hid;
             c = b.Meter("swr", "SWR", 518, 400, 140, 26, 255, "RM6;", @"^RM6(?<v>\d{3});$", "pct", true); c.Hidden = true; c.Hint = hid;
             c = b.Meter("alc", "ALC", 664, 400, 140, 26, 255, "RM4;", @"^RM4(?<v>\d{3});$", "pct", true); c.Hidden = true; c.Hint = hid;

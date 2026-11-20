@@ -31,13 +31,17 @@ namespace HamRadioLink
                 if (Environment.GetEnvironmentVariable("HRL_ONLY") == "srv") { ServerTest(); throw new OperationCanceledException(); }
                 if (Environment.GetEnvironmentVariable("HRL_ONLY") == "pttall") { foreach (RadioDef d in Radios.All()) { Ctl p = d.Find("ptt"); Check(p != null && p.K == Kind.Toggle, "touche PTT (menu clic droit : micro vers le poste) absente : " + d.Key + (d.Leg != null ? " [ancien]" : "")); } throw new OperationCanceledException(); }
                 if (Environment.GetEnvironmentVariable("HRL_ONLY") == "lock") { foreach (RadioDef d in Radios.All()) LockChecks(d); throw new OperationCanceledException(); }
+                if (Environment.GetEnvironmentVariable("HRL_ONLY") == "dead") { DeadReads(); throw new OperationCanceledException(); }
+                if (Environment.GetEnvironmentVariable("HRL_ONLY") == "maj") { UpdateChecks(); RosRestoreChecks(); ScaleChecks(); throw new OperationCanceledException(); }
+                if (Environment.GetEnvironmentVariable("HRL_ONLY") == "pickdead") { RadioDef q = Radios.ByKey("ftdx10"); PickChecks(q); DeadReads(); throw new OperationCanceledException(); }
+                if (Environment.GetEnvironmentVariable("HRL_ONLY") == "pick") { foreach (RadioDef d in Radios.All()) PickChecks(d); throw new OperationCanceledException(); }
                 if (Environment.GetEnvironmentVariable("HRL_ONLY") == "tci") { RadioDef t = Radios.ByKey("tci"); Definitions(t); Roundtrip(t); TciChecks(t); Persistence(t); throw new OperationCanceledException(); }
                 if (Environment.GetEnvironmentVariable("HRL_ONLY") == "leg") { foreach (RadioDef d in Radios.All()) if (d.Leg != null) { foreach (string nt in d.Notes) sb.AppendLine("NOTE " + d.Key + " : " + nt); Definitions(d); Roundtrip(d); LegChecks(d); Persistence(d); LockChecks(d); } throw new OperationCanceledException(); }
                 Templates(); CivCodec(); Y5Codec(); int nCiv = 0;
                 foreach (RadioDef d in Radios.All()) { foreach (string nt in d.Notes) sb.AppendLine("NOTE " + d.Key + " : " + nt); Definitions(d); Roundtrip(d); if (d.Civ >= 0) CivChecks(d, ++nCiv); else if (d.Bin) Y5Checks(d); else if (d.Leg != null) LegChecks(d); else if (d.Tci) TciChecks(d); else { StateMapping(d); EndToEnd(d); } Persistence(d); LockChecks(d); }
                 CustomTest(); Strictness();
                 Editors();
-                DeadReads(); MenuBackup();
+                DeadReads(); MenuBackup(); UpdateChecks(); RosRestoreChecks(); ScaleChecks(); foreach (RadioDef d in Radios.All()) { PickChecks(d); RosChecks(d); }
                 ShareTest(); ShareCfgTest(); ServerTest(); Com0ComTest(); CatLogTest(); PttTimeoutTest();
             }
             catch (OperationCanceledException) { }
@@ -51,7 +55,7 @@ namespace HamRadioLink
         // Liste de toutes les commandes (HamRadioLink.exe --dump=fichier.txt)
         public static void Dump(string path)
         {
-            StringBuilder o = new StringBuilder(); o.AppendLine("HamRadioLink - commandes CAT par défaut de chaque élément (celles que le clic droit en config vue permet de modifier)"); o.AppendLine();
+            StringBuilder o = new StringBuilder(); o.AppendLine("HamRadioLink - commandes CAT par défaut de chaque élément (celles que le clic droit en vue config permet de modifier)"); o.AppendLine();
             foreach (RadioDef d in Radios.All())
             {
                 o.AppendLine("==================== " + d.Name + "  (ID attendu " + d.IdAnswer + ", " + d.FreqDigits + " chiffres de fréquence, vitesse conseillée " + d.DefBaud + ")");
@@ -94,7 +98,7 @@ namespace HamRadioLink
             foreach (Ctl c in d.C)
             {
                 Check(ids.Add(c.Id), d.Key + " : identifiant en double " + c.Id);
-                Check(c.X >= 0 && c.Y >= 118 && c.X + c.W <= 1860 && c.Y + c.H <= 980, d.Key + " : " + c.Id + " hors de la fenêtre (" + c.X + "," + c.Y + "," + c.W + "," + c.H + ")");
+                Check(c.X >= 0 && c.Y >= 118 && c.X + c.W <= 1860 && c.Y + c.H <= (d.Key == "ft2000" ? 985 : 980), d.Key + " : " + c.Id + " hors de la fenêtre (" + c.X + "," + c.Y + "," + c.W + "," + c.H + ")");
                 if (c.Set.Length > 0) Check(Tpl.Check(c.Set) == null, d.Key + " : gabarit invalide " + c.Id);
                 if (c.Parse.Length > 0) { try { new Regex(c.Parse); } catch { Check(false, d.Key + " : regex invalide " + c.Id); } Check(c.Read.Length > 0 || (d.Catalog == "ts890" && c.Id == "ptt"), d.Key + " : " + c.Id + " a une réponse mais pas de lecture"); }
                 if (c.Read.Length > 0) { Check(c.Read.EndsWith(";"), d.Key + " : " + c.Id + " lecture sans ';'"); Check(c.Parse.Length > 0, d.Key + " : " + c.Id + " lecture sans format de réponse"); }
@@ -110,7 +114,7 @@ namespace HamRadioLink
             for (int i = 0; i < top.Count; i++) for (int j = i + 1; j < top.Count; j++)
                 {
                     Ctl a = top[i], b = top[j]; bool ov = a.X < b.X + b.W && b.X < a.X + a.W && a.Y < b.Y + b.H && b.Y < a.Y + a.H;
-                    Check(!ov, d.Key + " : " + a.Id + " et " + b.Id + " se chevauchent");
+                    Check(!ov || (d.Key == "ft2000" && Ft2000UserOverlap(a.Id, b.Id)), d.Key + " : " + a.Id + " et " + b.Id + " se chevauchent");
                 }
             Info(d.Name + " : " + d.C.Count + " éléments, " + nCat + " avec commande CAT");
         }
@@ -436,7 +440,342 @@ namespace HamRadioLink
             Check(Backup.Import(s, false, false, false) == 0, "import avec aucune partie cochée : rien d'écrit");
             Check(Backup.Import(s, false, false, true) == 1, "import du menu seul : mis en attente"); int sent = Backup.ApplyPending(d, rig);
             Check(sent >= 2, "menu renvoyé au poste (" + sent + " commandes)"); Check(Cfg.Get("pendingmenu.ft2000", "").Length == 0, "attente vidée après l'envoi");
-            rig.Disconnect(); Info("Export / import par parties : menu EXnnn lu, restauré, parties choisies");
+            // un seul poste : disposition + commandes + réglages d'affichage, export puis réimport sans toucher au reste
+            string fl = System.IO.Path.Combine(Cfg.Dir, "ft2000.layout.ini"), fc = System.IO.Path.Combine(Cfg.Dir, "ft2000.custom.ini");
+            System.IO.File.WriteAllText(fl, "af\t10\t130\t90\t40\r\n"); if (System.IO.File.Exists(fc)) System.IO.File.Delete(fc);
+            Cfg.Set("analog.ft2000.sm", "1"); Cfg.Set("lock.ft2000.af", "1"); Cfg.Set("autre.reglage", "garde");
+            string rs = Backup.DumpRig(d);
+            Check(Backup.RigOf(rs) == "ft2000" && rs.Contains("[[rigfile:layout]]") && rs.Contains("analog.ft2000.sm=1") && !rs.Contains("autre.reglage"), "export d'un seul poste : disposition et réglages du poste, rien d'autre");
+            Check(Backup.Parts(rs).Count == 0 && Backup.Import(rs, true, true, true) == 0, "fichier d'un poste seul ignoré par l'import complet");
+            System.IO.File.Delete(fl); Cfg.Set("analog.ft2000.sm", "0"); Cfg.Set("lock.ft2000.xx", "1");
+            Check(Backup.ImportRig(rs) >= 2, "import d'un seul poste");
+            Check(System.IO.File.Exists(fl) && Cfg.Get("analog.ft2000.sm", "") == "1" && Cfg.Get("lock.ft2000.xx", "") == "" && Cfg.Get("autre.reglage", "") == "garde", "poste restauré (disposition, affichage), le reste du logiciel intact");
+            System.IO.File.Delete(fl); Cfg.Set("analog.ft2000.sm", ""); Cfg.Set("lock.ft2000.af", ""); Cfg.Set("autre.reglage", "");
+            rig.Disconnect(); Info("Export / import par parties : menu EXnnn lu, restauré, parties choisies, poste seul");
+        }
+
+        // ---- mise à jour : comparaison de versions, lecture de la publication, téléchargement, remplacement de l'exe, sauvegarde, script de relance ; alerte ROS qui s'éteint seule
+        static void UpdateChecks()
+        {
+            Check(Updater.Compare("v1.10", "1.9") > 0 && Updater.Compare("1.2", "v1.2") == 0 && Updater.Compare("1.2", "1.3") < 0 && Updater.Compare("2", "1.99") > 0 && Updater.Compare("1.2.1", "1.2") > 0, "mise à jour : comparaison des numéros de version");
+            
+            string dir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "hrl-maj-" + Guid.NewGuid().ToString("N")); System.IO.Directory.CreateDirectory(dir);
+            try
+            {
+                byte[] a = new byte[600000], b = new byte[610000]; a[0] = (byte)'M'; a[1] = (byte)'Z'; a[2] = 1; b[0] = (byte)'M'; b[1] = (byte)'Z'; b[2] = 2;
+                string asset = System.IO.Path.Combine(dir, "HamRadioLink.exe"); System.IO.File.WriteAllBytes(asset, b);
+                string json = "{\"tag_name\":\"v9.9\",\"body\":\"Notes\\r\\nligne 2 \\\"cit\\\"\",\"assets\":[{\"name\":\"HamRadioLink-9.9.zip\",\"size\":12,\"browser_download_url\":\"file:///x/HamRadioLink-9.9.zip\"},{\"name\":\"HamRadioLink.exe\",\"uploader\":{\"login\":\"x\"},\"size\":" + b.Length + ",\"browser_download_url\":\"" + new Uri(asset).AbsoluteUri + "\"}]}";
+                string err; Updater.Info i = Updater.Parse(json, out err);
+                Check(i != null && i.Version == "9.9" && i.Url.EndsWith("HamRadioLink.exe") && i.Size == b.Length && i.Notes.StartsWith("Notes\nligne 2 \"cit\""), "mise à jour : publication lue (version, exe parmi plusieurs fichiers, taille, notes)");
+                Check(Updater.Parse("{\"tag_name\":\"v9.9\",\"assets\":[]}", out err) == null && err != null && Updater.Parse("[]", out err) == null, "mise à jour : publication sans exe ou illisible refusée");
+                string jf = System.IO.Path.Combine(dir, "release.json"); System.IO.File.WriteAllText(jf, json); Updater.ApiOverride = new Uri(jf).AbsoluteUri;
+                Updater.Info c = Updater.Check(out err); Check(c != null && Updater.IsNewer(c), "mise à jour : version plus récente détectée (" + err + ")");
+                System.IO.File.WriteAllText(jf, json.Replace("v9.9", "v" + MainForm.Version)); c = Updater.Check(out err); Check(c != null && !Updater.IsNewer(c), "mise à jour : même version = à jour, aucun message");
+                System.IO.File.WriteAllText(jf, "pas du json"); c = Updater.Check(out err); Check(c == null && err != null, "mise à jour : réponse invalide signalée");
+                Updater.ApiOverride = new Uri(System.IO.Path.Combine(dir, "absent.json")).AbsoluteUri; c = Updater.Check(out err); Check(c == null && err != null, "mise à jour : adresse injoignable signalée sans planter");
+                Updater.ApiOverride = null;
+                string dl = System.IO.Path.Combine(dir, "dl"); System.IO.Directory.CreateDirectory(dl); int pr = 0; string f = Updater.Download(i, dl, delegate(int p) { pr = p; }, out err);
+                Check(f != null && new System.IO.FileInfo(f).Length == b.Length && System.IO.File.ReadAllBytes(f)[2] == 2, "mise à jour : téléchargement identique à la publication (" + err + ")");
+                i.Size = 0; System.IO.File.WriteAllBytes(asset, new byte[700000]); f = Updater.Download(i, dl, null, out err); Check(f == null && err != null && !System.IO.File.Exists(System.IO.Path.Combine(dl, "HamRadioLink.maj")), "mise à jour : fichier qui n'est pas un programme refusé et supprimé");
+                System.IO.File.WriteAllBytes(asset, new byte[10]); f = Updater.Download(i, dl, null, out err); Check(f == null, "mise à jour : fichier trop petit refusé");
+                // remplacement de l'exe : l'ancien est gardé sous son numéro de version
+                string app = System.IO.Path.Combine(dir, "app"); System.IO.Directory.CreateDirectory(app); string exe = System.IO.Path.Combine(app, "HamRadioLink.exe"), nw = System.IO.Path.Combine(app, "HamRadioLink.maj"); System.IO.File.WriteAllBytes(exe, a); System.IO.File.WriteAllBytes(nw, b);
+                string bk; bool ok = Updater.Apply(exe, nw, "1.2", new List<string>(), false, out bk, out err);
+                Check(ok && System.IO.File.ReadAllBytes(exe)[2] == 2 && bk != null && System.IO.Path.GetFileName(bk) == "HamRadioLink-1.2.exe" && System.IO.File.ReadAllBytes(bk)[2] == 1 && !System.IO.File.Exists(nw), "mise à jour : nouvel exe en place, ancien conservé sous HamRadioLink-1.2.exe");
+                System.IO.File.WriteAllBytes(nw, a); ok = Updater.Apply(exe, nw, "1.2", new List<string>(), false, out bk, out err); Check(ok && System.IO.Path.GetFileName(bk) != "HamRadioLink-1.2.exe" && System.IO.File.Exists(System.IO.Path.Combine(app, "HamRadioLink-1.2.exe")), "mise à jour : une sauvegarde déjà présente n'est jamais écrasée");
+                ok = Updater.Apply(exe, System.IO.Path.Combine(app, "absent.maj"), "1.2", new List<string>(), false, out bk, out err); Check(!ok && err != null && System.IO.File.Exists(exe), "mise à jour : échec du remplacement = ancien exe remis en place");
+                // sauvegarde et fichiers à conserver
+                string dd = System.IO.Path.Combine(dir, "data"); System.IO.Directory.CreateDirectory(dd); foreach (string n in new[] { "settings.ini", "ft2000.layout.ini", "ft2000.cat.ini", "ftdx10.custom.ini", "ic7760.ini" }) System.IO.File.WriteAllText(System.IO.Path.Combine(dd, n), "x=" + n);
+                string sv = Updater.BackupData(dd); Check(System.IO.Directory.GetFiles(sv, "*.ini").Length == 5 && System.IO.File.ReadAllText(System.IO.Path.Combine(sv, "settings.ini")) == "x=settings.ini", "mise à jour : copie de sécurité de tous les fichiers de réglages");
+                Check(Updater.SettingsFiles(dd).Count == 1 && Updater.PostFiles(dd).Count == 3, "mise à jour : réglages du logiciel et fichiers des postes distingués (" + Updater.PostFiles(dd).Count + ")");
+                string sc = Updater.BuildScript(1234, @"C:\x y\HamRadioLink.exe", new List<string> { @"C:\x y\data\settings.ini" });
+                Check(sc.Contains("PID eq 1234") && sc.Contains("del /f /q \"C:\\x y\\data\\settings.ini\"") && sc.Contains("start \"\" \"C:\\x y\\HamRadioLink.exe\"") && sc.IndexOf("del /f") < sc.IndexOf("start \"\""), "mise à jour : script de relance (attend la fin, supprime ce qui n'est pas conservé, relance, s'efface)");
+            }
+            finally { Updater.ApiOverride = null; try { System.IO.Directory.Delete(dir, true); } catch { } }
+            int s = 0; Check(!RosGuard.ShouldClear(2.0, ref s, 1000, 3.0, 1500) && !RosGuard.ShouldClear(2.0, ref s, 2499, 3.0, 1500) && RosGuard.ShouldClear(2.0, ref s, 2500, 3.0, 1500), "alerte ROS : s'éteint seule 1,5 s après le retour sous le seuil");
+            s = 0; RosGuard.ShouldClear(2.0, ref s, 1000, 3.0, 1500); Check(!RosGuard.ShouldClear(3.5, ref s, 1200, 3.0, 1500) && s == 0 && !RosGuard.ShouldClear(2.0, ref s, 2600, 3.0, 1500), "alerte ROS : un nouveau dépassement relance l'attente");
+            s = 0; Check(!RosGuard.ShouldClear(-1, ref s, 9000, 3.0, 0), "alerte ROS : sans lecture du ROS, l'alerte n'est jamais éteinte d'office");
+        }
+
+        // ---- échelles des vumètres d'émission et étalonnage du wattmètre (FT-2000)
+        static void ScaleChecks()
+        {
+            RadioDef d = Radios.ByKey("ftdx10"); string k = d.Key; foreach (string z in new string[] { "pmax", "pfull", "po", "swr", "alc", "comp", "idd", "vdd" }) Cfg.Set("cal." + k + "." + z, "");
+            Check(MeterCal.PMax(k) == 100 && MeterCal.Active(d) && !MeterCal.Active(Radios.ByKey("tci")), "Échelles : 100 W par défaut, actives pour les postes ayant des vumètres d'émission");
+            Check(string.Join(",", MeterCal.Steps(100).ConvertAll<string>(delegate(int w) { return w.ToString(); }).ToArray()) == "10,20,30,40,50,60,70,80,90,100", "Étalonnage : paliers jusqu'à 100 W");
+            Check(string.Join(",", MeterCal.Steps(50).ConvertAll<string>(delegate(int w) { return w.ToString(); }).ToArray()) == "10,20,30,40,50", "Étalonnage : poste 50 W, arrêt à 50 W");
+            Check(MeterCal.Steps(200).Count == 15 && MeterCal.Steps(200)[14] == 200 && MeterCal.Steps(25)[MeterCal.Steps(25).Count - 1] == 25, "Étalonnage : poste 200 W jusqu'à 200 W, puissance max toujours en dernier");
+            Check(MeterCal.VddFull(200) == 50 && MeterCal.VddNominal(200) == 50 && MeterCal.VddNominal(100) == 13.8, "Échelle Vdd : 50 V pour 200 W, 13,8 V sinon");
+            Check(Math.Abs(MeterCal.SwrPos(1)) < 1e-9 && Math.Abs(MeterCal.SwrPos(3) - 0.5) < 1e-9 && MeterCal.SwrPos(1e9) > 0.999, "Échelle SWR : 1 au début, 3 au milieu, infini au bout");
+            Check(MeterCal.CompDb(0) == 0 && MeterCal.CompDb(0.5) == 10 && MeterCal.CompDb(1) == 30, "Échelle COMP : 0 dB, 10 dB au milieu, 30 dB en pleine déviation");
+            foreach (int pm in new int[] { 10, 50, 100, 200 })
+            {
+                MeterCal.SetPMax(k, pm); Sc po = MeterCal.Scale(d, d.Find("po")); Check(po != null && Math.Abs(po.Frac(255) - 1) < 1e-9 && po.Text(255) == pm + " W" && po.Pos[po.Pos.Length - 1] > 0.999 && po.Ticks.Length <= 7, "Échelle Po : pleine déviation " + pm + " W");
+            }
+            MeterCal.SetPMax(k, 100); Sc v = MeterCal.Scale(d, d.Find("vdd")); Check(v.Text(255) == "15.0 V", "Échelle Vdd 100 W : 15 V en pleine déviation"); MeterCal.SetPMax(k, 200); v = MeterCal.Scale(d, d.Find("vdd")); Check(v.Text(255) == "50.0 V" && v.Ticks.Length == 6, "Échelle Vdd 200 W : 50 V en pleine déviation");
+            Check(MeterCal.Scale(d, d.Find("idd")).Text(255) == "15.0 A" && MeterCal.Scale(d, d.Find("comp")).Text(255) == "30 dB" && MeterCal.Scale(d, d.Find("comp")).Text(128) == "10 dB" && MeterCal.Scale(d, d.Find("swr")).Text(255) == "∞" && MeterCal.Scale(d, d.Find("swr")).Text(0) == "1.0" && MeterCal.Scale(d, d.Find("alc")).BlueRed && MeterCal.Scale(d, d.Find("sm")) == null, "Échelles Id 15 A, COMP, SWR, ALC bleu/rouge ; S-mètre inchangé");
+            MeterCal.SetPMax(k, 100); MeterCal.SavePoints(k, new List<double[]> { new double[] { 100, 10 }, new double[] { 200, 50 }, new double[] { 240, 100 } });
+            Sc pc = MeterCal.Scale(d, d.Find("po")); Check(pc.Text(100) == "10 W" && pc.Text(150) == "30 W" && pc.Text(255) == "100 W" && Math.Abs(pc.Frac(240) - 1) < 1e-9, "Étalonnage Po : interpolation entre les points relevés");
+            MeterCal.SetPMax(k, 200); MeterCal.SavePoints(k, new List<double[]> { new double[] { 100, 20 }, new double[] { 150, 50 }, new double[] { 240, 200 } });
+            MeterCal.SetPFull(k, 50); Sc p50 = MeterCal.Scale(d, d.Find("po")); Check(MeterCal.PFull(k) == 50 && Math.Abs(p50.Frac(150) - 1) < 1e-9 && Math.Abs(p50.Frac(100) - 0.4) < 1e-9 && p50.Text(100) == "20 W" && p50.Ticks[p50.Ticks.Length - 1] == "50" && p50.Frac(240) == 1, "Échelle Po 50 W sur poste 200 W étalonné : pleine déviation à 50 W, sans nouvel étalonnage");
+            MeterCal.SetPFull(k, 300); Check(MeterCal.PFull(k) == 200, "Échelle Po : pleine déviation limitée à la puissance max");
+            MeterCal.SetPFull(k, 60); MeterCal.SetPMax(k, 50); Check(MeterCal.PFull(k) == 50, "Échelle Po : pleine déviation ramenée si la puissance max baisse");
+            MeterCal.SetPMax(k, 100);
+            MeterCal.SavePoints(k, "alc", new List<double[]> { new double[] { 100, 40 } }); Sc al = MeterCal.Scale(d, d.Find("alc")); Check(al.Text(100) == "40%" && al.Text(50) == "20%" && al.Text(200) == "80%" && Math.Abs(al.Frac(250) - 1.0) < 1e-9, "Étalonnage ALC : un point, extrapolation depuis l'origine");
+            MeterCal.SavePoints(k, "swr", new List<double[]> { new double[] { 48, 1.5 }, new double[] { 120, 3.0 } }); Sc sw = MeterCal.Scale(d, d.Find("swr")); Check(sw.Text(48) == "1.5" && sw.Text(120) == "3.0" && Math.Abs(sw.Frac(120) - 0.5) < 1e-9 && sw.Text(0) == "1.0" && sw.Text(255) == "∞", "Étalonnage SWR : deux points, 3 au milieu de l'échelle, prolongé jusqu'à l'infini");
+            MeterCal.SavePoints(k, "comp", new List<double[]> { new double[] { 128, 10 }, new double[] { 255, 30 } }); Sc cp = MeterCal.Scale(d, d.Find("comp")); Check(cp.Text(128) == "10 dB" && cp.Text(255) == "30 dB" && Math.Abs(cp.Frac(128) - 0.5) < 1e-9 && Math.Abs(cp.Frac(255) - 1) < 1e-9, "Étalonnage COMP : 10 dB au milieu, 30 dB en pleine déviation");
+            MeterCal.SavePoints(k, "idd", new List<double[]> { new double[] { 100, 6 } }); Sc id2 = MeterCal.Scale(d, d.Find("idd")); Check(id2.Text(100) == "6.0 A" && id2.Text(250) == "15.0 A" && Math.Abs(id2.Frac(250) - 1.0) < 0.001, "Étalonnage Id : un point, pleine déviation 15 A");
+            MeterCal.SavePoints(k, "vdd", new List<double[]> { new double[] { 100, 13.8 } }); Sc vd2 = MeterCal.Scale(d, d.Find("vdd")); Check(vd2.Text(100) == "13.8 V" && MeterCal.Interp(new List<double[]>(), 99, 0) == 0, "Étalonnage Vdd : lecture reliée à la tension réelle");
+            foreach (string mid in new string[] { "alc", "swr", "comp", "idd", "vdd" }) MeterCal.SavePoints(k, mid, new List<double[]>());
+            Check(MeterCal.Scale(d, d.Find("alc")).Text(100) == "39%", "Échelles : retour aux valeurs d'origine après effacement");
+            MeterCal.SavePoints(k, new List<double[]>()); Cfg.Set("cal." + k + ".pmax", ""); Cfg.Set("cal." + k + ".pfull", ""); Ver0();
+            Info("Échelles des vumètres et étalonnage du wattmètre vérifiés"); RadioScaleChecks(); AlignChecks(); MenuChecks(); AllRigChecks();
+        }
+        static void Ver0() { MeterCal.Ver++; }
+        // ---- fonctions étendues à tous les postes : menu EX (tables des manuels), boutons MENU, étalonnage Width / CONT / RF PWR, réglages d'origine
+        static void AllRigChecks()
+        {
+            // menu : tables des manuels pour FT-950, FT-991A, FTdx3000 ; bouton MENU présent exactement sur les postes à menu, sans chevauchement ni sortie de fenêtre
+            string[] mk = { "ft950", "ft991a", "ftdx3000" }; int tables = 0;
+            foreach (string k in mk)
+            {
+                RigMenu.Key = k; int cnt = RigMenu.Count; int named = 0, withVals = 0, bad = 0;
+                for (int n = 1; n <= cnt; n++) { string nm = RigMenu.ManualName(n); if (nm.Length > 0) named++; if (RigMenu.ManualChoices(n, false).Count > 0) withVals++; if (nm.Length > 0 && (nm.Length < 3 || nm.Contains("|"))) bad++; }
+                Check(cnt >= 100 && named >= 100 && withVals >= 30 && bad == 0 && RigMenu.ManualName(1).StartsWith("AGC FAST"), "Menu " + k + " : table du manuel (" + cnt + " menus, " + named + " noms, " + withVals + " listes de valeurs)"); tables++;
+            }
+            RigMenu.Key = "ft950"; Check(RigMenu.Name(new Dictionary<string, string>(), 999) == "Menu 999" && RigMenu.Name(new Dictionary<string, string>(), 1).StartsWith("AGC FAST") && RigMenu.FileVals.EndsWith("menu-ft950.ini") && RigMenu.FileDefs.EndsWith("menu-ft950-defs.ini"), "Menu FT-950 : nom par défaut, fichiers propres au poste");
+            RigMenu.Key = "ftdx5000"; Check(!RigMenu.HasTable && RigMenu.Count == 199 && RigMenu.Name(new Dictionary<string, string>(), 5) == "Menu 005", "Menu FTdx5000 : pas de table, numéros seuls (199 menus, lecture jusqu'à 20 absences)");
+            RigMenu.Key = "ft991a"; bool crit = false; for (int n = 1; n <= RigMenu.Count; n++) if (RigMenu.Critical(n)) crit = true; Check(crit, "Menu FT-991A : des menus critiques (CAT, puissance…) sont signalés");
+            RigMenu.Key = "ft2000"; Check(RigMenu.Count == 149 && RigMenu.Critical(28) && RigMenu.Name(RigMenu.LoadDefs(), 10) == "DISP BAR SEL" && RigMenu.Name(RigMenu.LoadDefs(), 17) == "DUS TX LEVEL", "Menu FT-2000 : 149 menus, noms d'origine relevés sur le poste (010, 012, 013, 016, 017)");
+            int withBtn = 0, noBtn = 0, badBtn = 0;
+            foreach (RadioDef d in Radios.All())
+            {
+                Ctl m = d.Find("menu"); bool has = Backup.HasMenu(d);
+                if (has != (m != null)) badBtn++; else if (has) { withBtn++; if (!m.Local || m.K != Kind.Action || m.W < 60 || m.H < 30 || m.X < 0 || m.Y < 118 || m.X + m.W > 1860 || m.Y + m.H > 980) badBtn++; } else noBtn++;
+                foreach (Ctl o in d.C) if (has && m != null && o != m && o.K != Kind.Frame && m.X < o.X + o.W && o.X < m.X + m.W && m.Y < o.Y + o.H && o.Y < m.Y + m.H) badBtn++;
+            }
+            Check(withBtn == 6 && badBtn == 0, "Bouton MENU : sur les " + withBtn + " postes à menu (FT-2000, FTdx5000, FT-450, FT-950, FT-991A, FTdx3000), absent des " + noBtn + " autres, sans chevauchement (" + badBtn + " défaut)");
+            // étalonnage Width / CONT / RF PWR : disponible sur tous les postes qui ont ces boutons ; sans étalonnage l'affichage d'origine est conservé
+            int kn = 0, knBad = 0;
+            foreach (RadioDef d in Radios.All())
+                foreach (string id in new string[] { "width", "contf", "pwr" })
+                {
+                    Ctl c = d.Find(id); if (c == null || c.K != Kind.Knob) { if (MeterCal.KnobActive(d, c)) knBad++; continue; }
+                    kn++; if (!MeterCal.KnobActive(d, c)) knBad++;
+                    if (d.Key != "ft2000" && (MeterCal.KnobText(d, c, c.Min) != null || MeterCal.KnobMax(d, c) != c.Max)) knBad++;
+                }
+            Check(kn > 20 && knBad == 0, "Width / CONT / RF PWR : " + kn + " boutons sur tous les postes, affichage d'origine inchangé tant qu'il n'est pas étalonné (" + knBad + " défaut)");
+            RadioDef x = Radios.ByKey("ftdx10"); Ctl xw = x.Find("width"), xp = x.Find("pwr"); string kx = x.Key; Cfg.RemovePrefix("cal." + kx + ".");
+            if (xw != null && xp != null)
+            {
+                MeterCal.SavePoints(kx, "width", new List<double[]> { new double[] { 2, 300 }, new double[] { 12, 2400 }, new double[] { 22, 3600 } }); MeterCal.SavePoints(kx, "rfpwr", new List<double[]> { new double[] { 10, 10 }, new double[] { 100, 100 } });
+                Check(MeterCal.KnobText(x, xw, 12) == "2400 Hz" && MeterCal.KnobText(x, xw, 30) == "4000 Hz" && MeterCal.KnobText(x, xp, 55) == "55 W" && MeterCal.KnobMax(x, xp) == 100, "Width / RF PWR étalonnés sur un autre poste (FTdx10) : Hz et W relevés, bornes respectées"); Cfg.RemovePrefix("cal." + kx + "."); MeterCal.Ver++;
+            }
+            // réglages d'origine du FT-2000 : tout ce que l'utilisateur a réglé, sauf la pleine déviation Po à 100 W (et non 50 W)
+            RadioDef ft = Radios.ByKey("ft2000"); Cfg.RemovePrefix("cal.ft2000."); MeterCal.Ver++; Sc po = MeterCal.Scale(ft, ft.Find("po")); Ctl pw = ft.Find("pwr");
+            Check(MeterCal.PMax("ft2000") == 200 && MeterCal.PFull("ft2000") == 100 && po.Ticks[po.Ticks.Length - 1] == "100" && MeterCal.KnobMax(ft, pw) == 142 && MeterCal.KnobText(ft, pw, 249) == "100 W", "FT-2000 : réglages d'origine = ceux de l'utilisateur, pleine déviation Po à 100 W");
+            { Cfg.RemovePrefix("ros."); Cfg.RemovePrefix("tune."); Cfg.RemovePrefix("meter.hold"); Cfg.RemovePrefix("wheelpct"); HW.WheelPct = Math.Max(1, Math.Min(10, Cfg.GetInt("wheelpct", 1))); string bad = ""; if (RosGuard.Threshold != 2.0) bad += " seuil=" + RosGuard.Threshold; if (RosGuard.DelayMs != 300) bad += " delai=" + RosGuard.DelayMs; if (RosGuard.IntervalMs != 50) bad += " pause=" + RosGuard.IntervalMs; if (!RosGuard.Drop) bad += " chute"; if (RosGuard.DropPct != 0) bad += " pct=" + RosGuard.DropPct; if (!RosGuard.TestVox) bad += " voxtest"; if (TuneMic.Level != 15) bad += " tune=" + TuneMic.Level; if (!TuneMic.Vox) bad += " tunevox"; if (HMeter.HoldMs != 10000) bad += " hold=" + HMeter.HoldMs; if (HW.WheelPct != 1) bad += " molette=" + HW.WheelPct; Check(bad.Length == 0, "Réglages d'origine du programme : ROS (seuil 2, délai 0,3 s, bips 50 ms, chute 0 %, test VOX), TUNE 15 % en VOX, maintien vumètre 10 s, molette 1 %" + bad); }
+            Rig rr = new Rig(); rr.Def = ft; Rig r2 = new Rig(); r2.Def = x; Check(rr.PttLimit == 30 && r2.PttLimit == 0, "Délai de sécurité TX : 30 s d'origine pour le FT-2000 seulement");
+            Info("Fonctions étendues à tous les postes vérifiées");
+        }
+        // ---- menu interne du FT-2000 (menus 001 à 149) : noms, formats, lecture / écriture contre le poste simulé, noms et valeurs personnalisés
+        static void MenuChecks()
+        {
+            string dir = Path.Combine(Path.GetTempPath(), "hrl-menu-" + Guid.NewGuid().ToString("N").Substring(0, 8)); Directory.CreateDirectory(dir); RigMenu.Dir = dir;
+            Check(Ft2000MenuNames.Names.Length == 149 && RigMenu.ManualName(1) == "AGC FAST DELAY TIME" && RigMenu.ManualName(149) == "EMERGENCY CHANNEL" && RigMenu.ManualName(76) == "28 MHz REPEATER SHIFT" && RigMenu.ManualName(139).Contains("BANDWIDTH (MID RANGE)"), "Menu FT-2000 : 149 noms du manuel");
+            bool empty = false; foreach (string s in Ft2000MenuNames.Names) if (s.Trim().Length < 4) empty = true; Check(!empty, "Menu FT-2000 : aucun nom vide");
+            Check(Ft2000MenuInfo.P2.Length == 149 && Ft2000MenuInfo.Bytes.Length == 149 && Ft2000MenuInfo.Bytes[0] == 4 && Ft2000MenuInfo.Bytes[6] == 1 && Ft2000MenuInfo.Bytes[14] == 7 && Ft2000MenuInfo.Bytes[123] == 13, "Menu FT-2000 : valeurs possibles et nombre de caractères du manuel pour les 149 menus");
+            bool noP2 = false; foreach (string s in Ft2000MenuInfo.P2) if (s.Trim().Length < 3) noP2 = true; Check(!noP2, "Menu FT-2000 : chaque menu a ses valeurs possibles");
+            List<KeyValuePair<string, string>> c7 = RigMenu.ManualChoices(7, false), c28 = RigMenu.ManualChoices(28, false), c97 = RigMenu.ManualChoices(97, false), c131 = RigMenu.ManualChoices(131, false);
+            Check(c7.Count == 5 && c7[0].Key == "0" && c7[0].Value == "COOL BLUE" && c7[4].Value == "UMBER" && c28.Count == 4 && c28[3].Key == "3" && c28[3].Value == "38400 bps" && c97.Count == 12 && c97[11].Key == "11" && c97[11].Value == "2000 Hz" && c131.Count == 19 && RigMenu.ManualChoices(1, false).Count == 0 && RigMenu.ManualChoices(38, false).Count == 1 && RigMenu.ManualChoices(35, false).Count == 7 && RigMenu.ManualChoices(11, false)[1].Value == "0.5 sec", "Menu FT-2000 : listes de valeurs du manuel décomposées (couleur, CAT, filtres, égaliseur, plages)");
+            Check(RigMenu.ManualChoices(144, false)[0].Value == "10 W" && RigMenu.ManualChoices(144, true)[0].Value == "20 W" && RigMenu.ManualChoices(144, true)[3].Value == "200 W" && RigMenu.ManualChoices(147, true)[3].Value == "200 W" && RigMenu.ManualChoices(147, false)[3].Value == "100 W", "Menu FT-2000 : puissances maximales distinctes FT-2000 (100 W) et FT-2000D (200 W)");
+            Check(RigMenu.Format("0300", "400") == "0400" && RigMenu.Format("0300", "12345") == null && RigMenu.Format("+0000", "-25") == "-0025" && RigMenu.Format("+0000", "30") == "+0030" && RigMenu.Format("1", "7") == "7" && RigMenu.Format("1", "-1") == null && RigMenu.Format("00", "abc") == null && RigMenu.Format(null, "1") == null, "Menu FT-2000 : saisie mise au format du poste (chiffres, signe)");
+            RadioDef d = Radios.ByKey("ft2000"); Ctl mn = d.Find("menu"), me = d.Find("meter");
+            Check(mn != null && me != null && mn.Local && mn.K == Kind.Action && mn.W == me.W && mn.H == me.H && mn.Y == me.Y && mn.X == me.X + me.W + 10 && Radios.ByKey("ftdx10").Find("menu") == null && Radios.ByKey("ftdx5000").Find("menu") != null, "Menu FT-2000 : bouton MENU à droite de METER, même taille ; absent des postes sans menu EX");
+            d.LoadUser(); Rig rig = new Rig(); VirtualLink vl = new VirtualLink(d); string err; rig.Connect(d, vl, out err); Wait(delegate { return rig.Get("pwr") != null; }, 8000);
+            int got = 0; Dictionary<int, string> vals = new Dictionary<int, string>(); for (int n = 1; n <= 149; n++) { string v = RigMenu.Read(rig, n); if (v != null) { got++; vals[n] = v; } }
+            Check(got == 149 && vals[1] == "0300" && vals[86] == "+0000", "Menu FT-2000 : les 149 menus sont lus (" + got + ")");
+            RigMenu.SaveVals(vals); Dictionary<int, string> back = RigMenu.LoadVals(); Check(back.Count == 149 && back[1] == "0300" && back[86] == "+0000", "Menu FT-2000 : valeurs mémorisées puis rechargées");
+            string w = RigMenu.Write(rig, 1, RigMenu.Format(vals[1], "420")); string w2 = RigMenu.Write(rig, 86, RigMenu.Format(vals[86], "-25"));
+            Check(w == "0420" && w2 == "-0025" && RigMenu.Read(rig, 1) == "0420", "Menu FT-2000 : valeur écrite puis relue (0300 -> 0420, +0000 -> -0025)");
+            RigMenu.Write(rig, 1, "0300"); RigMenu.Write(rig, 86, "+0000");
+            using (MenuDlg dlg = new MenuDlg(rig))
+            {
+                Check(dlg.RowsShown == 149 && dlg.TestValue(1) == "0300" && dlg.TestValue(86) == "+0000" && dlg.TestName(1) == "AGC FAST DELAY TIME" && dlg.TestName(28).Contains("⚠"), "Fenêtre Menu : 149 lignes, valeurs mémorisées, menus critiques signalés");
+                Check(dlg.TestMean(7) == "COOL BLUE" && dlg.TestMean(28) == "4800 bps", "Fenêtre Menu : signification lue dans la liste du manuel (menu 7 = COOL BLUE)"); dlg.TestApply(7, "3"); Check(dlg.TestMean(7) == "CONTRAST UMBER" && RigMenu.Read(rig, 7) == "03", "Fenêtre Menu : choix dans la liste envoyé au poste (menu 7 -> 3 = CONTRAST UMBER)"); dlg.TestApply(7, "0"); Check(dlg.ClientSize.Width <= 1366 && dlg.TestFit(1920, 1080) == new System.Drawing.Size(1366, 700) && dlg.TestFit(1280, 720).Width == 1256 && dlg.TestFit(1280, 720).Height == 640 && dlg.TestFit(800, 600).Width == 776, "Fenêtre Menu : 1366 x 700 par défaut, réduite si l'écran est plus petit"); dlg.TestApply(2, "480"); Check(dlg.TestValue(2) == "0480" && RigMenu.Read(rig, 2) == "0480" && RigMenu.LoadVals()[2] == "0480", "Fenêtre Menu : modification envoyée au poste, relue et mémorisée");
+                dlg.TestApply(2, "99999"); Check(dlg.TestValue(2) == "0480" && dlg.TestStatus.Contains("refusée"), "Fenêtre Menu : valeur trop longue refusée, valeur du poste inchangée");
+                RigMenu.Write(rig, 2, "0300");
+            }
+            rig.Disconnect();
+            Dictionary<string, string> defs = new Dictionary<string, string>(); defs["001.name"] = "AGC FST DLY"; defs["028.vals"] = "0=4800;1=9600;2=19200;3=38400;4=57600"; RigMenu.SaveDefs(defs); Dictionary<string, string> d2 = RigMenu.LoadDefs();
+            Check(RigMenu.Name(d2, 1) == "AGC FST DLY" && RigMenu.Name(d2, 2) == "AGC FAST PEAK HOLD TIME" && RigMenu.Meaning(d2, 28, "3") == "38400" && RigMenu.Meaning(d2, 28, "03") == "38400" && RigMenu.Meaning(d2, 28, "9") == "" && RigMenu.Choices(d2, 28).Count == 5 && RigMenu.Critical(28) && !RigMenu.Critical(1), "Menu FT-2000 : noms et valeurs possibles personnalisés (clic droit)");
+            RigMenu.Dir = null; try { Directory.Delete(dir, true); } catch { }
+            Info("Menu interne du FT-2000 vérifié");
+        }
+        // chevauchements présents dans la disposition d'origine du FT-2000 (celle validée sur le poste de l'utilisateur) : tolérés, signalés à l'utilisateur
+        static bool Ft2000UserOverlap(string a, string b)
+        {
+            string p = a + "+" + b, q = b + "+" + a;
+            foreach (string s in new string[] { "nar+narb", "afb+nbl", "rfb+dnrl", "sqlb+procl", "mic+monil", "pwr+voxg" }) if (s == p || s == q) return true;
+            return false;
+        }
+        // ---- « Aligner » : même taille pour les éléments de même forme d'une section, centre conservé, résultat stable, valable pour tous les postes
+        static void AlignChecks()
+        {
+            RadioDef f0 = Radios.ByKey("ft2000"); Ctl k1 = f0.Find("clar"), k2 = f0.Find("clartx"), k3 = f0.Find("nbl");
+            Check(k1 != null && k2 != null && k3 != null && k1.X == 1680 && k1.Y == 594 && k1.DX == 1680 && k1.W == 110 && k1.H == 112 && k2.X == 1684 && k2.Y == 772 && k2.DY == 772 && k3.X == 324 && k3.Y == 887 && k3.W == 94 && k3.H == 96, "FT-2000 : disposition d'origine = disposition validée sur le poste");
+            Check(Radios.ByKey("ftdx5000").Find("clar").X != 1680, "FT-2000 : la disposition d'origine ne touche pas les autres postes");
+            RadioDef t = Radios.ByKey("ft2000"); Ctl[] kn = new Ctl[] { t.Find("clar"), t.Find("shift"), t.Find("width"), t.Find("notch"), t.Find("cont") };
+            Ctl cl = t.Find("clar"); int cx = cl.X + cl.W / 2, cy = cl.Y + cl.H / 2; cl.W -= 24; cl.H -= 20; cl.X += 12; cl.Y += 10;   // CLAR plus petit que ses voisins
+            Ctl tb = t.Find("clartx") ?? t.Find("clar_tx");
+            int n = Align.Run(t); Ctl w = t.Find("width");
+            Check(n > 0 && cl.W == w.W && cl.H == w.H && Math.Abs(cl.X + cl.W / 2 - cx) <= 1 && Math.Abs(cl.Y + cl.H / 2 - cy) <= 1, "Aligner : le potentiomètre CLAR plus petit reprend la taille de ses voisins, centre conservé");
+            Check(Align.Run(t) == 0, "Aligner : deuxième passage sans effet (résultat stable)");
+            int bad = 0, rigs = 0;
+            foreach (RadioDef d in Radios.All())
+            {
+                int before = d.C.Count; Align.Run(d); bool same = Align.Run(d) == 0; bool ok = same && d.C.Count == before;
+                foreach (Ctl c in d.C) if (c.W < 4 || c.H < 4) ok = false;
+                if (!ok) bad++; rigs++;
+            }
+            Check(bad == 0, "Aligner : stable et sans taille aberrante sur " + rigs + " postes (" + bad + " en défaut)");
+        }
+        // ---- cohérence des échelles sur TOUS les postes : monotone, bornée, graduations ordonnées, puissance max plausible, réglages d'origine du FT-2000
+        static void RadioScaleChecks()
+        {
+            RadioDef ft = Radios.ByKey("ft2000"); string fk = ft.Key;
+            Cfg.RemovePrefix("cal." + fk + "."); MeterCal.Ver++;
+            Sc fpo = MeterCal.Scale(ft, ft.Find("po"));
+            Check(MeterCal.PMax(fk) == 200 && MeterCal.PFull(fk) == 100 && MeterCal.Points(fk).Count == 15 && fpo.Text(224) == "200 W" && fpo.Text(115) == "50 W" && Math.Abs(fpo.Frac(160) - 1) < 1e-9 && MeterCal.Scale(ft, ft.Find("swr")).Text(77) == "1.7" && MeterCal.Scale(ft, ft.Find("alc")).Text(129) == "50%" && MeterCal.Scale(ft, ft.Find("idd")).Text(20) == "1.1 A" && MeterCal.Scale(ft, ft.Find("vdd")).Text(195) == "50.0 V", "FT-2000 : réglages d'origine (200 W, échelle Po 100 W, étalonnage relevé) appliqués sans rien enregistrer");
+            Ctl wc = ft.Find("width"), pw = ft.Find("pwr");
+            Check(MeterCal.KnobText(ft, wc, 1) == "200 Hz" && MeterCal.KnobText(ft, wc, 16) == "2400 Hz" && MeterCal.KnobText(ft, wc, 29) == "3790 Hz" && MeterCal.KnobText(ft, wc, 31) == "4000 Hz" && MeterCal.KnobText(ft, wc, 0) == "200 Hz" && MeterCal.KnobText(ft, wc, 22) == "3040 Hz" && MeterCal.KnobText(ft, wc, 8) == "1230 Hz" && MeterCal.KnobText(ft, pw, 95) == "50 W" && MeterCal.KnobText(ft, pw, 70) == "30 W" && MeterCal.KnobMax(ft, pw) == 142 && MeterCal.KnobText(Radios.ByKey("ftdx5000"), Radios.ByKey("ftdx5000").Find("width"), 16) == null, "Width : 200 Hz / 2400 Hz / 4000 Hz aux positions 1 / 16 / 31 ; RF PWR en W (échelle Po 100 W) ; autres postes inchangés");
+            MeterCal.SavePoints(fk, "width", new List<double[]> { new double[] { 2, 400 }, new double[] { 10, 1800 }, new double[] { 20, 3000 } }); MeterCal.SavePoints(fk, "rfpwr", new List<double[]> { new double[] { 11, 10 }, new double[] { 110, 100 }, new double[] { 200, 200 } });
+            MeterCal.SetPFull(fk, 200); Check(MeterCal.KnobText(ft, wc, 10) == "1800 Hz" && MeterCal.KnobText(ft, wc, 2) == "400 Hz" && MeterCal.KnobText(ft, pw, 110) == "100 W" && MeterCal.KnobText(ft, pw, 200) == "200 W" && MeterCal.KnobMax(ft, pw) == 200, "Width / RF PWR étalonnés : Hz et W relevés, pleine échelle de RF PWR = puissance max");
+            MeterCal.SetPMax(fk, 100); Check(MeterCal.KnobMax(ft, pw) == 110, "RF PWR : pleine échelle suit la puissance max (100 W)"); MeterCal.SetPMax(fk, 200); MeterCal.SetPFull(fk, 50); Check(MeterCal.KnobMax(ft, pw) == 55 && MeterCal.KnobText(ft, pw, 200) == "50 W" && MeterCal.KnobText(ft, pw, 55) == "50 W" && MeterCal.KnobText(ft, pw, 30) == "27 W" && MeterCal.KnobText(ft, pw, 11) == "10 W", "RF PWR : échelle Po à 50 W -> bouton de 10 à 50 W, au-delà il reste à 50 W"); Cfg.RemovePrefix("cal." + fk + "."); MeterCal.Ver++;
+            int rigs = 0, meters = 0;
+            foreach (RadioDef d in Radios.All())
+            {
+                string k = d.Key; if (k == "ft2000") continue; bool bad = false; string why = "";
+                int pm = MeterCal.PMax(k); if (pm < 5 || pm > 200 || MeterCal.PFull(k) != pm) { bad = true; why += " pmax=" + pm; }
+                foreach (string id in new string[] { "po", "swr", "alc", "comp", "idd", "vdd" })
+                {
+                    Ctl c = d.Find(id); bool has = c != null && c.K == Kind.Meter && c.Fmt == "pct"; Sc s = MeterCal.Scale(d, c);
+                    if (has != (s != null)) { bad = true; why += " " + id + "=présence"; continue; }
+                    if (s == null) continue; meters++;
+                    if (s.Ticks.Length != s.Pos.Length || s.Ticks.Length < 3) { bad = true; why += " " + id + "=graduations"; }
+                    for (int i = 1; i < s.Pos.Length; i++) if (s.Pos[i] <= s.Pos[i - 1] || s.Pos[i] > 1.0001) { bad = true; why += " " + id + "=ordre"; break; }
+                    double prev = -1; for (int v = 0; v <= c.Max; v += Math.Max(1, c.Max / 40)) { double f = s.Frac(v); if (double.IsNaN(f) || f < -1e-9 || f > 1 + 1e-9 || f < prev - 1e-9 || s.Text(v).Length == 0) { bad = true; why += " " + id + "@" + v; break; } prev = f; }
+                    if (Math.Abs(s.Frac(c.Max) - 1.0) > 0.03 && id != "swr" && id != "comp") { bad = true; why += " " + id + "=pleine déviation"; }
+                    if (id == "po" && Math.Abs(double.Parse(s.Text(c.Max).Replace(" W", ""), System.Globalization.CultureInfo.InvariantCulture) - pm) > 0.01) { bad = true; why += " po=" + s.Text(c.Max); }
+                    // avec un point d'étalonnage au milieu, l'échelle reste ordonnée et le point est restitué
+                    double mid = c.Max / 2.0; double real = id == "swr" ? 2.0 : id == "po" ? pm / 2.0 : id == "alc" ? 50 : id == "comp" ? 10 : id == "idd" ? 7.5 : MeterCal.VddNominal(pm);
+                    MeterCal.SavePoints(k, id, new List<double[]> { new double[] { Math.Round(mid * 255.0 / c.Max, 1), real } }); Sc s2 = MeterCal.Scale(d, c); double q = -1; bool ok2 = s2 != null;
+                    for (int v = 0; ok2 && v <= c.Max; v += Math.Max(1, c.Max / 40)) { double f = s2.Frac(v); if (double.IsNaN(f) || f < q - 1e-9 || f > 1 + 1e-9) ok2 = false; q = f; }
+                    if (!ok2) { bad = true; why += " " + id + "=étalonné"; }
+                    MeterCal.SavePoints(k, id, new List<double[]>());
+                }
+                rigs++; Check(!bad, "Échelles : cohérence sur " + d.Name + " (" + k + ")" + why);
+            }
+            Info("Échelles d'émission : " + rigs + " postes, " + meters + " vumètres vérifiés (monotonie, bornes, graduations, puissance max, étalonnage)");
+        }
+        // ---- alerte ROS : fin d'alerte automatique ; la puissance est rétablie sauf si « laisser la puissance réduite » est cochée
+        static void RosRestoreChecks()
+        {
+            Check(RosGuard.ClearMs == 1500 && !RosGuard.KeepReduced, "alerte ROS : extinction après 1,5 s et puissance rétablie par défaut");
+            Cfg.SetInt("ros.eteint", 100); Check(RosGuard.ClearMs == 500, "alerte ROS : extinction limitée à 0,5 s minimum"); Cfg.SetInt("ros.eteint", 999999); Check(RosGuard.ClearMs == 30000, "alerte ROS : extinction limitée à 30 s"); Cfg.SetInt("ros.eteint", 3000); Check(RosGuard.ClearMs == 3000, "alerte ROS : délai d'extinction réglable (3 s)");
+            RadioDef d = Radios.ByKey("ft2000"); d.LoadUser(); Rig rig = new Rig(); VirtualLink vl = new VirtualLink(d); string err; rig.Connect(d, vl, out err);
+            Wait(delegate { return rig.Get("pwr") != null && rig.Get("swr") != null; }, 8000);
+            Ctl pc = RosGuard.PowerCtl(rig); string p0 = rig.Get(pc.Id); RosGuard.Silent = true; Cfg.SetBool("ros.chute", true); Cfg.SetInt("ros.pct", 50);
+            for (int pass = 0; pass < 2; pass++)
+            {
+                bool keep = pass == 1; Cfg.SetBool("ros.garder", keep); RosGuard.Notice = null; string tag = keep ? " (puissance réduite gardée)" : " (puissance rétablie)";
+                RosGuard.Test(rig); Check(RosGuard.Alarming, "alerte ROS : déclenchée" + tag);
+                Wait(delegate { return rig.Get(pc.Id) != p0; }, 5000); string red = rig.Get(pc.Id); Check(red != p0 && int.Parse(red) == RosGuard.Reduced(pc, int.Parse(p0)), "alerte ROS : puissance réduite à 50 % (" + p0 + " -> " + red + ")" + tag);
+                if (!keep)
+                {
+                    Cfg.SetInt("ros.pct", 25); RosGuard.ReapplyNow(); Wait(delegate { return rig.Get(pc.Id) != red; }, 5000); string r25 = rig.Get(pc.Id);
+                    Check(r25 != red && int.Parse(r25) == RosGuard.Reduced(pc, int.Parse(p0)) && int.Parse(r25) < int.Parse(red), "alerte ROS : % de sécurité modifié en cours d'alerte, appliqué aussitôt (" + red + " -> " + r25 + ")");
+                    Cfg.SetInt("ros.pct", 50); RosGuard.ReapplyNow(); Wait(delegate { return rig.Get(pc.Id) == red; }, 5000); Check(rig.Get(pc.Id) == red, "alerte ROS : % de sécurité remis à 50 % aussitôt");
+                }
+                Info("ROS simulé = " + RosGuard.Ratio(rig) + " swr=" + rig.Get("swr")); RosGuard.Tick(1000); Check(RosGuard.Alarming, "alerte ROS : pas éteinte tout de suite" + tag);
+                RosGuard.Tick(1000 + RosGuard.ClearMs + 5); Check(!RosGuard.Alarming && RosGuard.Notice != null, "alerte ROS : éteinte seule après le délai réglé" + tag);
+                if (!keep) { Wait(delegate { return rig.Get(pc.Id) == p0; }, 5000); Check(rig.Get(pc.Id) == p0 && RosGuard.Notice.Contains("rétablie"), "alerte ROS : puissance nominale rétablie (" + rig.Get(pc.Id) + ")"); }
+                else { System.Threading.Thread.Sleep(600); Check(rig.Get(pc.Id) == red && RosGuard.Notice.Contains("réduite"), "alerte ROS : puissance laissée réduite comme demandé (" + rig.Get(pc.Id) + ")"); rig.Set(pc, p0); Wait(delegate { return rig.Get(pc.Id) == p0; }, 5000); }
+            }
+            RosGuard.Silent = false; Cfg.SetInt("ros.eteint", 1500); Cfg.SetBool("ros.garder", false); Cfg.SetBool("ros.chute", false); rig.Disconnect(); Info("Alerte ROS : extinction seule, puissance rétablie ou gardée selon la coche");
+        }
+
+        // ---- alerte ROS : conversion, déclenchement avec délai, puissance de sécurité, réglages (chaque poste a-t-il lecture du ROS / réglage de puissance ?)
+        static bool rosOnce;
+        static void RosChecks(RadioDef d)
+        {
+            if (!rosOnce)
+            {
+                rosOnce = true; int s = 0;
+                Check(Math.Abs(RosGuard.RatioOf(0, 255) - 1.0) < 0.01 && Math.Abs(RosGuard.RatioOf(48, 255) - 1.5) < 0.01 && Math.Abs(RosGuard.RatioOf(80, 255) - 2.0) < 0.01 && Math.Abs(RosGuard.RatioOf(120, 255) - 3.0) < 0.01 && RosGuard.RatioOf(255, 255) >= 9.9, "ROS : table de conversion (1,0 / 1,5 / 2,0 / 3,0 / max)");
+                Check(Math.Abs(RosGuard.RatioOf(15, 30) - RosGuard.RatioOf(127.5, 255)) < 0.001, "ROS : échelle Kenwood (0-30) ramenée à 0-255");
+                Check(!RosGuard.ShouldTrigger(2.9, ref s, 1000, 3.0, 0) && s == 0, "ROS : sous le seuil, pas d'alerte");
+                Check(RosGuard.ShouldTrigger(3.0, ref s, 1000, 3.0, 0), "ROS : délai 0 = déclenchement immédiat");
+                s = 0; Check(!RosGuard.ShouldTrigger(3.5, ref s, 1000, 3.0, 500) && !RosGuard.ShouldTrigger(3.5, ref s, 1499, 3.0, 500) && RosGuard.ShouldTrigger(3.5, ref s, 1500, 3.0, 500), "ROS : délai 0,5 s respecté");
+                s = 0; RosGuard.ShouldTrigger(3.5, ref s, 1000, 3.0, 500); RosGuard.ShouldTrigger(1.2, ref s, 1300, 3.0, 500); Check(s == 0 && !RosGuard.ShouldTrigger(3.5, ref s, 1600, 3.0, 500), "ROS : retombée sous le seuil = délai relancé");
+                Check(RosGuard.Threshold == 2.0 && RosGuard.DelayMs == 300 && RosGuard.Freq == 2000 && RosGuard.Volume == 100 && RosGuard.IntervalMs == 50, "ROS : valeurs par défaut (seuil 2, délai 0,3 s, 2000 Hz, volume max, bips 50 ms)");
+                Cfg.SetInt("ros.delai", 99999); Check(RosGuard.DelayMs == 10000, "ROS : délai limité à 10 s"); Cfg.SetInt("ros.delai", 50); Check(RosGuard.DelayMs == 50, "ROS : pas de 0,05 s"); Cfg.SetInt("ros.delai", 0);
+                byte[] w = RosGuard.Wav(2000, 100, 120); Check(w.Length == 44 + 44100 * 120 / 1000 * 2 && w[0] == 'R', "ROS : bip 2000 Hz généré (WAV)");
+            }
+            double rr = -1; Ctl sw = d.Find("swr"); Ctl pc = null; foreach (Ctl x in d.C) if (x.K == Kind.Knob && x.Id == "pwr") pc = x;
+            if (sw != null && sw.HasCat) Check(sw.Max > 0 && RosGuard.RatioOf(sw.Max, sw.Max) >= 9.9 && RosGuard.RatioOf(0, sw.Max) == 1.0, "ROS : échelle du poste utilisable (" + d.Key + ")");
+            if (pc != null && pc.HasCat && pc.Set.Length > 0) { Cfg.SetInt("ros.pct", 50); Check(RosGuard.PowerCtl(d) == pc && RosGuard.Reduced(pc, pc.Max) == pc.Min + (int)Math.Round((pc.Max - pc.Min) / 2.0), "ROS : puissance de sécurité 50 % (" + d.Key + ")"); }
+        }
+
+        // ---- éditeur de commande : menu déroulant « Nom affiché » (face avant + menus), remplissage des champs, S-mètre (échelle S + case agrandie)
+        static void PickChecks(RadioDef d)
+        {
+            CmdEditor.Quiet = true;
+            try
+            {
+                List<AddDialog.Entry> en = AddDialog.Entries(d); bool anyCat = false; foreach (Ctl x in d.C) if (x.HasCat && !x.Local && !x.Hidden) { anyCat = true; break; }
+                if (!anyCat) return;
+                Check(en.Count > 0, "liste des commandes de l'éditeur vide : " + d.Key);
+                AddDialog.Entry plain = null, sm = null; foreach (AddDialog.Entry e in en) { if (plain == null && !e.Meter && e.Set.Length > 0 && !e.Set.Contains("{")) plain = e; if (sm == null && AddDialog.IsS(e)) sm = e; }
+                Ctl act = null, met = null, tg = null; foreach (Ctl x in d.C) { if (x.Local || !x.HasCat || x.Hidden) continue; if (act == null && x.K == Kind.Action) act = x; if (met == null && x.K == Kind.Meter && x.Fmt == "s") met = x; if (tg == null && x.K == Kind.Toggle && x.Set.Length > 0) tg = x; }
+                // 1. un bouton : choisir une commande remplit envoi et nom
+                if (act != null && plain != null)
+                {
+                    string os = act.Set, ol = act.Label;
+                    using (CmdEditor ed = new CmdEditor(act, null, d)) { ed.Pick(plain); Check(ed.Commit(), "éditeur : commande choisie acceptée (" + d.Key + ")"); }
+                    Check(act.Set == plain.Set && act.Label == plain.Name, "éditeur : choisir « " + plain.Name + " » remplit envoi et nom (" + d.Key + ")");
+                    act.Set = os; act.Label = ol;
+                }
+                // 2. une touche (toggle) : choisir un S-mètre est refusé sans rien changer
+                if (tg != null && sm != null)
+                {
+                    string os = tg.Set; Kind ok = tg.K;
+                    using (CmdEditor ed = new CmdEditor(tg, null, d)) { ed.Pick(sm); Check(ed.Warning.Length > 0 && tg.Set == os && tg.K == ok, "éditeur : S-mètre refusé sur une touche, rien modifié (" + d.Key + ")"); }
+                    tg.ResetCat();
+                }
+                // 3. un vu-mètre S : échelle S, case agrandie si trop petite, dans la fenêtre
+                if (met != null && sm != null)
+                {
+                    int x0 = met.X, y0 = met.Y, w0 = met.W, h0 = met.H; string f0 = met.Fmt;
+                    met.W = 100; met.H = 12;
+                    using (CmdEditor ed = new CmdEditor(met, null, d)) { ed.Pick(sm); Check(ed.Commit(), "éditeur : S-mètre accepté (" + d.Key + ")"); Check(ed.Resized && met.Fmt == "s" && met.W >= 240 && met.H >= 26 && met.X >= 0 && met.X + met.W <= 1860 && met.Y + met.H <= 980, "éditeur : S-mètre en échelle S, case agrandie " + met.W + "x" + met.H + " (" + d.Key + ")"); }
+                    met.X = x0; met.Y = y0; met.W = w0; met.H = h0; met.Fmt = f0; met.ResetCat();
+                }
+                // 4. un élément ajouté (touche) devient un vu-mètre S à la sélection d'un S-mètre
+                if (sm != null)
+                {
+                    Ctl t = new Ctl(); t.K = Kind.Toggle; t.Custom = true; t.Id = "u99"; t.Label = t.DLabel = "essai"; t.Set = t.DSet = "ZZ{v};"; t.Read = t.DRead = "ZZ;"; t.Parse = t.DParse = "^ZZ(?<v>\\d)$"; t.OnVal = t.DOnVal = "1"; t.OffVal = t.DOffVal = "0"; t.Items = t.DItems = ""; t.X = 1800; t.Y = 900; t.W = 110; t.H = 40; t.Max = t.DMax = 1;
+                    using (CmdEditor ed = new CmdEditor(t, null, d)) { ed.Pick(sm); Check(ed.Commit() && ed.KindChanged, "éditeur : élément ajouté converti en vu-mètre (" + d.Key + ")"); }
+                    Check(t.K == Kind.Meter && t.Fmt == "s" && t.Set.Length == 0 && t.Read == sm.Read && t.W >= 240 && t.X + t.W <= 1860 && t.Y + t.H <= 980, "éditeur : vu-mètre S correct (lecture reprise, dans la fenêtre) (" + d.Key + ")");
+                    string[] cl = null; d.AddCtl(t); try { cl = d.CustomLines(); d.SetCustomLines(cl); Ctl b = d.Find("u99"); Check(b != null && b.K == Kind.Meter && b.Fmt == "s", "éditeur : vu-mètre S enregistré et relu (" + d.Key + ")"); } finally { d.RemoveCtl(d.Find("u99") ?? t); }
+                }
+                // 5. le format d'affichage d'un élément d'origine est enregistré puis relu
+                if (met != null)
+                {
+                    met.DFmt = met.Fmt; met.Fmt = "pct"; d.SaveCat(); met.Fmt = met.DFmt; d.LoadUser(); Check(met.Fmt == "pct", "format d'affichage enregistré et relu (" + d.Key + ")"); met.ResetCat(); d.SaveCat();
+                }
+            }
+            finally { CmdEditor.Quiet = false; }
         }
 
         // ---- verrous (clic droit) : sur chaque élément de chaque poste, le clic droit verrouille, un verrou bloque clic / molette, un second clic droit déverrouille
@@ -566,7 +905,7 @@ namespace HamRadioLink
         // ---- partage réglé POSTE PAR POSTE : deux postes, deux paires différentes, l'un ne change pas l'autre ; reprise de l'ancien réglage global
         static void ShareCfgTest()
         {
-            foreach (string n in new string[] { "on", "comOn", "com", "baud", "stop", "tcpOn", "tcpPort", "net" }) { Cfg.Set("share." + n, ""); }
+            foreach (string n in new string[] { "on", "comOn", "com", "baud", "stop", "tcpOn", "tcpPort", "net" }) { Cfg.Set("share." + n, ""); Cfg.Set(ShareOpts.K("ic7300", n), ""); }
             Cfg.SetBool(ShareOpts.K("ft2000", "on"), true); Cfg.SetBool(ShareOpts.K("ft2000", "comOn"), true); Cfg.Set(ShareOpts.K("ft2000", "com"), "COM20");
             Cfg.SetBool(ShareOpts.K("ftdx10", "on"), true); Cfg.SetBool(ShareOpts.K("ftdx10", "comOn"), true); Cfg.Set(ShareOpts.K("ftdx10", "com"), "COM22");
             ShareOpts a = ShareOpts.Load(Framing.Text, "ft2000"), b = ShareOpts.Load(Framing.Text, "ftdx10"), c = ShareOpts.Load(Framing.Text, "ic7300");

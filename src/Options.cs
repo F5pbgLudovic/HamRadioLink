@@ -43,17 +43,17 @@ namespace HamRadioLink
     // Fenêtre des paramètres (menu à gauche, page à droite)
     public class OptionsDlg : Form
     {
-        public event Action<Dictionary<int, Color>> ThemeChanged; public event Action<bool> AllMeters; public event Action UnlockAll; public event Action OpenMonitor; public event Action ResetAllLocks, VeilChanged;
+        public event Action<Dictionary<int, Color>> ThemeChanged; public event Action<bool> AllMeters; public event Action UnlockAll; public event Action OpenMonitor; public event Action ResetAllLocks, VeilChanged, RunUpdate;
         readonly Panel page = new Panel(); readonly Rig rig; readonly Func<int> lockCount;
         public OptionsDlg(Rig rig, Func<int> lockCount)
         {
             this.rig = rig; this.lockCount = lockCount;
-            Text = "Paramètres"; BackColor = T.Bg; ForeColor = T.Text; Font = new Font("Segoe UI", 9f); ClientSize = new Size(800, 430); StartPosition = FormStartPosition.CenterParent; FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; MinimizeBox = false; ShowInTaskbar = false;
-            ListBox menu = new ListBox(); menu.SetBounds(0, 0, 190, 430); menu.BackColor = Color.FromArgb(14, 18, 26); menu.ForeColor = T.Text; menu.BorderStyle = BorderStyle.None; menu.Font = new Font("Segoe UI Semibold", 10f); menu.ItemHeight = 28; menu.IntegralHeight = false; Controls.Add(menu);
-            foreach (string s in new string[] { "  Couleurs de l'interface", "  Vumètres", "  Réglage molette souris", "  Verrous", "  Commande manuelle", "  Réinitialiser les verrous", "  Journal des commandes", "  Réglages des ports", "  Micro vers le poste", "  Bouton TUNE" }) menu.Items.Add(s);
-            menu.SelectedIndexChanged += delegate { switch (menu.SelectedIndex) { case 7: PortsPage(); break; case 8: MicPage(); break; case 9: TunePage(); break; case 1: Meters(); break; case 2: Wheel(); break; case 3: Locks(); break; case 4: Manual(); break; case 5: ResetLocks(); break; case 6: LogPage(); break; default: Colors(); break; } };
+            Text = "Paramètres"; BackColor = T.Bg; ForeColor = T.Text; Font = new Font("Segoe UI", 9f); ClientSize = new Size(880, 580); StartPosition = FormStartPosition.CenterParent; FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; MinimizeBox = false; ShowInTaskbar = false;
+            ListBox menu = new ListBox(); menu.SetBounds(0, 0, 250, 580); menu.BackColor = Color.FromArgb(14, 18, 26); menu.ForeColor = T.Text; menu.BorderStyle = BorderStyle.None; menu.Font = new Font("Segoe UI Semibold", 10f); menu.ItemHeight = 28; menu.IntegralHeight = false; Controls.Add(menu);
+            foreach (string s in new string[] { "  Couleurs de l'interface", "  Vumètres", "  Réglage molette souris", "  Verrous", "  Commande manuelle", "  Réinitialiser les verrous", "  Journal des commandes", "  Réglages des ports", "  Micro vers le poste", "  Bouton TUNE", "  Alerte ROS", "  Mise à jour", "  Réglage S-mètre puissance", "  Réglage autres S-mètres", "  Réglage Width / CONT / RF PWR" }) menu.Items.Add(s);
+            menu.SelectedIndexChanged += delegate { switch (menu.SelectedIndex) { case 7: PortsPage(); break; case 8: MicPage(); break; case 9: TunePage(); break; case 10: RosPage(); break; case 11: UpdatePage(); break; case 12: ScalePage(); break; case 13: OtherScalePage(); break; case 14: KnobScalePage(); break; case 1: Meters(); break; case 2: Wheel(); break; case 3: Locks(); break; case 4: Manual(); break; case 5: ResetLocks(); break; case 6: LogPage(); break; default: Colors(); break; } };
             FormClosed += delegate { Cfg.Save(); };
-            page.SetBounds(200, 0, 600, 430); Controls.Add(page); menu.SelectedIndex = 0;
+            page.SetBounds(260, 0, 620, 580); Controls.Add(page); menu.SelectedIndex = 0;
         }
         Label Head(string t, string sub) { Label h = new Label(); h.Text = t; h.Font = new Font("Segoe UI Semibold", 12f); h.ForeColor = T.Amber; h.SetBounds(6, 8, 400, 26); page.Controls.Add(h); Label d = new Label(); d.Text = sub; d.SetBounds(6, 38, 586, 52); page.Controls.Add(d); return d; }
         Button Mk(string t, int x, int y, int w) { Button b = new Button(); b.Text = t; b.SetBounds(x, y, w, 30); b.FlatStyle = FlatStyle.Flat; b.BackColor = T.Panel2; b.ForeColor = T.Text; b.FlatAppearance.BorderColor = T.Edge; page.Controls.Add(b); return b; }
@@ -89,6 +89,12 @@ namespace HamRadioLink
             page.Controls.Clear(); Head("Vumètres", "Clic droit sur un vumètre : bascule entre barres (bargraphe) et aiguille, mémorisé pour ce vumètre. Ces boutons changent tous les vumètres du poste d'un coup.");
             Button a = Mk("Tous en aiguille", 6, 110, 200); a.Click += delegate { if (AllMeters != null) AllMeters(true); };
             Button b = Mk("Tous en barres", 216, 110, 200); b.Click += delegate { if (AllMeters != null) AllMeters(false); };
+            Label lh = new Label(); lh.Text = "Maintien de la valeur maximale (S-mètre et autres vumètres) : le repère et la valeur lue restent affichés ce temps-là avant de redescendre."; lh.ForeColor = T.Text; lh.SetBounds(6, 170, 584, 36); page.Controls.Add(lh);
+            ComboBox ch = new ComboBox(); ch.DropDownStyle = ComboBoxStyle.DropDownList; ch.FlatStyle = FlatStyle.Flat; ch.BackColor = T.Panel2; ch.ForeColor = T.Text; ch.SetBounds(6, 212, 160, 26); page.Controls.Add(ch);
+            List<int> hv = new List<int>(); hv.Add(500); for (int s = 1; s <= 20; s++) hv.Add(s * 1000);
+            foreach (int ms in hv) ch.Items.Add(ms == 500 ? "0,5 s" : (ms / 1000) + " s");
+            int cur = HMeter.HoldMs, ix = hv.IndexOf(cur); if (ix < 0) { ix = 0; for (int i = 0; i < hv.Count; i++) if (Math.Abs(hv[i] - cur) < Math.Abs(hv[ix] - cur)) ix = i; }
+            ch.SelectedIndex = ix; ch.SelectedIndexChanged += delegate { Cfg.SetInt("meter.hold", hv[ch.SelectedIndex]); Cfg.Save(); };
             Button cl = Mk("Fermer", 500, 380, 90); cl.Click += delegate { Close(); };
         }
         void Wheel()
@@ -145,6 +151,112 @@ namespace HamRadioLink
             c1.Click += delegate { Color c = Ask(TuneMic.ColOff, "TUNE : couleur au repos"); Cfg.SetInt("tune.coff", Color.FromArgb(255, c).ToArgb()); Cfg.Save(); c1.BackColor = c; TuneMic.Refresh(); };
             c2.Click += delegate { Color c = Ask(TuneMic.ColOn, "TUNE : couleur pendant le TUNE"); Cfg.SetInt("tune.con", Color.FromArgb(255, c).ToArgb()); Cfg.Save(); c2.BackColor = c; TuneMic.Refresh(); };
             c3.Click += delegate { Cfg.SetInt("tune.coff", 0); Cfg.SetInt("tune.con", 0); Cfg.Save(); c1.BackColor = TuneMic.ColOff; c2.BackColor = TuneMic.ColOn; TuneMic.Refresh(); };
+        }
+        NumericUpDown Num(decimal min, decimal max, decimal step, int dec, decimal val, int x, int y, int w)
+        {
+            NumericUpDown n = new NumericUpDown(); n.Minimum = min; n.Maximum = max; n.Increment = step; n.DecimalPlaces = dec; n.Value = Math.Max(min, Math.Min(max, val)); n.SetBounds(x, y, w, 24); n.BackColor = T.Panel2; n.ForeColor = T.Text; page.Controls.Add(n); return n;
+        }
+        Label Lbl(string t, int x, int y, int w) { Label l = new Label(); l.Text = t; l.SetBounds(x, y, w, 24); l.ForeColor = T.Text; page.Controls.Add(l); return l; }
+        // ---- Réglage S-mètre puissance : puissance max de l'émetteur et étalonnage du wattmètre
+        void ScalePage()
+        {
+            page.Controls.Clear(); Head("Réglage S-mètre puissance", "Indiquez la puissance maximale de l'émetteur : les vumètres Po, Vdd, Id, SWR, ALC et COMP sont gradués en conséquence. Le wattmètre Po peut ensuite être étalonné palier par palier (10 W, 20 W…).");
+            if (rig == null || rig.Def == null || !MeterCal.Active(rig.Def)) { Lbl("Ce poste n'a pas de vumètre d'émission (Po, SWR, ALC, COMP, Id, Vdd) à graduer.", 6, 100, 580); return; }
+            string key = rig.Def.Key; Lbl("Puissance maximale de l'émetteur (W)", 6, 100, 280); NumericUpDown pm = Num(5m, 2000m, 5m, 0, MeterCal.PMax(key), 290, 98, 80);
+            Lbl("Pleine déviation de l'échelle Po (W)", 6, 132, 280); NumericUpDown pfn = Num(5m, 2000m, 5m, 0, MeterCal.PFull(key), 290, 130, 80); Lbl("(sans nouvel étalonnage)", 380, 132, 200);
+            Label vd = Lbl("", 6, 164, 580); Label st = Lbl("", 6, 262, 584); st.Height = 120; Button cal = Mk("Étalonner le wattmètre…", 6, 226, 240), clr = Mk("Effacer l'étalonnage", 256, 226, 200);
+            Action show = delegate
+            {
+                int p = MeterCal.PMax(key); vd.Text = "Vdd : pleine échelle " + MeterCal.VddFull(p).ToString("0") + " V, valeur nominale " + MeterCal.VddNominal(p).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + " V (200 W = 50 V, sinon 13,8 V). Id : pleine déviation 15 A. COMP : 0 / 10 / 30 dB. SWR : 1 à ∞ (3 au milieu). ALC : bleu puis rouge à partir du milieu.";
+                List<double[]> pts = MeterCal.Points(key); StringBuilder sb = new StringBuilder();
+                if (pts.Count == 0) sb.Append("Wattmètre non étalonné : l'échelle Po est linéaire de 0 à " + p + " W (approximation).");
+                else { sb.Append("Wattmètre étalonné (" + pts.Count + " points) :\n"); foreach (double[] x in pts) sb.Append("lecture " + x[0].ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) + " = " + x[1].ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) + " W    "); }
+                st.Text = sb.ToString(); clr.Enabled = pts.Count > 0;
+            };
+            vd.Height = 56; pm.ValueChanged += delegate { MeterCal.SetPMax(key, (int)pm.Value); pfn.Value = Math.Max(pfn.Minimum, Math.Min(pfn.Maximum, MeterCal.PFull(key))); show(); };
+            pfn.ValueChanged += delegate { MeterCal.SetPFull(key, (int)pfn.Value); };
+            cal.Click += delegate
+            {
+                if (rig.Link == null) { MessageBox.Show(this, "Connectez d'abord le poste.", "Étalonnage"); return; }
+                MeterCal.SetPMax(key, (int)pm.Value);
+                if (MessageBox.Show(this, "L'étalonnage va demander " + string.Join(", ", MeterCal.Steps((int)pm.Value).ConvertAll<string>(delegate(int w) { return w + " W"; }).ToArray()) + ".\nVous réglez la puissance du poste et vous émettez une porteuse à chaque palier ; l'antenne doit être adaptée (ou une charge fictive). Continuer ?", "Étalonnage du wattmètre", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK) return;
+                using (CalDlg d = new CalDlg(rig)) d.ShowDialog(this); show();
+            };
+            clr.Click += delegate { MeterCal.SavePoints(key, new List<double[]>()); show(); };
+            show(); if (!MeterCal.Has(rig.Def, "po")) { cal.Enabled = false; pfn.Enabled = false; clr.Enabled = false; }
+        }
+        // ---- Réglage autres S-mètres : SWR, ALC, COMP, Id, Vdd (valeur lue sur le poste <-> lecture brute, puis extrapolation)
+        void OtherScalePage()
+        {
+            page.Controls.Clear(); Head("Réglage autres S-mètres", "Pour chaque vumètre, vous émettez, vous lisez la valeur réelle sur le poste et vous la saisissez : le programme relie sa lecture à cette valeur puis extrapole toute l'échelle. Un point suffit, plusieurs sont plus justes.");
+            if (rig == null || rig.Def == null || !MeterCal.Active(rig.Def)) { Lbl("Ce poste n'a pas de vumètre d'émission (Po, SWR, ALC, COMP, Id, Vdd) à graduer.", 6, 100, 580); return; }
+            string key = rig.Def.Key; int y = 100;
+            foreach (string id in MeterTestDlg.Ids)
+            {
+                if (!MeterCal.Has(rig.Def, id)) continue; string mid = id; Lbl(MeterTestDlg.Name(mid), 6, y + 3, 130); Label st = Lbl("", 140, y + 3, 190); Button b = Mk("Étalonner…", 336, y, 120), c = Mk("Effacer", 466, y, 100);
+                Action show = delegate { int n = MeterCal.Points(key, mid).Count; st.Text = n == 0 ? "échelle par défaut" : "étalonné (" + n + " point" + (n > 1 ? "s" : "") + ")"; c.Enabled = n > 0; };
+                b.Click += delegate
+                {
+                    if (rig.Link == null) { MessageBox.Show(this, "Connectez d'abord le poste.", "Étalonnage"); return; }
+                    using (MeterTestDlg d = new MeterTestDlg(rig, mid)) d.ShowDialog(this); show();
+                };
+                c.Click += delegate { MeterCal.SavePoints(key, mid, new List<double[]>()); show(); }; show(); y += 40;
+            }
+            Label h = Lbl("Valeurs d'origine : SWR 1 à ∞ (3 au milieu), ALC 0 à 100 %, COMP 0 / 10 / 30 dB, Id jusqu'à 15 A, Vdd jusqu'à la pleine échelle réglée dans « Réglage S-mètre puissance ».", 6, y + 8, 584); h.Height = 50; h.ForeColor = T.Dim;
+        }
+        // ---- Réglage Width / RF PWR (FT-2000) : le bouton affiche des Hz / des watts au lieu de la valeur brute du poste
+        void KnobScalePage()
+        {
+            page.Controls.Clear(); Head("Réglage Width / CONT / RF PWR", "Les boutons WIDTH et CONT affichent des fréquences en Hz et le bouton RF PWR la puissance en W, au lieu de la valeur interne du poste. Vous réglez le poste sur chaque valeur et le programme relève la position correspondante.");
+            if (rig == null || rig.Def == null || !MeterCal.KnobAny(rig.Def)) { Lbl("Ce poste n'a pas de bouton Width, CONT ou RF PWR à graduer.", 6, 100, 580); return; }
+            string key = rig.Def.Key; int y = 100;
+            foreach (string kid in new string[] { "width", "contf", "rfpwr" })
+            {
+                if (!MeterCal.KnobActive(rig.Def, rig.Def.Find(kid == "rfpwr" ? "pwr" : kid))) continue;
+                string id = kid; Lbl(KnobCalDlg.Title(id), 6, y + 3, 200); Label st = Lbl("", 210, y + 3, 150); Button b = Mk("Étalonner…", 366, y, 120), c = Mk("Effacer", 496, y, 90);
+                Action show = delegate { int n = MeterCal.Points(key, id).Count; st.Text = n == 0 ? "valeur brute du poste" : "étalonné (" + n + " point" + (n > 1 ? "s" : "") + ")"; c.Enabled = n > 0; };
+                b.Click += delegate
+                {
+                    if (rig.Link == null) { MessageBox.Show(this, "Connectez d'abord le poste.", "Étalonnage"); return; }
+                    if (id == "rfpwr" && MessageBox.Show(this, "L'étalonnage de RF PWR demande " + string.Join(", ", MeterCal.Steps(MeterCal.PMax(key)).ConvertAll<string>(delegate(int w) { return w + " W"; }).ToArray()) + " (puissance max : " + MeterCal.PMax(key) + " W, réglable dans « Réglage S-mètre puissance »).\nVous réglez le bouton RF PWR du poste sur chaque valeur ; il n'y a pas d'émission. Continuer ?", "Étalonnage RF PWR", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK) return;
+                    using (KnobCalDlg d = new KnobCalDlg(rig, id)) d.ShowDialog(this); show();
+                };
+                c.Click += delegate { MeterCal.SavePoints(key, id, new List<double[]>()); show(); }; show(); y += 40;
+            }
+            Label h = Lbl("Width d'origine : position 1 = 200 Hz, 16 = 2400 Hz, 31 = 4000 Hz (droites entre ces points, jamais au-delà de 4000 Hz). CONT d'origine : position 1 = 100 Hz, 20 = 2000 Hz, 40 = 4000 Hz (valeurs supposées, à étalonner). RF PWR : tant qu'il n'est pas étalonné, la valeur brute du poste est affichée en W ; une fois étalonné, la pleine échelle du bouton est la puissance max.", 6, y + 8, 584); h.Height = 100; h.ForeColor = T.Dim;
+        }
+        void RosPage()
+        {
+            page.Controls.Clear(); Head("Alerte ROS", "En émission, si le ROS lu sur le poste dépasse le seuil, bips continus jusqu'à ce que vous les arrêtiez (bouton de la fenêtre d'alerte). Réglages communs à tous les postes ; sans lecture du ROS, rien ne se déclenche.");
+            CheckBox on = new CheckBox(); on.Text = "Alerte ROS activée"; on.SetBounds(6, 96, 300, 24); on.ForeColor = T.Text; on.Checked = RosGuard.On; page.Controls.Add(on); on.CheckedChanged += delegate { Cfg.SetBool("ros.on", on.Checked); Cfg.Save(); };
+            Lbl("Seuil de ROS", 6, 128, 200); NumericUpDown ns = Num(1.1m, 20m, 0.1m, 1, (decimal)RosGuard.Threshold, 230, 126, 70); ns.ValueChanged += delegate { Cfg.SetInt("ros.seuil", (int)Math.Round(ns.Value * 100)); Cfg.Save(); };
+            Lbl("Délai avant déclenchement (s)", 6, 158, 220); NumericUpDown nd = Num(0m, 10m, 0.05m, 2, RosGuard.DelayMs / 1000m, 230, 156, 70); nd.ValueChanged += delegate { Cfg.SetInt("ros.delai", (int)Math.Round(nd.Value * 1000)); Cfg.Save(); };
+            Lbl("0 = immédiat ; de 0,05 en 0,05 s jusqu'à 10 s", 310, 158, 280).ForeColor = T.Dim;
+            Lbl("Fréquence des bips (Hz)", 6, 188, 220); NumericUpDown nf = Num(200m, 8000m, 50m, 0, RosGuard.Freq, 230, 186, 70); nf.ValueChanged += delegate { Cfg.SetInt("ros.freq", (int)nf.Value); Cfg.Save(); };
+            Lbl("Volume des bips (%)", 6, 218, 220); NumericUpDown nv = Num(1m, 100m, 1m, 0, RosGuard.Volume, 230, 216, 70); nv.ValueChanged += delegate { Cfg.SetInt("ros.vol", (int)nv.Value); Cfg.Save(); };
+            Lbl("Intervalle entre bips (s)", 6, 248, 220); NumericUpDown np = Num(0.05m, 2m, 0.05m, 2, RosGuard.IntervalMs / 1000m, 230, 246, 70); np.ValueChanged += delegate { Cfg.SetInt("ros.pause", (int)Math.Round(np.Value * 1000)); Cfg.Save(); };
+            Lbl("Extinction seule après (s)", 330, 248, 170); NumericUpDown ne = Num(0.5m, 30m, 0.5m, 1, RosGuard.ClearMs / 1000m, 510, 246, 70); ne.ValueChanged += delegate { Cfg.SetInt("ros.eteint", (int)Math.Round(ne.Value * 1000)); Cfg.Save(); };
+            CheckBox kp = new CheckBox(); kp.Text = "Laisser la puissance réduite de sécurité (sinon elle est rétablie quand l'alerte s'éteint)"; kp.SetBounds(6, 306, 584, 24); kp.ForeColor = T.Text; kp.Checked = RosGuard.KeepReduced; page.Controls.Add(kp); kp.CheckedChanged += delegate { Cfg.SetBool("ros.garder", kp.Checked); Cfg.Save(); };
+            Button tb = Mk("Essai du bip", 320, 216, 130); tb.Click += delegate { RosGuard.TestBeep(); };
+            CheckBox dr = new CheckBox(); dr.Text = "Faire chuter la puissance à (0 % = minimum du poste)"; dr.SetBounds(6, 280, 400, 24); dr.ForeColor = T.Text; dr.Checked = RosGuard.Drop; page.Controls.Add(dr); dr.CheckedChanged += delegate { Cfg.SetBool("ros.chute", dr.Checked); Cfg.Save(); };
+            TrackBar npc = new TrackBar(); npc.Minimum = 0; npc.Maximum = 100; npc.TickFrequency = 5; npc.SmallChange = 1; npc.LargeChange = 5; npc.SetBounds(410, 272, 130, 40); npc.Value = Math.Max(0, Math.Min(100, RosGuard.DropPct)); page.Controls.Add(npc);
+            Label npl = Lbl(npc.Value + " %", 544, 282, 50);
+            npc.ValueChanged += delegate { Cfg.SetInt("ros.pct", npc.Value); Cfg.Save(); npl.Text = npc.Value + " %"; RosGuard.ReapplyDrop(); };
+            CheckBox tv = new CheckBox(); tv.Text = "Test en VOX du poste (sinon PTT par CAT)"; tv.SetBounds(6, 332, 380, 24); tv.ForeColor = T.Text; tv.Checked = RosGuard.TestVox; page.Controls.Add(tv); tv.CheckedChanged += delegate { Cfg.SetBool("ros.vox", tv.Checked); Cfg.Save(); };
+            Button tt = Mk("Test : TUNE 1500 Hz à la puissance de sécurité", 6, 360, 380); tt.Click += delegate { TuneMic.StartSafe(rig, tv.Checked); };
+            // rouge pendant l'émission du test (puissance de sécurité), comme le bouton TUNE
+            Action recolor = delegate { bool act = TuneMic.SafeActiveFor(rig); tt.BackColor = act ? TuneMic.ColOn : T.Panel2; tt.Text = act ? "● TEST EN COURS (" + TuneMic.Left + " s) — cliquer pour arrêter" : "Test : TUNE 1500 Hz à la puissance de sécurité"; };
+            Action rc = delegate { if (!tt.IsDisposed) { try { tt.BeginInvoke(recolor); } catch { } } }; TuneMic.Changed += rc; tt.Disposed += delegate { TuneMic.Changed -= rc; }; recolor();
+            Label hint = Lbl("Le test émet le TUNE à la puissance réduite (durée et niveau : onglet Bouton TUNE) puis remet la puissance d'origine. Second clic = arrêt.", 6, 394, 584); hint.Height = 34; hint.ForeColor = T.Dim;
+        }
+        void UpdatePage()
+        {
+            page.Controls.Clear(); Head("Mise à jour", "Version installée : " + MainForm.Version + ". La dernière version publiée sur GitHub peut être installée en un clic ; seul le programme est remplacé (réglages, dispositions, commandes et journal restent en place).");
+            CheckBox au = new CheckBox(); au.Text = "Mise à jour automatique : vérifier la dernière version au démarrage"; au.SetBounds(6, 110, 580, 24); au.ForeColor = T.Text; au.Checked = Updater.AutoOn; page.Controls.Add(au);
+            au.CheckedChanged += delegate { Cfg.SetBool("maj.auto", au.Checked); Cfg.Save(); };
+            Label ex = Lbl("À jour : rien n'est dit. Sinon une fenêtre propose la mise à jour (un clic), avec la liste de ce qui peut être conservé ou remis à zéro, et une copie de sécurité des réglages.", 6, 140, 584); ex.Height = 54; ex.ForeColor = T.Dim;
+            Button go = Mk("Vérifier et mettre à jour maintenant", 6, 210, 320); go.Click += delegate { Cursor = Cursors.WaitCursor; try { if (RunUpdate != null) RunUpdate(); } finally { Cursor = Cursors.Default; } };
+            Button ig = Mk("Proposer de nouveau la version ignorée", 6, 252, 320); ig.Enabled = Cfg.Get("maj.ignore", "").Length > 0; ig.Click += delegate { Cfg.Set("maj.ignore", ""); Cfg.Save(); ig.Enabled = false; };
         }
         void LogPage()
         {
@@ -250,11 +362,56 @@ namespace HamRadioLink
         public static List<string> Parts(string text)
         {
             List<string> l = new List<string>();
-            foreach (string raw in text.Replace("\r\n", "\n").Split('\n')) { string s = raw.Trim(); if (!(s.StartsWith("[[") && s.EndsWith("]]"))) continue; string n = s.Substring(2, s.Length - 4); string p = n.StartsWith("radiomenu:") ? "menu" : n.StartsWith("radio:") ? "radio" : "app"; if (!l.Contains(p)) l.Add(p); }
+            foreach (string raw in text.Replace("\r\n", "\n").Split('\n')) { string s = raw.Trim(); if (!(s.StartsWith("[[") && s.EndsWith("]]"))) continue; string n = s.Substring(2, s.Length - 4); if (n.StartsWith("rig") && !n.EndsWith(".ini")) continue; string p =n.StartsWith("radiomenu:") ? "menu" : n.StartsWith("radio:") ? "radio" : "app"; if (!l.Contains(p)) l.Add(p); }
             return l;
         }
         // Poste d'origine du menu / des réglages (ex. « ft2000 »), vide si inconnu
         public static string RadioOf(string text) { System.Text.RegularExpressions.Match m = System.Text.RegularExpressions.Regex.Match(text, @"\[\[radio(?:menu)?:([^\]]+)\]\]"); return m.Success ? m.Groups[1].Value : ""; }
+
+        // ----- Export / import d'UN poste : disposition (toutes fenêtres), commandes (CAT, personnalisées) et réglages d'affichage de ce poste -----
+        static readonly string[] rigKinds = { "layout", "cat", "custom" };
+        static readonly string[] rigPrefixes = { "analog.", "lock.", "cal." };
+        public static string DumpRig(RadioDef r)
+        {
+            StringBuilder sb = new StringBuilder(); string k = r.Key;
+            sb.AppendLine("# HamRadioLink " + MainForm.Version + " - poste seul " + k + " - " + DateTime.Now.ToString("yyyy-MM-dd HH:mm")); sb.AppendLine("[[rig:" + k + "]]");
+            foreach (string kind in rigKinds)
+            {
+                string f = Path.Combine(Cfg.Dir, k + "." + kind + ".ini"); if (!File.Exists(f)) continue;
+                sb.AppendLine("[[rigfile:" + kind + "]]"); foreach (string l in File.ReadAllLines(f, Encoding.UTF8)) if (l.Trim().Length > 0) sb.AppendLine(l);
+            }
+            sb.AppendLine("[[rigcfg]]");
+            foreach (string line in Cfg.Dump().Replace("\r\n", "\n").Split('\n')) foreach (string p in rigPrefixes) if (line.StartsWith(p + k + ".", StringComparison.Ordinal)) sb.AppendLine(line);
+            return sb.ToString();
+        }
+        // Poste d'un fichier « poste seul » (vide si ce n'en est pas un)
+        public static string RigOf(string text) { System.Text.RegularExpressions.Match m = System.Text.RegularExpressions.Regex.Match(text, @"^\[\[rig:([^\]]+)\]\]", System.Text.RegularExpressions.RegexOptions.Multiline); return m.Success ? m.Groups[1].Value.Trim() : ""; }
+        // Restaure ce seul poste ; retourne le nombre de blocs écrits (0 = fichier sans rien d'utile). Le reste de la configuration n'est pas touché.
+        public static int ImportRig(string text)
+        {
+            string k = RigOf(text); if (k.Length == 0 || k != Path.GetFileName(k) || k.IndexOfAny(new[] { '/', '\\', ':' }) >= 0) return 0;
+            Dictionary<string, StringBuilder> files = new Dictionary<string, StringBuilder>(); StringBuilder cfg = null, cur = null;
+            foreach (string raw in text.Replace("\r\n", "\n").Split('\n'))
+            {
+                string l = raw.TrimEnd();
+                if (l.StartsWith("[[") && l.EndsWith("]]"))
+                {
+                    string n = l.Substring(2, l.Length - 4); cur = null;
+                    if (n.StartsWith("rigfile:")) { string kind = n.Substring(8); if (Array.IndexOf(rigKinds, kind) >= 0) { cur = new StringBuilder(); files[kind] = cur; } }
+                    else if (n == "rigcfg") { cfg = new StringBuilder(); cur = cfg; }
+                }
+                else if (cur != null && l.Length > 0 && l[0] != '#') cur.AppendLine(l);
+            }
+            int c = 0;
+            foreach (string kind in rigKinds)
+            {
+                string f = Path.Combine(Cfg.Dir, k + "." + kind + ".ini");
+                try { if (files.ContainsKey(kind)) { File.WriteAllText(f, files[kind].ToString().Replace("\n", "\r\n"), Encoding.UTF8); c++; } else if (File.Exists(f)) File.Delete(f); } catch { }
+            }
+            foreach (string p in rigPrefixes) Cfg.RemovePrefix(p + k + ".");
+            if (cfg != null) foreach (string line in cfg.ToString().Replace("\r\n", "\n").Split('\n')) { int i = line.IndexOf('='); if (i <= 0) continue; string key = line.Substring(0, i).Trim(); foreach (string p in rigPrefixes) if (key.StartsWith(p + k + ".", StringComparison.Ordinal)) { Cfg.Set(key, line.Substring(i + 1)); c++; } }
+            Cfg.Save(); return c;
+        }
 
         public static int Import(string text) { return Import(text, true, true, true); }
         // écrit les fichiers (app) et garde les réglages / le menu du poste en attente (appliqués à la prochaine connexion, ou tout de suite par ApplyPending) ; retourne le nombre de blocs
@@ -266,6 +423,7 @@ namespace HamRadioLink
                 if (name == null) return;
                 if (name.StartsWith("radiomenu:")) { if (menu) { Cfg.Set("pendingmenu." + name.Substring(10), Enc(body.ToString())); n++; } }
                 else if (name.StartsWith("radio:")) { if (radio) { Cfg.Set("pending." + name.Substring(6), Enc(body.ToString())); n++; } }
+                else if (name.StartsWith("rig") && !name.EndsWith(".ini")) { }
                 else if (!app) { }
                 else if (name == "settings.ini") { if (Cfg.Import(body.ToString()) > 0) n++; }
                 else if (name.EndsWith(".ini") && name == Path.GetFileName(name)) { try { File.WriteAllText(Path.Combine(Cfg.Dir, name), body.ToString().Replace("\n", "\r\n"), Encoding.UTF8); n++; } catch { } }
@@ -329,7 +487,34 @@ namespace HamRadioLink
             Label l = new Label(); l.SetBounds(12, 10, 396, 70); Controls.Add(l);
             l.Text = "Exporter : choisissez les parties à enregistrer (logiciel et dispositions, réglages du poste" + (HasMenuPart() ? ", menu interne du poste" : "") + ").\nImporter : choisissez les parties à restaurer ; les réglages du poste sont envoyés au poste connecté (ou à la prochaine connexion).";
             b1 = B("Exporter…", 12, 96, 120); b1.Click += delegate { Export(); }; b2 = B("Importer…", 142, 96, 120); b2.Click += delegate { Open(); }; b3 = B("Annuler", 292, 96, 116); b3.Click += delegate { cancel = true; Close(); }; CancelButton = b3;
-            status = new Label(); status.SetBounds(12, 138, 396, 24); status.ForeColor = T.Dim; Controls.Add(status);
+            Label l2 = new Label(); l2.SetBounds(12, 140, 396, 34); l2.ForeColor = T.Dim; l2.Text = "Un seul poste (" + CmdServer.ModelName(cur) + ") : sa disposition, ses commandes et ses réglages d'affichage, sans toucher au reste du logiciel."; Controls.Add(l2);
+            Button b4 = B("Exporter ce poste…", 12, 178, 196), b5 = B("Importer un poste…", 214, 178, 194);
+            b4.Click += delegate { ExportRig(); }; b5.Click += delegate { ImportRig(); };
+            status = new Label(); status.SetBounds(12, 220, 396, 24); status.ForeColor = T.Dim; Controls.Add(status); ClientSize = new Size(420, 248);
+        }
+        void ExportRig()
+        {
+            using (SaveFileDialog d = new SaveFileDialog())
+            {
+                d.Filter = "Poste HamRadioLink (*.ini)|*.ini|Tous les fichiers|*.*"; d.FileName = "HamRadioLink-poste-" + cur.Key + "-" + DateTime.Now.ToString("yyyy-MM-dd") + ".ini"; if (d.ShowDialog(this) != DialogResult.OK) return;
+                try { try { cur.SaveLayout(); cur.SaveCustom(); cur.SaveCat(); } catch { } File.WriteAllText(d.FileName, Backup.DumpRig(cur).Replace("\r\n", "\n").Replace("\n", "\r\n"), Encoding.UTF8); MessageBox.Show(this, "Poste exporté :\n" + d.FileName, "Export"); Close(); }
+                catch (Exception ex) { MessageBox.Show(this, ex.Message, "Erreur"); }
+            }
+        }
+        void ImportRig()
+        {
+            using (OpenFileDialog d = new OpenFileDialog())
+            {
+                d.Filter = "Poste HamRadioLink (*.ini)|*.ini|Tous les fichiers|*.*"; if (d.ShowDialog(this) != DialogResult.OK) return;
+                string txt; try { txt = File.ReadAllText(d.FileName, Encoding.UTF8); } catch (Exception ex) { MessageBox.Show(this, ex.Message, "Erreur"); return; }
+                string k = Backup.RigOf(txt); if (k.Length == 0) { MessageBox.Show(this, "Ce fichier n'est pas une sauvegarde d'un seul poste (utilisez « Importer… » pour une sauvegarde complète).", "Importer"); return; }
+                RadioDef rd = null; try { rd = Radios.ByKey(k); } catch { }
+                if (rd == null) { MessageBox.Show(this, "Le poste « " + k + " » de ce fichier n'existe pas dans cette version du logiciel : import impossible.", "Importer un poste"); return; }
+                string nm = CmdServer.ModelName(rd) + " (" + k + ")";
+                if (MessageBox.Show(this, "ATTENTION — ce fichier est la sauvegarde du poste :\n\n        " + nm + "\n\nSa disposition, ses commandes et ses réglages d'affichage vont ÉCRASER la configuration actuelle de ce poste (le poste est déterminé par le fichier, pas par la fenêtre en cours). Le reste du logiciel n'est pas touché. Le logiciel redémarre.\n\nContinuer ?", "Importer un poste", MessageBoxButtons.OKCancel, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) != DialogResult.OK) return;
+                if (Backup.ImportRig(txt) == 0) { MessageBox.Show(this, "Rien à restaurer dans ce fichier.", "Importer"); return; }
+                Imported = true; DialogResult = DialogResult.OK; Close();
+            }
         }
         bool HasMenuPart() { return Backup.HasMenu(cur); }
         Button B(string t, int x, int y, int w) { Button b = new Button(); b.Text = t; b.SetBounds(x, y, w, 34); b.FlatStyle = FlatStyle.Flat; b.BackColor = T.Panel2; b.ForeColor = T.Text; b.FlatAppearance.BorderColor = T.Edge; Controls.Add(b); return b; }

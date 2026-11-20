@@ -117,11 +117,33 @@ namespace HamRadioLink.Journal
         static LogbookForm win;
         public static Action ShowMain, LogClosed;   // fournis par la fenêtre de télécommande
         public static bool IsOpen { get { return win != null && !win.IsDisposed && win.Visible; } }
+        static bool quit;
+        // Le journal vit dès le démarrage, fenêtre masquée : il reçoit les QSO des logiciels (WSJT-WWA…) et le cluster tourne.
+        // La croix de la fenêtre la masque seulement ; le bouton LOG la rouvre.
+        public static void Prepare()
+        {
+            try
+            {
+                if (WsjtListener.Disabled || (win != null && !win.IsDisposed)) return;
+                App.Init();
+                if (!App.Cfg.GetBool("setup.done", false) && App.Cfg.Get("db.host", "").Length == 0) return;
+                if (!Connect(null)) return;
+                Create(); DxCluster.AutoStart();
+            }
+            catch { }
+        }
+        static void Create()
+        {
+            win = new LogbookForm();
+            win.FormClosing += (s, e) => { if (!quit && e.CloseReason == CloseReason.UserClosing) { e.Cancel = true; win.Hide(); Action a = LogClosed; if (a != null) a(); } };
+            win.FormClosed += delegate { Action a = LogClosed; if (a != null) a(); };
+            IntPtr h = win.Handle;      // crée la fenêtre sans l'afficher
+        }
         public static void Open(IWin32Window owner)
         {
             try
             {
-                if (win != null && !win.IsDisposed) { win.Show(); if (win.WindowState == FormWindowState.Minimized) win.WindowState = FormWindowState.Normal; win.BringToFront(); win.Activate(); return; }
+                if (win != null && !win.IsDisposed) { bool was = win.Visible; win.Show(); if (!was) win.Reload(); if (win.WindowState == FormWindowState.Minimized) win.WindowState = FormWindowState.Normal; win.BringToFront(); win.Activate(); return; }
                 App.Init();
                 if (!App.Cfg.GetBool("setup.done", false))
                 {
@@ -129,7 +151,7 @@ namespace HamRadioLink.Journal
                     else { using (SetupForm f = new SetupForm()) f.ShowDialog(owner); if (!App.Cfg.GetBool("setup.done", false)) return; }
                 }
                 Connect(owner);
-                win = new LogbookForm(); win.FormClosed += delegate { Action a = LogClosed; if (a != null) a(); }; win.Show();
+                Create(); win.Show();
             }
             catch (Exception ex) { MessageBox.Show(owner, ex.Message, "Journal", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
         }
@@ -148,7 +170,7 @@ namespace HamRadioLink.Journal
         // Après un QSO reçu : rafraîchit la fenêtre du journal si elle est ouverte.
         public static void Refresh() { try { if (win != null && !win.IsDisposed) win.Reload(); } catch { } }
         public static void ClusterChanged() { try { if (win != null && !win.IsDisposed) win.ApplyCluster(); } catch { } }
-        public static void Shutdown() { WsjtListener.Stop(); try { DxCluster.Disconnect(); } catch { } try { if (win != null && !win.IsDisposed) win.Close(); } catch { } try { if (win != null && !win.IsDisposed) win.Dispose(); } catch { } try { List<Form> all = new List<Form>(); foreach (Form x in Application.OpenForms) all.Add(x); foreach (Form f in all) if (f != null && !f.IsDisposed && (f.GetType().Namespace ?? "").StartsWith("HamRadioLink.Journal")) f.Dispose(); } catch { } App.Shutdown(); }
+        public static void Shutdown() { quit = true; WsjtListener.Stop(); try { DxCluster.Disconnect(); } catch { } try { if (win != null && !win.IsDisposed) win.Close(); } catch { } try { if (win != null && !win.IsDisposed) win.Dispose(); } catch { } try { List<Form> all = new List<Form>(); foreach (Form x in Application.OpenForms) all.Add(x); foreach (Form f in all) if (f != null && !f.IsDisposed && (f.GetType().Namespace ?? "").StartsWith("HamRadioLink.Journal")) f.Dispose(); } catch { } App.Shutdown(); }
     }
 
 }

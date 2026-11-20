@@ -7,20 +7,21 @@ using System.Windows.Forms;
 
 namespace HamRadioLink
 {
-    // Éditeur de la commande CAT d'un élément (clic droit en « config vue »)
+    // Éditeur de la commande CAT d'un élément (clic droit en « vue config »)
     public class CmdEditor : Form
     {
         readonly Ctl c; readonly Rig rig;
         TextBox tbLabel, tbSet, tbRead, tbParse, tbItems, tbOn, tbOff, tbMin, tbMax, tbSample; Label lbPrev, lbRes, lbTest;
         public bool Changed, Deleted;
 
-        public CmdEditor(Ctl ctl, Rig r)
+        public CmdEditor(Ctl ctl, Rig r) : this(ctl, r, null) { }
+        public CmdEditor(Ctl ctl, Rig r, RadioDef radio)
         {
-            c = ctl; rig = r; Text = "Commande CAT — " + c.Label; FormBorderStyle = FormBorderStyle.FixedDialog; StartPosition = FormStartPosition.CenterParent; MaximizeBox = false; MinimizeBox = false; ShowInTaskbar = false;
+            c = ctl; rig = r; def = radio ?? (r != null ? r.Def : null); Text = "Commande CAT — " + c.Label; FormBorderStyle = FormBorderStyle.FixedDialog; StartPosition = FormStartPosition.CenterParent; MaximizeBox = false; MinimizeBox = false; ShowInTaskbar = false;
             BackColor = T.Panel; ForeColor = T.Text; Font = new Font("Segoe UI", 9f); ClientSize = new Size(660, 560);
             int y = 12;
             Label h = L("Élément : " + c.Label + "   (identifiant interne : " + c.Id + ")", 12, y, 636, 20); h.ForeColor = T.Amber; h.Font = new Font("Segoe UI Semibold", 9.5f); y += 26;
-            tbLabel = Box("Nom affiché", c.Label, ref y, false);
+            if (!c.Local && def != null) NameCombo(ref y); else tbLabel = Box("Nom affiché", c.Label, ref y, false);
             if (c.Local && c.K != Kind.Choice)
             {
                 L(c.K == Kind.Frame || c.K == Kind.Text ? "Cadre décoratif : pas de commande CAT." : "Voyant ou réglage interne : aucune commande CAT n'est envoyée par cet élément (il reprend l'état d'un autre élément : « " + c.Ref + " »).", 12, y, 636, 40); y += 44;
@@ -53,6 +54,49 @@ namespace HamRadioLink
             ClientSize = new Size(660, Math.Max(ClientSize.Height, y + 120)); bd.Top = bt.Top = ok.Top = ca.Top = ClientSize.Height - 44; if (bx != null) bx.Top = ClientSize.Height - 44;
             Prev(); Test();
         }
+
+        // ---- menu déroulant « Nom affiché » : toutes les commandes de la face avant du poste et de ses menus ; le choix remplit les champs
+        readonly RadioDef def; ComboBox cbName; List<AddDialog.Entry> entries; string lastPick = "";
+        public bool Resized, KindChanged; public string Warning = ""; public static bool Quiet;
+        Kind? pKind; string pFmt; int? pMax, pW, pH, pX, pY;
+        public IList<AddDialog.Entry> Entries { get { return entries; } }
+        string Nm { get { return cbName != null ? cbName.Text : tbLabel.Text; } set { if (cbName != null) cbName.Text = value; else tbLabel.Text = value; } }
+        void NameCombo(ref int y)
+        {
+            entries = AddDialog.Entries(def);
+            Label l = L("Nom affiché — ou choisissez une commande dans la liste (face avant et menus du poste) : les champs ci-dessous se remplissent", 12, y, 636, 18); l.ForeColor = T.Dim; y += 19;
+            cbName = new ComboBox(); cbName.DropDownStyle = ComboBoxStyle.DropDown; cbName.FlatStyle = FlatStyle.Flat; cbName.BackColor = T.Bg; cbName.ForeColor = T.Text; cbName.SetBounds(12, y, 636, 24); cbName.MaxDropDownItems = 20; cbName.DropDownWidth = 636;
+            cbName.Items.AddRange(entries.ToArray()); cbName.Text = c.Label; cbName.AutoCompleteMode = AutoCompleteMode.SuggestAppend; cbName.AutoCompleteSource = AutoCompleteSource.ListItems;
+            cbName.SelectionChangeCommitted += delegate { AddDialog.Entry e = cbName.SelectedItem as AddDialog.Entry; if (e != null) Pick(e); };
+            cbName.Leave += delegate { string t = cbName.Text; if (t == c.Label || t == lastPick) return; foreach (AddDialog.Entry e in entries) if (e.ToString() == t) { Pick(e); return; } };
+            Controls.Add(cbName); y += 32;
+        }
+        void Warn(string t) { Warning = t; if (!Quiet) MessageBox.Show(this, t, "Commande", MessageBoxButtons.OK, MessageBoxIcon.Information); }
+        // Choix d'une commande de la liste : remplit envoi / lecture / réponse / valeurs ; un S-mètre prend l'échelle S et une case assez grande
+        public void Pick(AddDialog.Entry e)
+        {
+            bool s = AddDialog.IsS(e), toMeter = false;
+            if (s && c.K != Kind.Meter)
+            {
+                if (!c.Custom) { Warn("« " + e.Name + " » est un S-mètre : cet élément (" + c.K + ") ne peut pas l'afficher.\nUtilisez « Ajouter » > « Vu-mètre » pour créer une barre S-mètre, ou choisissez ici un élément de type vu-mètre."); return; }
+                toMeter = true;
+            }
+            lastPick = e.Name; Nm = e.Name; Warning = "";
+            if (toMeter) pKind = Kind.Meter;
+            if (c.K == Kind.Meter || toMeter)
+            {
+                pFmt = s ? "s" : (e.Fmt == "s" ? "raw" : e.Fmt); pMax = e.Max > 1 ? e.Max : 255;
+                int w = c.W, h = c.H; if (toMeter) { w = 480; h = 34; } else { if (w < 240) w = 480; if (h < 26) h = 34; }
+                if (w != c.W || h != c.H) { pW = w; pH = h; pX = Math.Max(0, Math.Min(c.X, 1860 - w)); pY = Math.Max(118, Math.Min(c.Y, 980 - h)); }
+            }
+            else if (c.K == Kind.Knob && e.Fmt != "raw") pFmt = e.Fmt;
+            if (tbSet != null) tbSet.Text = toMeter ? "" : (c.K == Kind.Action && e.Set.Contains("{") ? Tpl.Fill(e.Set, c.OnSend) : e.Set);
+            if (tbRead != null) tbRead.Text = e.Read; if (tbParse != null) tbParse.Text = e.Parse; if (tbItems != null && e.Items.Length > 0) tbItems.Text = e.Items;
+            if (tbOn != null) { tbOn.Text = e.On; tbOff.Text = e.Off; } if (tbMin != null) { tbMin.Text = e.Min.ToString(); tbMax.Text = (e.Max > e.Min ? e.Max : 255).ToString(); }
+            if (lbTest != null) { lbTest.ForeColor = T.Dim; lbTest.Text = s ? "S-mètre : affichage en échelle S" + (pW.HasValue ? ", case agrandie à " + pW + " × " + pH : "") + (toMeter ? ", l'élément devient un vu-mètre." : ".") : "Commande reprise : vérifiez envoi, lecture et réponse."; }
+            Prev(); Test();
+        }
+        public bool Commit() { return Apply(); }
 
         Label L(string t, int x, int y, int w, int h) { Label l = new Label(); l.Text = t; l.SetBounds(x, y, w, h); l.ForeColor = T.Text; Controls.Add(l); return l; }
         Button Btn(string t, int x, int y, int w) { Button b = new Button(); b.Text = t; b.SetBounds(x, y, w, 30); b.FlatStyle = FlatStyle.Flat; b.BackColor = T.Panel2; b.ForeColor = T.Text; b.FlatAppearance.BorderColor = T.Edge; Controls.Add(b); return b; }
@@ -90,7 +134,7 @@ namespace HamRadioLink
         }
         void Reset()
         {
-            c.ResetCat(); tbLabel.Text = c.Label;
+            c.ResetCat(); Nm = c.Label; pKind = null; pFmt = null; pMax = pW = pH = pX = pY = null;
             if (tbSet != null) tbSet.Text = c.DSet; if (tbRead != null) tbRead.Text = c.DRead; if (tbParse != null) tbParse.Text = c.DParse; if (tbItems != null) tbItems.Text = c.DItems;
             if (tbOn != null) tbOn.Text = c.DOnVal; if (tbOff != null) tbOff.Text = c.DOffVal; if (tbMin != null) tbMin.Text = c.DMin.ToString(); if (tbMax != null) tbMax.Text = c.DMax.ToString();
             Changed = true; Prev(); Test();
@@ -104,9 +148,13 @@ namespace HamRadioLink
             if (tbMin != null && (!int.TryParse(tbMin.Text, out mn) || !int.TryParse(tbMax.Text, out mx) || mn >= mx)) { MessageBox.Show(this, "Minimum et maximum doivent être des nombres entiers (minimum < maximum).", "Commande", MessageBoxButtons.OK, MessageBoxIcon.Warning); return false; }
             if (tbItems != null && Item.ParseList(tbItems.Text).Length == 0) { MessageBox.Show(this, "Au moins une valeur « Libellé=code » est nécessaire.", "Commande", MessageBoxButtons.OK, MessageBoxIcon.Warning); return false; }
             if (tbOn != null && tbOn.Text.Length == 0) { MessageBox.Show(this, "La valeur « allumé » ne peut pas être vide.", "Commande", MessageBoxButtons.OK, MessageBoxIcon.Warning); return false; }
-            c.Label = tbLabel.Text.Length > 0 ? tbLabel.Text : c.DLabel;
+            c.Label = Nm.Length > 0 ? Nm : c.DLabel;
             if (tbSet != null) c.Set = tbSet.Text; if (tbRead != null) c.Read = tbRead.Text; if (tbParse != null) c.Parse = tbParse.Text; if (tbItems != null) c.Items = tbItems.Text;
             if (tbOn != null) { c.OnVal = tbOn.Text; c.OffVal = tbOff.Text; } if (tbMin != null) { c.Min = mn; c.Max = mx; }
+            if (pFmt != null && c.Fmt != pFmt) { if (c.DFmt == null) c.DFmt = c.Fmt; c.Fmt = pFmt; }
+            if (pMax.HasValue && tbMax == null) c.Max = pMax.Value;
+            if (pKind == Kind.Meter) { c.K = Kind.Meter; c.Set = ""; c.Min = 0; c.Period = 300; c.Fmt = "s"; KindChanged = true; }
+            if (pW.HasValue) { c.W = pW.Value; c.H = pH.Value; c.X = pX.Value; c.Y = pY.Value; Resized = true; }
             Changed = true; return true;
         }
     }

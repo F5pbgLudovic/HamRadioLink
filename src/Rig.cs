@@ -36,7 +36,7 @@ namespace HamRadioLink
         public bool IsOn(Ctl c) { return c.IsOn(Get(c.Id)); }
                 // délai de sécurité TX (comme le PTT de SDRLink) : une émission LANCÉE PAR LA TOUCHE PTT est coupée au bout du délai choisi (clic droit sur PTT ; 0 = désactivé)
         public bool PttByButton; long pttSince; bool pttSaw;
-        public int PttLimit { get { return Def != null ? Cfg.GetInt("ptt.timeout." + Def.Key, 0) : 0; } }
+        public int PttLimit { get { return Def != null ? Cfg.GetInt("ptt.timeout." + Def.Key, Def.Key == "ft2000" ? 30 : 0) : 0; } }
         public void PttButtonStart() { pttSince = clock.ElapsedMilliseconds; PttByButton = true; pttSaw = false; }
         public void PttButtonStop() { PttByButton = false; }
         public int PttLeft { get { int lim = PttLimit; if (!PttByButton || lim <= 0) return -1; return Math.Max(0, lim - (int)((clock.ElapsedMilliseconds - pttSince) / 1000)); } }
@@ -217,7 +217,7 @@ namespace HamRadioLink
         // Nom du poste d'après l'identifiant ID reçu
         public static string IdName(string id)
         {
-            switch (id) { case "0761": return "FTdx10"; case "0251": return "FT-2000"; case "0570": return "FT-991"; case "0310": return "FT-950"; case "020": return "TS-480"; case "024": return "TS-890"; default: return null; }
+            switch (id) { case "0761": return "FTdx10"; case "0251": return "FT-2000"; case "0252": return "FT-2000D"; case "0570": return "FT-991"; case "0310": return "FT-950"; case "020": return "TS-480"; case "024": return "TS-890"; default: return null; }
         }
     }
 }

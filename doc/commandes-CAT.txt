@@ -1,4 +1,4 @@
-﻿HamRadioLink - commandes CAT par défaut de chaque élément (celles que le clic droit en config vue permet de modifier)
+﻿HamRadioLink - commandes CAT par défaut de chaque élément (celles que le clic droit en vue config permet de modifier)
 
 ==================== Elecraft K2  (ID attendu , 11 chiffres de fréquence, vitesse conseillée 4800)
 ptt       Toggle  ÉMISSION (PTT)
@@ -11189,22 +11189,22 @@ l_rxant   Led     ANT RX A
 l_rxantb  Led     ANT RX B
 po        Meter   Po
             lecture : RM5;   réponse : ^RM5(?<v>\d{3});$
-            note    : Mesure lue pour l'aiguille du compteur (visible seulement en config vue).
+            note    : Mesure lue pour l'aiguille du compteur (visible seulement en vue config).
 swr       Meter   SWR
             lecture : RM6;   réponse : ^RM6(?<v>\d{3});$
-            note    : Mesure lue pour l'aiguille du compteur (visible seulement en config vue).
+            note    : Mesure lue pour l'aiguille du compteur (visible seulement en vue config).
 alc       Meter   ALC
             lecture : RM4;   réponse : ^RM4(?<v>\d{3});$
-            note    : Mesure lue pour l'aiguille du compteur (visible seulement en config vue).
+            note    : Mesure lue pour l'aiguille du compteur (visible seulement en vue config).
 comp      Meter   COMP
             lecture : RM3;   réponse : ^RM3(?<v>\d{3});$
-            note    : Mesure lue pour l'aiguille du compteur (visible seulement en config vue).
+            note    : Mesure lue pour l'aiguille du compteur (visible seulement en vue config).
 idd       Meter   Id
             lecture : RM7;   réponse : ^RM7(?<v>\d{3});$
-            note    : Mesure lue pour l'aiguille du compteur (visible seulement en config vue).
+            note    : Mesure lue pour l'aiguille du compteur (visible seulement en vue config).
 vdd       Meter   Vdd
             lecture : RM8;   réponse : ^RM8(?<v>\d{3});$
-            note    : Mesure lue pour l'aiguille du compteur (visible seulement en config vue).
+            note    : Mesure lue pour l'aiguille du compteur (visible seulement en vue config).
 fb        Freq    SUB DISPLAY-I  VFO-B
             envoi   : FB{v:8};
             lecture : FB;   réponse : ^FB(?<v>\d{8});$

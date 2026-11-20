@@ -28,12 +28,15 @@
 
 **Face avant et réglages**
 - **Face avant fidèle** : afficheurs de fréquence (clic sur un chiffre, molette, saisie), vumètres (barres ↔ aiguille par clic droit), boutons, potentiomètres, molette d'accord, bandes et modes, deux récepteurs quand le poste en a deux.
-- **Config vue** : tout se déplace et se redimensionne à la souris ; **Valider**, **Retour arrière** (illimité) et **Réinit**. **Clic droit sur un élément** : la commande CAT / CI-V est visible et **modifiable** (test de lecture, bouton « Défaut »). **Ajouter** crée un élément à partir des commandes **du poste choisi**.
+- **Vue config** : tout se déplace et se redimensionne à la souris ; **Valider**, **Retour arrière** (illimité) et **Réinit**. **Clic droit sur un élément** : la commande CAT / CI-V est visible et **modifiable** (test de lecture, bouton « Défaut »). **Ajouter** crée un élément à partir des commandes **du poste choisi**.
 - **Paramètres ⚙** : couleurs de l'interface (dont fond des touches actives, voile des verrous, bouton de connexion vert / rouge), niveau du voile, molette, vumètres, **réinitialisation de tous les verrous**, **journal des commandes**, commande manuelle. **Export / import ⇅** des réglages, dispositions et réglages du poste.
 - **Export / import ⇅ par parties** : logiciel et dispositions, réglages du poste, menu interne du poste (6 Yaesu) ; **commandes de nombreux postes contrôlées contre les manuels CAT officiels** (Yaesu, Kenwood, Icom).
 - **Verrous** par clic droit sur n'importe quel organe (une seule touche d'une rangée de modes / bandes) et **touche Lock** qui bloque tout le programme.
 - **Touche PTT** verte au repos, rouge en émission ; **clic droit = délai de sécurité TX** (jusqu'à 30 min, compte à rebours, coupure automatique) ; **micro du PC vers le poste** : le même menu envoie le micro choisi sur la carte son reliée au poste (aussi dans Paramètres ⚙). **Bouton TUNE** (tonalité 1500 Hz sur la carte son du poste, PTT ou VOX, couleurs et durée dans Paramètres ⚙).
-- **Journal de trafic (bouton LOG, 1.0)** : base MariaDB au choix ou intégrée, import ADIF / partage d'une base existante, **QSO de WSJT-X reçus automatiquement** (ports réglables dans Paramètres ⚙), distance calculée à chaque contact, **DX Cluster** (échelle de la bande avec curseurs VFO A / B, clic sur un indicatif = le poste se règle, alertes sonores), **28 thèmes** aux couleurs personnalisables. Gardez une sauvegarde ADIF.
+- **Journal de trafic (bouton LOG, 1.0)** : base MariaDB au choix ou intégrée, import ADIF / partage d'une base existante, **QSO de WSJT-X reçus automatiquement** (ports réglables dans Paramètres ⚙), distance calculée à chaque contact, **DX Cluster** (échelle de la bande avec curseurs VFO A / B, clic sur un indicatif = le poste se règle, alertes sonores), **40 thèmes** aux couleurs personnalisables. Gardez une sauvegarde ADIF.
+- **Échelles et étalonnage (1.2, tous les postes)** : puissance max par poste, vumètres Po (en watts), SWR (1 à ∞), ALC (bleu puis rouge), COMP (dB), Id (A), Vdd (V), étalonnés par quelques mesures (Paramètres ⚙ > Réglage S-mètre puissance / autres S-mètres / Width, CONT, RF PWR) ; le FT-2000 / FT-2000D est livré avec un étalonnage et une disposition d'origine.
+- **Menu interne du poste (1.2, postes Yaesu à commande EX)** : bouton **MENU**, table des menus avec noms et valeurs possibles du manuel (FT-2000 complet, FT-950, FT-991A, FTdx3000), valeurs lues dans le poste et modifiables (relecture de contrôle, confirmation pour les menus critiques, bandeau d'avertissement), noms et listes corrigeables par clic droit.
+- **Vue config (1.2)** : bouton **Aligner** (même taille pour les boutons de même forme d'une section, Retour arrière pour annuler) ; **journal** : zoom du texte par zone (− / + / ↺), colonnes ajustables (↔), bouton QRZCQ, 40 thèmes.
 - **Moniteur CAT** et **journal des commandes** (un fichier par jour, purgé, envoyable pour diagnostiquer).
 - **IC-7760** : fenêtre complète reprise d'[IC7760Link](https://github.com/F5pbgLudovic/IC7760Link).
 
@@ -62,7 +65,7 @@ Le mode d'emploi complet est dans **[AIDE.md](AIDE.md)** (English: **[HELP.md](H
 
 Tout a été développé et vérifié contre un **poste virtuel**. Des commandes du **FT-2000** et du **FTdx10** ont été essayées sur de vrais postes ; **le reste n'a jamais été essayé sur du matériel réel**.
 - Pour les **8 Icom** dont le manuel CI-V est analysé (IC-7000, 7100, 7300, 7300MK2, 7410, 7610, 7760, 9700) et les Yaesu / Kenwood TS-480 / TS-890, chaque touche est contrôlée contre le catalogue du manuel.
-- Pour **tous les autres postes**, la face avant et les commandes suivent la famille du modèle : **à vérifier sur le poste**. Tout se corrige par clic droit en config vue.
+- Pour **tous les autres postes**, la face avant et les commandes suivent la famille du modèle : **à vérifier sur le poste**. Tout se corrige par clic droit en vue config.
 - **Testez l'émission sur charge fictive, à faible puissance.**
 
 Les retours sont les bienvenus : ouvrez une [issue](https://github.com/F5pbgLudovic/HamRadioLink/issues) avec le modèle, la liaison et un extrait du Moniteur CAT.
@@ -94,7 +97,7 @@ Utilise le compilateur .NET Framework 4 fourni avec Windows (C# 5) : rien à ins
 
 *Front panel and settings*
 - Faithful front panel per model (dual receivers, meters bar ↔ needle by right-click, knobs, tuning wheel).
-- **Layout editor** ("config vue"): move and resize everything, Apply / Undo / Reset. **Right-click any control** to see and edit its CAT / CI-V command; **Add** builds new controls from the selected radio's own command catalogue.
+- **Layout editor** ("vue config"): move and resize everything, Apply / Undo / Reset. **Right-click any control** to see and edit its CAT / CI-V command; **Add** builds new controls from the selected radio's own command catalogue.
 - **Settings ⚙**: interface colours (active-key background, lock veil, green / red connection button), veil level, mouse wheel, meters, **reset of every lock**, **command log**, manual command. **Export / import ⇅** of settings, layouts and radio settings.
 - **Export / import ⇅ by parts**: program and layouts, radio settings, radio internal menu (6 Yaesu); **many radios' commands checked against the official CAT manuals** (Yaesu, Kenwood, Icom).
 - **Locks** by right-click on any control (a single key of a mode / band row) and a **Lock key** that blocks the whole program.

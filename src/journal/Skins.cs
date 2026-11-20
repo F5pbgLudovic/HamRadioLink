@@ -77,6 +77,20 @@ namespace HamRadioLink.Journal
             l.Add(T("Thème IA n°25 – Rétro : monochrome années 90", LookKind.Flat, 0, "Arial", 0xDCDCDC, 0x000000, 0xFFFFFF, 0x000000, 0x000000, 0xFFFFFF, 0xEDEDED, 0x000000, 0xFFFFFF, 0xFFFFFF, 0x000000, 0xDCDCDC, 0x000000, 0x000000, 0xFFFFFF, 0x000000));
             l.Add(T("Thème IA n°26 – Rétro : écran 4 couleurs", LookKind.Flat, 0, "Consolas", 0x000000, 0x55FFFF, 0x000000, 0xFFFFFF, 0xFF55FF, 0x000000, 0x0000AA, 0xFFFFFF, 0x000000, 0x000055, 0x55FFFF, 0x0000AA, 0xFFFF55, 0xFF55FF, 0x000000, 0x5555FF));
             l.Add(T("Thème IA n°27 – Rétro : console bleue", LookKind.Flat, 0, "Consolas", 0x0000AA, 0xFFFFFF, 0x000080, 0xFFFFFF, 0xFFFF55, 0x0000AA, 0x00AAAA, 0x000000, 0x0000AA, 0x0000C0, 0xFFFFFF, 0x00AAAA, 0x000000, 0xAAAAAA, 0x000000, 0x5555FF));
+            // nouvelles ambiances
+            l.Add(T("Thème IA n°28 – Solarized sombre", LookKind.Round, 5, "Consolas", 0x002B36, 0x93A1A1, 0x073642, 0xEEE8D5, 0xB58900, 0x002B36, 0x0A4150, 0xEEE8D5, 0x00252E, 0x073642, 0x93A1A1, 0x0E4A5A, 0xFDF6E3, 0x268BD2, 0xFFFFFF, 0x0F4450));
+            l.Add(T("Thème IA n°29 – Solarized clair", LookKind.Round, 5, "Segoe UI", 0xFDF6E3, 0x586E75, 0xFFFFFF, 0x073642, 0x268BD2, 0xFFFFFF, 0xEEE8D5, 0x586E75, 0xFDF6E3, 0xF5EFDC, 0x586E75, 0xEEE8D5, 0x073642, 0xB4D7F0, 0x002B36, 0xE0D9C3));
+            l.Add(T("Thème IA n°30 – Dracula", LookKind.Round, 7, "Consolas", 0x282A36, 0xF8F8F2, 0x343746, 0xF8F8F2, 0xBD93F9, 0x282A36, 0x44475A, 0xF8F8F2, 0x21222C, 0x282A36, 0xF8F8F2, 0x44475A, 0xF8F8F2, 0x6272A4, 0xFFFFFF, 0x3B3E52));
+            l.Add(T("Thème IA n°31 – Nord (glace)", LookKind.Round, 6, "Segoe UI", 0x2E3440, 0xD8DEE9, 0x3B4252, 0xECEFF4, 0x88C0D0, 0x2E3440, 0x434C5E, 0xECEFF4, 0x2A303B, 0x303644, 0xD8DEE9, 0x434C5E, 0xECEFF4, 0x5E81AC, 0xFFFFFF, 0x3B4252));
+            l.Add(T("Thème IA n°32 – Cockpit rouge", LookKind.Flat, 0, "Consolas", 0x1A0A0A, 0xFFD9D9, 0x2A1010, 0xFFEAEA, 0xFF3B30, 0xFFFFFF, 0x3A1414, 0xFFE0E0, 0x140707, 0x1D0C0C, 0xFFD0D0, 0x3A1414, 0xFFE8E8, 0x8B1A1A, 0xFFFFFF, 0x3A1818));
+            l.Add(T("Thème IA n°33 – Brume (gris bleuté clair)", LookKind.Round, 6, "Segoe UI", 0xE9EDF1, 0x2B3640, 0xFFFFFF, 0x1F2933, 0x4F6D8F, 0xFFFFFF, 0xD7DEE6, 0x2B3640, 0xFFFFFF, 0xF1F4F7, 0x2B3640, 0xCBD5DF, 0x1F2933, 0xB9CCE0, 0x111A22, 0xD0D8E0));
+            l.Add(T("Thème IA n°34 – Cacao (chocolat)", LookKind.Round, 7, "Georgia", 0x2A1E17, 0xF0E1D0, 0x3A2B22, 0xFFF1E0, 0xD9A066, 0x2A1E17, 0x4A372B, 0xFFF1E0, 0x231810, 0x2D2018, 0xF0E1D0, 0x4A372B, 0xFFEFD8, 0x8A5A3A, 0xFFFFFF, 0x4A372B));
+            l.Add(T("Thème IA n°35 – Cerisier (rose pâle)", LookKind.Round, 11, "Segoe UI", 0xFCEEF3, 0x4A2030, 0xFFFFFF, 0x3A1626, 0xD6336C, 0xFFFFFF, 0xF6D6E2, 0x4A2030, 0xFFF8FA, 0xFCEBF1, 0x4A2030, 0xF2C4D5, 0x3A1626, 0xF3B6CB, 0x2A0F1B, 0xEBCFDA));
+            l.Add(T("Thème IA n°36 – Soleil (jaune doux)", LookKind.Round, 8, "Segoe UI", 0xFFF8DC, 0x3D3300, 0xFFFFFF, 0x2E2700, 0xE6A800, 0x2E2300, 0xFBEBA8, 0x3D3300, 0xFFFDF0, 0xFFF6CF, 0x3D3300, 0xF7E08A, 0x2E2700, 0xFFE27A, 0x2E2700, 0xEDD98F));
+            l.Add(T("Thème IA n°37 – Carbone (gris profond, bleu vif)", LookKind.Round, 6, "Consolas", 0x15181C, 0xC9D1D9, 0x0D1117, 0xE6EDF3, 0x58A6FF, 0x0D1117, 0x21262D, 0xC9D1D9, 0x0D1117, 0x12171E, 0xC9D1D9, 0x21262D, 0xE6EDF3, 0x1F6FEB, 0xFFFFFF, 0x30363D));
+            l.Add(T("Thème IA n°38 – Radar (vert militaire)", LookKind.Flat, 0, "Consolas", 0x1C2418, 0xC8D6B0, 0x263020, 0xE0EBCB, 0x8DB255, 0x1C2418, 0x323D2A, 0xDDE8C6, 0x182014, 0x202A1B, 0xC8D6B0, 0x323D2A, 0xE0EBCB, 0x58702F, 0xFFFFFF, 0x344029));
+            l.Add(T("Thème IA n°39 – Indigo électrique", LookKind.Round, 9, "Consolas", 0x0B1026, 0xCFD8FF, 0x131A3D, 0xE6EBFF, 0x4D7CFF, 0xFFFFFF, 0x1B2554, 0xDCE3FF, 0x090D20, 0x0F1530, 0xCFD8FF, 0x1B2554, 0xE6EBFF, 0x2F4FD0, 0xFFFFFF, 0x222C5E));
+            l.Add(T("Thème IA n°40 – Aube (pêche et ciel)", LookKind.Round, 12, "Segoe UI", 0xFFF1E6, 0x40302A, 0xFFFFFF, 0x30221C, 0xFF8A5B, 0xFFFFFF, 0xFFDCC8, 0x40302A, 0xFFFAF5, 0xFFEBDD, 0x40302A, 0xFFD2B8, 0x30221C, 0xBFDFF5, 0x1A2A36, 0xF0D9C8));
             foreach (ThemeDef d in l) { d.Snap(); if (d.Dlg != null) d.Dlg.Snap(); }
             return l;
         }
@@ -332,8 +346,21 @@ namespace HamRadioLink.Journal
 
         // ----- barre de titre sombre (Windows 10) -----
         [DllImport("dwmapi.dll")] static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int val, int size);
+        [DllImport("user32.dll")] static extern bool RedrawWindow(IntPtr h, IntPtr r, IntPtr rgn, uint flags);
+        [DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int cx, int cy, uint flags);
+        static readonly System.Collections.Generic.HashSet<Form> frameFix = new System.Collections.Generic.HashSet<Form>();
+        // Windows 10 + barre de titre sombre : les boutons réduire / agrandir / fermer disparaissent parfois quand on réduit la fenêtre → on force le redessin du cadre
+        public static void FrameFix(Form f)
+        {
+            if (!frameFix.Add(f)) return;
+            f.FormClosed += delegate { frameFix.Remove(f); };
+            f.Resize += delegate { try { if (f.IsHandleCreated) RedrawWindow(f.Handle, IntPtr.Zero, IntPtr.Zero, 0x401); } catch { } };
+            f.ResizeEnd += delegate { try { if (f.IsHandleCreated) SetWindowPos(f.Handle, IntPtr.Zero, 0, 0, 0, 0, 0x37); } catch { } };
+            f.SizeChanged += delegate { try { if (f.IsHandleCreated && f.WindowState != FormWindowState.Minimized) f.BeginInvoke((Action)delegate { try { SetWindowPos(f.Handle, IntPtr.Zero, 0, 0, 0, 0, 0x37); } catch { } }); } catch { } };
+        }
         static void DarkTitle(Form f, bool dark)
         {
+            FrameFix(f);
             try { if (!f.IsHandleCreated) return; int v = dark ? 1 : 0; if (DwmSetWindowAttribute(f.Handle, 20, ref v, 4) != 0) DwmSetWindowAttribute(f.Handle, 19, ref v, 4); } catch { }
         }
     }

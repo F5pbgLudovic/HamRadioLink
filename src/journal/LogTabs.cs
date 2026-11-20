@@ -14,6 +14,7 @@ namespace HamRadioLink.Journal
     {
         public event Action<LogRef> TabSelected; public event Action AddClicked; public event Action<LogRef> RenameRequested; public event Action<LogRef> RemoveRequested, DeleteRequested;
         readonly List<Rectangle> rects = new List<Rectangle>(); Rectangle plus; int hot = -2;
+        public event Action<int> ZoomStep; public event Action ZoomReset; Rectangle zMinus, zPlus, zReset; int zhot;   // boutons ronds − / + (zoom du texte de la liste), tout à droite de la ligne
         // Boutons d'action (Add, Delete…) dessinés sur la même ligne que les onglets, avec la même forme que le « + ».
         class TabItem { public string Text; public ToolStripButton Src; public int Kind; public Rectangle R; }   // Kind : 0 bouton, 1 séparateur, 2 libellé, 3 zone de recherche
         readonly List<TabItem> items = new List<TabItem>(); TextBox box; int hotItem = -1;
@@ -60,21 +61,36 @@ items.Clear(); box = null;   // la zone de recherche n'est plus affichée (elle 
                     else if (it.Kind == 3) { it.R = Rectangle.Empty; if (box != null) { Point p = new Point(x, (Height - box.Height) / 2); if (box.Location != p) box.Location = p; x += box.Width + 6; } }
                     else
                     {
-                        int w = it.Text == "▲" ? Height - 6 : TextRenderer.MeasureText(it.Text, f).Width + 16; it.R = new Rectangle(x, 3, w, Height - 6);
+                        int w = it.Text == "▲" ? Height - 6 : it.Text == "↔" ? 36 : TextRenderer.MeasureText(it.Text, f).Width + 16; it.R = new Rectangle(x, 3, w, Height - 6);
                         Color tc = Looks.DrawButton(g, it.R, null, tt, hotItem == i, false, true, back);
-                        TextRenderer.DrawText(g, it.Text, f, it.R, tc, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding); x += w + 4;
+                        if (it.Text == "↔") FitIcon(g, it.R, tc); else TextRenderer.DrawText(g, it.Text, f, it.R, tc, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding); x += w + 4;
                     }
                 }
+                int dz = Math.Min(22, Height - 6); zPlus = new Rectangle(Width - dz - 8, (Height - dz) / 2, dz, dz); zMinus = new Rectangle(zPlus.X - dz - 4, zPlus.Y, dz, dz); zReset = new Rectangle(zMinus.X - dz - 8, zPlus.Y, dz, dz);
+                LogZoom.Circle(g, zMinus, false, zhot == 1); LogZoom.Circle(g, zPlus, true, zhot == 2); LogZoom.Reset(g, zReset, zhot == 3);
             }
         }
 
+        // icône « <-> » : deux chevrons larges de part et d'autre d'un petit tiret central (ajuster la largeur des colonnes)
+        internal static void FitIcon(Graphics g, Rectangle r, Color c)
+        {
+            System.Drawing.Drawing2D.SmoothingMode old = g.SmoothingMode; g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            float cx = r.X + r.Width / 2f, cy = r.Y + r.Height / 2f, half = 9f, hh = 4.5f, ah = 4.5f;   // flèche double « ←→ » : un trait continu et deux pointes collées aux extrémités
+            using (Pen p = new Pen(c, 1.8f)) { p.StartCap = System.Drawing.Drawing2D.LineCap.Round; p.EndCap = System.Drawing.Drawing2D.LineCap.Round; p.LineJoin = System.Drawing.Drawing2D.LineJoin.Round;
+                g.DrawLine(p, cx - half, cy, cx + half, cy);
+                g.DrawLines(p, new PointF[] { new PointF(cx - half + ah, cy - hh), new PointF(cx - half, cy), new PointF(cx - half + ah, cy + hh) });
+                g.DrawLines(p, new PointF[] { new PointF(cx + half - ah, cy - hh), new PointF(cx + half, cy), new PointF(cx + half - ah, cy + hh) }); }
+            g.SmoothingMode = old;
+        }
+        int ZAt(Point p) { return zMinus.Contains(p) ? 1 : zPlus.Contains(p) ? 2 : zReset.Contains(p) ? 3 : 0; }
         int At(Point p) { for (int i = 0; i < rects.Count; i++) if (rects[i].Contains(p)) return i; return plus.Contains(p) ? -1 : -2; }
         int ItemAt(Point p) { for (int i = 0; i < items.Count; i++) if (items[i].Kind == 0 && items[i].R.Contains(p)) return i; return -1; }
-        protected override void OnMouseMove(MouseEventArgs e) { int h = At(e.Location), hi = ItemAt(e.Location); if (h != hot || hi != hotItem) { hot = h; hotItem = hi; Invalidate(); } Cursor = h > -2 || hi >= 0 ? Cursors.Hand : Cursors.Default; }
-        protected override void OnMouseLeave(EventArgs e) { hot = -2; hotItem = -1; Invalidate(); }
+        protected override void OnMouseMove(MouseEventArgs e) { int h = At(e.Location), hi = ItemAt(e.Location), zh = ZAt(e.Location); if (h != hot || hi != hotItem || zh != zhot) { hot = h; hotItem = hi; zhot = zh; Invalidate(); } Cursor = h > -2 || hi >= 0 || zh > 0 ? Cursors.Hand : Cursors.Default; }
+        protected override void OnMouseLeave(EventArgs e) { hot = -2; hotItem = -1; zhot = 0; Invalidate(); }
         protected override void OnMouseDown(MouseEventArgs e)
         {
-            int ii = ItemAt(e.Location); if (ii >= 0 && e.Button == MouseButtons.Left) { items[ii].Src.PerformClick(); return; }
+            int ii = ItemAt(e.Location); if (e.Button == MouseButtons.Left && ZAt(e.Location) > 0) { int zz = ZAt(e.Location); if (zz == 3) { Action zr = ZoomReset; if (zr != null) zr(); return; } Action<int> za = ZoomStep; if (za != null) za(zz == 2 ? 1 : -1); return; }
+            if (ii >= 0 && e.Button == MouseButtons.Left) { items[ii].Src.PerformClick(); return; }
             int i = At(e.Location);
             if (i == -1 && e.Button == MouseButtons.Left) { Action a = AddClicked; if (a != null) a(); return; }
             if (i < 0) return; LogRef l = App.Logs[i];
