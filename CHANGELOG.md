@@ -10,7 +10,7 @@
 - Quand le poste ne répond plus (« Plus de réponse du poste »), le bouton passe à **CONNECTER** sur fond rouge ; un clic relance la connexion ; si le poste répond de nouveau, il redevient « DÉCONNECTER ».
 
 ### Vérification
-- Autotest : 163 753 vérifications (bouton TUNE présent et dans la fenêtre pour chaque poste). **Pas essayé en réel** : l'émission de TUNE sur un vrai poste.
+- Autotest : 163 753 vérifications (bouton TUNE présent et dans la fenêtre pour chaque poste). Essayé en réel par l utilisateur : TUNE sur FT-2000, OK (autres postes non essayés).
 
 ## 1.0 — 2026-11-19 (première version publiée)
 
