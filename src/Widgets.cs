@@ -43,6 +43,8 @@ namespace HamRadioLink
         public static int VeilAlpha { get { return (int)Math.Round(Math.Max(10, Math.Min(100, VeilPct)) * 2.55); } }
         // verrou (clic droit sur un bouton ou un potentiomètre ; Ctrl + clic droit pour un choix) : bloque l'action, mémorisé par poste
         bool locked; public bool Locked { get { return locked; } set { if (locked != value) { locked = value; Invalidate(); } } }
+        // FT-991A DF5DP : sur CTCSS ENC, FREQ CTCSS et CODE DCS, le clic droit ouvre la liste de toutes les valeurs au lieu de verrouiller
+        bool DropOnRight { get { return Def.K == Kind.Choice && Rig != null && Rig.Def != null && Rig.Def.Key == "ft991a-df5dp" && (Def.Id == "ctcss" || Def.Id == "ctone" || Def.Id == "dcsc"); } }
         bool Lockable { get { return Def.K == Kind.Toggle || Def.K == Kind.Action || Def.K == Kind.Knob || Def.K == Kind.Choice || Def.K == Kind.Chain || Def.K == Kind.Dsp || Def.K == Kind.Freq || Def.K == Kind.Dial; } }
         // essais automatiques : simulent un clic ou une molette sur l'élément (Ctrl simulé par CtrlOverride)
         public static bool CtrlOverride, NoSave;
@@ -148,8 +150,8 @@ namespace HamRadioLink
             }
             if (Def.Id == "ptt" && Def.K == Kind.Toggle && e.Button == MouseButtons.Right && Rig != null && Rig.Def != null && !NoSave && !CtrlHeld) { PttMenu(e.Location); return; }      // clic droit sur PTT : délai de sécurité (Ctrl + clic droit : verrou)
             HRow hr = this as HRow; if (hr != null && e.Button == MouseButtons.Right && Rig != null) { hr.ToggleCell(e.Location); return; }      // rangée : le clic droit ne verrouille que la case touchée
-            if (Lockable && e.Button == MouseButtons.Right && !(Def.K == Kind.Choice && !(this is HRow) && CtrlHeld) && Rig != null) { Locked = !locked; Cfg.SetBool(LockKey, locked); if (!NoSave) Cfg.Save(); return; }
-            if (locked && Lockable) return;
+            if (Lockable && e.Button == MouseButtons.Right && !(Def.K == Kind.Choice && !(this is HRow) && (DropOnRight ? !CtrlHeld : CtrlHeld)) && Rig != null) { Locked = !locked; Cfg.SetBool(LockKey, locked); if (!NoSave) Cfg.Save(); return; }
+            if (locked && Lockable && !(DropOnRight && e.Button == MouseButtons.Right && !CtrlHeld)) return;
             Up(e); base.OnMouseUp(e);
         }
         protected sealed override void OnMouseWheel(MouseEventArgs e) { float o = UseScale(); try { if (!Edit && !(locked && Lockable)) Wheel(e); base.OnMouseWheel(e); } finally { T.Scale = o; } }
@@ -193,6 +195,19 @@ namespace HamRadioLink
         protected override void OnHandleDestroyed(EventArgs e) { if (tuneCb != null) TuneMic.Changed -= tuneCb; tuneCb = null; base.OnHandleDestroyed(e); }
         protected override void Leaving() { hot = false; down = false; Invalidate(); }
         protected override void OnMouseEnter(EventArgs e) { hot = true; Invalidate(); base.OnMouseEnter(e); }
+        // liste longue (CTCSS, DCS…) : fenêtre avec ascenseur et molette, au lieu d'un menu qui ne défile pas bien
+        void LongPick(Item[] it, int cu, Point at)
+        {
+            Form f = new Form(); f.FormBorderStyle = FormBorderStyle.None; f.StartPosition = FormStartPosition.Manual; f.ShowInTaskbar = false; f.BackColor = T.Edge; f.Padding = new Padding(1);
+            ListBox lb = new ListBox(); lb.Dock = DockStyle.Fill; lb.BackColor = T.Panel2; lb.ForeColor = T.Text; lb.BorderStyle = BorderStyle.None; lb.IntegralHeight = false; lb.Font = new Font("Segoe UI", 10f);
+            foreach (Item q in it) lb.Items.Add(q.Label); if (cu >= 0 && cu < it.Length) lb.SelectedIndex = cu;
+            int rows = Math.Min(it.Length, 16); f.ClientSize = new Size(Math.Max(Width, 190), rows * lb.ItemHeight + 4); f.Controls.Add(lb);
+            Point sp = PointToScreen(at); Rectangle wa = Screen.FromPoint(sp).WorkingArea; if (sp.Y + f.Height > wa.Bottom) sp.Y = Math.Max(wa.Top, wa.Bottom - f.Height); if (sp.X + f.Width > wa.Right) sp.X = wa.Right - f.Width; f.Location = sp;
+            bool done = false; Action close = delegate { if (!done) { done = true; f.Close(); } };
+            lb.MouseUp += delegate(object s, MouseEventArgs ev) { int i = lb.IndexFromPoint(ev.Location); if (i >= 0 && i < it.Length) { Rig.Set(Def, it[i].Code); close(); } };
+            lb.KeyDown += delegate(object s, KeyEventArgs ev) { if (ev.KeyCode == Keys.Escape) close(); else if (ev.KeyCode == Keys.Enter && lb.SelectedIndex >= 0) { Rig.Set(Def, it[lb.SelectedIndex].Code); close(); } };
+            f.Deactivate += delegate { close(); }; f.Shown += delegate { lb.Focus(); }; f.Show(FindForm());
+        }
         protected override void Down(MouseEventArgs e) { if (e.Button == MouseButtons.Left) { down = true; Invalidate(); } }
         protected override void Up(MouseEventArgs e)
         {
@@ -204,6 +219,7 @@ namespace HamRadioLink
                 Item[] it = Def.ItemList; if (it.Length == 0) return; int cur = Cur(it);
                 if (e.Button == MouseButtons.Right)
                 {
+                    if (it.Length > 20) { LongPick(it, Cur(it), e.Location); return; }
                     ContextMenuStrip m = new ContextMenuStrip(); m.BackColor = T.Panel2; m.ForeColor = T.Text; int cu = Cur(it);
                     for (int i = 0; i < it.Length; i++) { Item q = it[i]; ToolStripMenuItem mi = new ToolStripMenuItem(q.Label); mi.Checked = i == cu; mi.Click += delegate { Rig.Set(Def, q.Code); }; m.Items.Add(mi); }
                     m.Show(this, new Point(e.X, e.Y)); return;
@@ -469,7 +485,9 @@ namespace HamRadioLink
     public class HFreq : HW
     {
         long freq; string mode = ""; bool sel, tx; int hover = -1; Font fd;
-        static readonly long[] Place = { 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1 }; Rectangle[] cell = new Rectangle[8];
+        Rectangle[] cell = new Rectangle[9];
+        int N { get { return Rig != null && Rig.Def != null && Rig.Def.MaxFreq >= 100000000 ? 9 : 8; } }          // 9 chiffres dès que le poste monte au-delà de 100 MHz (144 / 430 MHz)
+        long PlaceAt(int i) { long p = 1; for (int q = 0; q < N - 1 - i; q++) p *= 10; return p; }
         public override void Sync()
         {
             if (!Ready) return; string s = St(Def.Id); long f = 0; if (s != null) long.TryParse(s, out f);
@@ -479,10 +497,10 @@ namespace HamRadioLink
         }
         void Calc()
         {
-            float k = T.Scale; float fsz = Math.Max(14, Math.Min(Height * 0.60f, (Width - 24 * k) / 5.1f));
+            float k = T.Scale; float fsz = Math.Max(14, Math.Min(Height * 0.60f, (Width - 24 * k) / (N == 9 ? 5.7f : 5.1f)));
             if (fd == null || Math.Abs(fd.Size - fsz) > 0.5f) { if (fd != null) fd.Dispose(); fd = new Font("Consolas", fsz, FontStyle.Bold, GraphicsUnit.Pixel); }
-            float dw = fsz * 0.56f, dotw = fsz * 0.30f, total = dw * 8 + dotw * 2, x = Width - total - 12 * k; if (x < 6) x = 6; float y = Height * 0.24f, h = Height * 0.70f;
-            for (int i = 0; i < 8; i++) { cell[i] = new Rectangle((int)x, (int)y, (int)dw, (int)h); x += dw; if (i == 1 || i == 4) x += dotw; }
+            float dw = fsz * 0.56f, dotw = fsz * 0.30f, total = dw * N + dotw * 2, x = Width - total - 12 * k; if (x < 6) x = 6; float y = Height * 0.24f, h = Height * 0.70f;
+            for (int i = 0; i < N; i++) { cell[i] = new Rectangle((int)x, (int)y, (int)dw, (int)h); x += dw; if (i < N - 1 && (N - 1 - i) % 3 == 0) x += dotw; }
         }
         protected override void Draw(Graphics g)
         {
@@ -495,18 +513,18 @@ namespace HamRadioLink
             }
             using (Brush b = new SolidBrush(sel ? acc : T.Dim)) g.DrawString(Def.Label, T.Fn("Segoe UI Semibold", 10f), b, 10 * k, 6 * k);
             using (Brush b = new SolidBrush(tx ? T.Red : T.Cyan)) g.DrawString(mode, T.Fn("Segoe UI Semibold", 11f), b, 10 * k, 28 * k);
-            bool have = Ready && St(Def.Id) != null; string s = have ? freq.ToString().PadLeft(8) : "        "; bool lead = true;
+            bool have = Ready && St(Def.Id) != null; string s = have ? freq.ToString().PadLeft(N) : new string(' ', N); bool lead = true;
             Color on = tx ? Color.FromArgb(255, 110, 100) : (sel ? Color.FromArgb(255, 226, 150) : Color.FromArgb(190, 205, 220)); if (oled && !tx) on = sel ? Color.FromArgb(255, 200, 80) : Color.FromArgb(200, 150, 60);
-            for (int i = 0; i < 8; i++)
+            for (int i = 0; i < N; i++)
             {
-                char c = s[i]; if (c != ' ' && c != '0') lead = false; else if (c == '0' && i >= 2 && lead) lead = false; bool dim = c == ' ' || (c == '0' && lead);
+                char c = s[i]; if (c != ' ' && c != '0') lead = false; else if (c == '0' && i >= N - 6 && lead) lead = false; bool dim = c == ' ' || (c == '0' && lead);
                 if (i == hover) using (Brush hb = new SolidBrush(Color.FromArgb(40, 255, 255, 255))) g.FillRectangle(hb, cell[i]);
                 if (!dim) using (Brush b = new SolidBrush(on)) using (StringFormat sf = T.Center()) g.DrawString(c == ' ' ? "8" : c.ToString(), fd, b, new RectangleF(cell[i].X - 4, cell[i].Y, cell[i].Width + 8, cell[i].Height), sf);
-                if (i == 1 || i == 4) { int dx = cell[i].Right + (int)(fd.Size * 0.12f); using (Brush b = new SolidBrush(dim ? Color.FromArgb(50, 60, 74) : on)) g.FillRectangle(b, dx, cell[i].Bottom - (int)(fd.Size * 0.14f), Math.Max(3, (int)(fd.Size * 0.08f)), Math.Max(3, (int)(fd.Size * 0.08f))); }
+                if (i < N - 1 && (N - 1 - i) % 3 == 0) { int dx = cell[i].Right + (int)(fd.Size * 0.12f); using (Brush b = new SolidBrush(dim ? Color.FromArgb(50, 60, 74) : on)) g.FillRectangle(b, dx, cell[i].Bottom - (int)(fd.Size * 0.14f), Math.Max(3, (int)(fd.Size * 0.08f)), Math.Max(3, (int)(fd.Size * 0.08f))); }
             }
             using (Brush b = new SolidBrush(T.Dim)) g.DrawString("Hz", T.Fn("Segoe UI Semibold", 9f), b, Width - 26 * k, 6 * k);
         }
-        int Hit(Point p) { for (int i = 0; i < 8; i++) { Rectangle c = cell[i]; c.Inflate(2, 0); if (c.Contains(p)) return i; } return -1; }
+        int Hit(Point p) { for (int i = 0; i < N; i++) { Rectangle c = cell[i]; c.Inflate(2, 0); if (c.Contains(p)) return i; } return -1; }
         protected override void Moving(MouseEventArgs e) { int h = Hit(e.Location); if (h != hover) { hover = h; Invalidate(); } Cursor = h >= 0 ? Cursors.SizeNS : Cursors.Default; }
         protected override void Leaving() { hover = -1; Invalidate(); }
         protected override void Down(MouseEventArgs e)
@@ -515,7 +533,7 @@ namespace HamRadioLink
             int h = Hit(e.Location); if (h >= 0 && e.Button == MouseButtons.Left) Bump(h, e.Y < cell[h].Top + cell[h].Height / 2 ? 1 : -1);
         }
         protected override void Wheel(MouseEventArgs e) { int h = Hit(e.Location); if (h < 0) h = 4; Bump(h, e.Delta > 0 ? 1 : -1); }
-        void Bump(int i, int dir) { if (!Ready) return; long nf = freq + dir * Place[i]; Setf(nf); }
+        void Bump(int i, int dir) { if (!Ready) return; long nf = freq + dir * PlaceAt(i); Setf(nf); }
         void Setf(long nf)
         {
             long max = Rig.Def != null ? Rig.Def.MaxFreq : 60000000; if (nf < 30000) nf = 30000; if (nf > max) nf = max;

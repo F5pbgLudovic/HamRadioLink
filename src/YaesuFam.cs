@@ -89,8 +89,7 @@ namespace HamRadioLink
         {
             Ctl bd = r.Find("band"); if (bd != null && !bd.Items.Contains("144=")) { bd.Items += ",144=15,430=16"; bd.Hint = "Manuel : BS P1 = 00 (1,8 MHz) à 11 (GEN), 15 = 144 MHz, 16 = 430 MHz. Pas de lecture : la bande allumée vient de la fréquence."; }
             Bld b = new Bld(r); Ctl c;
-            c = b.Knob("dtg", "DT GAIN", 424, 902, 94, 66, 0, 100, "EX073{v:3};", "EX073;", @"^EX073(?<v>\d{3});$", "raw"); c.Accent = "amber"; c.Hint = "DT GAIN : niveau du signal envoyé en modes DATA (menu 073 DATA OUT LEVEL, 0 à 100). Sert à régler l'entrée audio des modes numériques en DATA-USB / DATA-LSB.";
-            c = b.Tog("meq", "MIC EQ", 524, 906, 94, 52, "PR1{v};", "PR1;", @"^PR1(?<v>[0-2]);$", "1", "0"); c.Hint = "Égaliseur paramétrique du micro (PR P1 = 1). Le manuel donne P2 = 1 arrêt / 2 marche ; même convention que PROC ici : si le bouton agit à l'envers, mettez allumé = 2 et éteint = 1.";
+            c = b.Knob("dtg", "DT GAIN", 660, 902, 94, 66, 0, 100, "EX073{v:3};", "EX073;", @"^EX073(?<v>\d{3});$", "raw"); c.Accent = "amber"; c.Hint = "DT GAIN : niveau du signal envoyé en modes DATA (menu 073 DATA OUT LEVEL, 0 à 100). Sert à régler l'entrée audio des modes numériques en DATA-USB / DATA-LSB.";
             string tones = "67.0 69.3 71.9 74.4 77.0 79.7 82.5 85.4 88.5 91.5 94.8 97.4 100.0 103.5 107.2 110.9 114.8 118.8 123.0 127.3 131.8 136.5 141.3 146.2 151.4 156.7 159.8 162.2 165.5 167.9 171.3 173.8 177.3 179.9 183.5 186.2 189.9 192.8 196.6 199.5 203.5 206.5 210.7 218.1 225.7 229.1 233.6 241.8 250.3 254.1";
             string dcs = "023 025 026 031 032 036 043 047 051 053 054 065 071 072 073 074 114 115 116 122 125 131 132 134 143 145 152 155 156 162 165 172 174 205 212 223 225 226 243 244 245 246 251 252 255 261 263 265 266 271 274 306 311 315 325 331 332 343 346 351 356 364 365 371 411 412 413 423 431 432 445 446 452 454 455 462 464 465 466 503 506 516 523 526 532 546 565 606 612 624 627 631 632 654 662 664 703 712 723 731 732 734 743 754";
             System.Text.StringBuilder t1 = new System.Text.StringBuilder(), t2 = new System.Text.StringBuilder(); int i = 0;
@@ -126,7 +125,17 @@ namespace HamRadioLink
             List<Ctl> keep = new List<Ctl>();
             foreach (Ctl c in r.C)
             {
-                if (!c.HasCat || Conforms(cs, c)) keep.Add(c); else r.Notes.Add(c.Id + " (" + c.Label + ") : commande absente du catalogue de " + name + ", élément retiré");
+                if (c.Id == "ft8")
+                {
+                    // FT8/FT4... prend la case libre de la grille des modes (nombre de modes impair, sur 2 rangées) ; pas de case libre : pas de bouton
+                    Ctl m0 = r.Find("md0"); int n = m0 != null ? m0.ItemList.Length : 0, cols = (n + 1) / 2;
+                    if (m0 != null && n > 0 && n % 2 == 1)
+                    {
+                        float cw = (m0.W - 4 * (cols - 1)) / (float)cols, ch = (m0.H - 4) / 2f; int cx = n % cols, cy = n / cols;
+                        c.X = c.DX = m0.X + (int)(cx * (cw + 4)); c.Y = c.DY = m0.Y + (int)(cy * (ch + 4)); c.W = c.DW = (int)cw; c.H = c.DH = (int)ch; keep.Add(c);
+                    }
+                }
+                else if (!c.HasCat || Conforms(cs, c)) keep.Add(c); else r.Notes.Add(c.Id + " (" + c.Label + ") : commande absente du catalogue de " + name + ", élément retiré");
             }
             keep = keep.FindAll(delegate(Ctl q) { return !(q.K == Kind.Led && q.Local && q.Ref.Length > 0 && !keep.Exists(delegate(Ctl z) { return z.Id == q.Ref; })); });
             r.C = keep;
@@ -140,6 +149,8 @@ namespace HamRadioLink
         static RadioDef Ft891() { return YaesuModel("ft891", "Yaesu FT-891", "ft891", "ID0650;", 9, 56000000, 9600, MODES_891); }
         static RadioDef Ft950() { return YaesuModel("ft950", "Yaesu FT-950", "ft950", "ID0310;", 8, 56000000, 4800, MODES_OLD); }
         static RadioDef Ft991a() { return YaesuModel("ft991a", "Yaesu FT-991A", "ft991a", "ID0670;", 9, 470000000, 4800, MODES_991); }
+        // copie conforme du FT-991A, avec sa propre disposition (fichiers datat991a-df5dp.*) pour deux affichages distincts
+        static RadioDef Ft991aDf5dp() { return YaesuModel("ft991a-df5dp", "Yaesu FT-991A DF5DP", "ft991a", "ID0670;", 9, 470000000, 4800, MODES_991); }
         static RadioDef Ftdx101() { return YaesuModel("ftdx101", "Yaesu FTdx101D/MP", "ftdx101", "ID0681;", 9, 75000000, 38400, MODES_NEW); }
         static RadioDef Ftdx3000() { return YaesuModel("ftdx3000", "Yaesu FTdx3000", "ftdx3000", "ID0460;", 8, 60000000, 4800, MODES_OLD); }
         // modèles voisins : pas de catalogue propre, ceux du FTdx3000 (FTdx1200, FTdx9000) et du FT-710 (FTX-1) servent de référence

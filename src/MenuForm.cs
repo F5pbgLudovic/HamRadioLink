@@ -15,7 +15,7 @@ namespace HamRadioLink
     public static class RigMenu
     {
         public static string Key = "ft2000";                          // poste dont le menu est ouvert
-        static string[] Tbl { get { string[] t; return RigMenuTables.Tab.TryGetValue(Key, out t) ? t : null; } }
+        static string[] Tbl { get { string[] t; return RigMenuTables.Tab.TryGetValue(Key.StartsWith("ft991a") ? "ft991a" : Key, out t) ? t : null; } }
         static int tmax = -1; static string tmaxKey = "";
         // nombre de menus : 149 pour le FT-2000, le plus grand numéro du manuel pour les autres postes à table, sinon 199 (lecture jusqu'à 20 absences de réponse)
         public static int Count { get { if (Key == "ft2000") return 149; string[] t = Tbl; if (t == null) return 199; if (tmaxKey != Key) { tmax = 0; foreach (string l in t) { int n; if (int.TryParse(l.Substring(0, 3), out n) && n > tmax) tmax = n; } tmaxKey = Key; } return tmax; } }

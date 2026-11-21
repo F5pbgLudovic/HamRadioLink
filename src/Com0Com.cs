@@ -129,13 +129,20 @@ namespace HamRadioLink
             err = null; string sc = SetupC(); if (sc == null) { err = "com0com n'est pas installé"; return false; }
             if (!IsComName(a) || !IsComName(b) || a.Equals(b, StringComparison.OrdinalIgnoreCase)) { err = "noms de ports invalides"; return false; }
             CatLog.Event("com0com", "création demandée de la paire " + a + " <-> " + b);
-            if (!RunAdmin(sc, "--silent install PortName=" + a + ",EmuBR=yes PortName=" + b + ",EmuBR=yes", Path.GetDirectoryName(sc), 60000, out err)) { CatLog.Event("com0com", "création refusée : " + err); return false; }
+            // la sortie de setupc est écrite dans un fichier pour savoir pourquoi Windows refuse (pilote bloqué, intégrité de la mémoire, etc.)
+            string log = Path.Combine(Path.GetTempPath(), "HamRadioLink-com0com-sortie.txt"); try { File.Delete(log); } catch { }
+            string cmd = "/c \"\"" + sc + "\" --silent install PortName=" + a + ",EmuBR=yes PortName=" + b + ",EmuBR=yes > \"" + log + "\" 2>&1\"";
+            if (!RunAdmin("cmd.exe", cmd, Path.GetDirectoryName(sc), 60000, out err)) { CatLog.Event("com0com", "création refusée : " + err); return false; }
+            string outp = ""; try { if (File.Exists(log)) outp = File.ReadAllText(log).Trim(); } catch { }
+            if (outp.Length > 0) CatLog.Event("com0com", "sortie de setupc : " + outp.Replace("\r", " ").Replace("\n", " | "));
             for (int i = 0; i < 50; i++)
             {
                 foreach (Pair p in Pairs()) if (p.A.Equals(a, StringComparison.OrdinalIgnoreCase) && p.B.Equals(b, StringComparison.OrdinalIgnoreCase)) { for (int j = 0; j < 20; j++) { bool ok = false; foreach (string s in PortsNow()) if (s.Equals(a, StringComparison.OrdinalIgnoreCase)) ok = true; if (ok) return true; System.Threading.Thread.Sleep(300); } return true; }
                 System.Threading.Thread.Sleep(500);
             }
-            err = "la paire n'est pas apparue (autorisation refusée ou pilote non confirmé ?)"; return false;
+            string why = outp.Length > 0 ? " Réponse de com0com : " + (outp.Length > 300 ? outp.Substring(0, 300) : outp) : "";
+            err = "la paire n'est pas apparue (autorisation refusée ou pilote non confirmé ?)." + why + " Sous Windows 11, vérifiez que « Isolation du noyau > Intégrité de la mémoire » est désactivée et que le pilote com0com est autorisé (Sécurité Windows), puis redémarrez et réessayez ; ou créez la paire avec « Setup Command Prompt » de com0com.";
+            return false;
         }
         // supprime la paire n (CNCAn / CNCBn) : seulement une paire que la fenêtre a listée
         public static bool RemovePair(Pair p, out string err)

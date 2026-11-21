@@ -116,3 +116,11 @@ This software sends commands to your radio, **including transmit**. Try the virt
 - **FT-991A**: **144** and **430 MHz** band buttons; **CLAR** knob (10 Hz steps); **DT GAIN** knob (menu 073, DATA-mode level); **MIC EQ** button (microphone equalizer); **CTCSS / DCS** (mode, CTCSS frequency, DCS code); **C4FM TX (AMS)** (menu 090).
 - The rest of C4FM (GM, dedicated screen) has no CAT command: not reproduced. None of this has been tried on a real FT-991A yet: if something differs (e.g. MIC EQ reversed), right-click in config view to fix it.
 - The CLAR knob through RC / RU / RD is also restored on other Yaesu radios whose catalog lacks the CF command.
+
+## 4 nonies. What's new in 1.4 (FTdx10, FT-991A DF5DP, TUNE)
+- **FTdx10**: **MIC EQ** button; **PROC** gets its level back when switched on again; **FT8/FT4...** button (mode grid, after DATA-FM-N): USB, with PROC and MIC EQ switched off; when leaving, the previous mode, PROC (with its level) and MIC EQ come back. Choosing another mode also leaves FT8/FT4. Commands are spaced 350 ms apart. The same button appears on Yaesu radios whose mode grid has a free cell.
+- **"Yaesu FT-991A DF5DP" radio**: a copy of the FT-991A with its own layout (`data\ft991a-df5dp.*`). Right-click on CTCSS ENC / FREQ CTCSS / CODE DCS: list of all values; Ctrl + right-click: lock.
+- **9-digit frequencies** (radios above 100 MHz); **long lists** (over 20 values) with scroll bar and mouse wheel.
+- **TUNE**: "Change the power during TUNE" box (Settings > TUNE): the set value is sent before transmitting, the previous power is restored afterwards.
+- **com0com pair**: if creation fails, the message shows com0com's answer (kept in the log too).
+- Nothing new has been tried on a real radio yet.

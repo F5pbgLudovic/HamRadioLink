@@ -94,6 +94,7 @@ namespace HamRadioLink
                 R("ag0", @"AG0(\d{3})", "AG0", "AG0{0}", "064", 0, 255); R("rg0", @"RG0(\d{3})", "RG0", "RG0{0}", "255", 0, 255); R("sq0", @"SQ0(\d{3})", "SQ0", "SQ0{0}", "000", 0, 100);
                 R("mg", @"MG(\d{3})", "MG", "MG{0}", "050", 0, 100); R("pc", @"PC(\d{3})", "PC", "PC{0}", "100", 5, 100); R("pl", @"PL(\d{3})", "PL", "PL{0}", "050", 0, 100);
                 R("pr0", "PR0([012])", "PR0", "PR0{0}", "0");   // 0 = arrêt, 1 = marche (essai sur FTdx10 réel) ; le manuel imprime 1 = OFF, 2 = ON
+                R("pr1", "PR1([012])", "PR1", "PR1{0}", "0");   // égaliseur paramétrique du micro (PR P1 = 1), même convention que PR0
                 R("ml0", @"ML0(\d{3})", "ML0", "ML0{0}", "000", 0, 1); R("ml1", @"ML1(\d{3})", "ML1", "ML1{0}", "050", 0, 100);
                 R("vg", @"VG(\d{3})", "VG", "VG{0}", "050", 0, 100);
                 R("nb0", "NB0([01])", "NB0", "NB0{0}", "0"); R("nl0", @"NL0(\d{3})", "NL0", "NL0{0}", "005", 0, 10); R("nr0", "NR0([01])", "NR0", "NR0{0}", "0"); R("rl0", @"RL0(\d{2})", "RL0", "RL0{0}", "05", 1, 15);

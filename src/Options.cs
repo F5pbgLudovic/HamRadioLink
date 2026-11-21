@@ -146,7 +146,10 @@ namespace HamRadioLink
             n2.ValueChanged += delegate { Cfg.SetInt("tune.duree", (int)n2.Value); Cfg.Save(); };
             CheckBox vx = new CheckBox(); vx.Text = "VOX du poste (tonalité seule, sans PTT par CAT)"; vx.SetBounds(6, 172, 560, 24); vx.ForeColor = T.Text; vx.Checked = TuneMic.Vox; page.Controls.Add(vx);
             vx.CheckedChanged += delegate { Cfg.SetBool("tune.vox", vx.Checked); Cfg.Save(); };
-            Button c1 = Mk("Couleur au repos…", 6, 214, 200), c2 = Mk("Couleur pendant le TUNE…", 216, 214, 220), c3 = Mk("Couleurs par défaut (vert / rouge)", 6, 254, 300);
+            CheckBox pw = new CheckBox(); pw.Text = "Changer la puissance pendant le TUNE, puis la remettre :"; pw.SetBounds(6, 204, 470, 24); pw.ForeColor = T.Text; pw.Checked = Cfg.GetBool("tune.pwron", false); page.Controls.Add(pw);
+            NumericUpDown pn = Num(1, 100, 1, 0, Cfg.GetInt("tune.pwr", 10), 482, 202, 60); Lbl("W", 548, 204, 30);
+            pw.CheckedChanged += delegate { Cfg.SetBool("tune.pwron", pw.Checked); Cfg.Save(); }; pn.ValueChanged += delegate { Cfg.SetInt("tune.pwr", (int)pn.Value); Cfg.Save(); };
+            Button c1 = Mk("Couleur au repos…", 6, 250, 200), c2 = Mk("Couleur pendant le TUNE…", 216, 250, 220), c3 = Mk("Couleurs par défaut (vert / rouge)", 6, 290, 300);
             c1.BackColor = TuneMic.ColOff; c2.BackColor = TuneMic.ColOn;
             c1.Click += delegate { Color c = Ask(TuneMic.ColOff, "TUNE : couleur au repos"); Cfg.SetInt("tune.coff", Color.FromArgb(255, c).ToArgb()); Cfg.Save(); c1.BackColor = c; TuneMic.Refresh(); };
             c2.Click += delegate { Color c = Ask(TuneMic.ColOn, "TUNE : couleur pendant le TUNE"); Cfg.SetInt("tune.con", Color.FromArgb(255, c).ToArgb()); Cfg.Save(); c2.BackColor = c; TuneMic.Refresh(); };
@@ -310,7 +313,7 @@ namespace HamRadioLink
     {
         static readonly string[] noRadio = { "ptt", "tune", "tunemic", "tuner", "poff", "pon", "power_on", "pwr_off" };
         // postes dont le menu interne se lit / s'écrit par EXnnn (3 chiffres), d'après les catalogues des manuels
-        static readonly string[] menuRadios = { "ft2000", "ftdx5000", "ft450", "ft950", "ft991a", "ftdx3000" };
+        static readonly string[] menuRadios = { "ft2000", "ftdx5000", "ft450", "ft950", "ft991a", "ft991a-df5dp", "ftdx3000" };
         public static int MenuFrom = 1, MenuTo = 199;   // plage des menus lus (le test la réduit)
         public static bool HasMenu(RadioDef r) { return r != null && Array.IndexOf(menuRadios, r.Key) >= 0; }
 

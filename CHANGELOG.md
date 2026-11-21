@@ -1,5 +1,15 @@
 # Historique des versions
 
+## 1.4 — 2026-11-21
+
+- **FTdx10** : bouton **MIC EQ** (égaliseur du micro, commande PR1) ; la touche **PROC** retrouve son niveau quand on la rallume (aussi sur les FT-2000 / FTdx5000 et la famille FTdx10) ; bouton **FT8/FT4...** dans la grille des modes, à droite de DATA-FM-N : passe en USB, coupe PROC et MIC EQ s'ils étaient actifs, puis au retour (clic de nouveau, ou choix d'un autre mode) remet le mode d'avant, PROC (avec son niveau) et MIC EQ. Les ordres partent à la suite avec 350 ms entre chacun (le poste en laissait tomber). Le bouton prend la case libre de la grille sur tout poste Yaesu dont le nombre de modes est impair ; pas de bouton s'il n'y a pas de case libre (FT-991A : 14 modes).
+- **Nouveau poste « Yaesu FT-991A DF5DP »** : copie conforme du FT-991A avec ses propres fichiers (`data\ft991a-df5dp.*`) pour deux affichages distincts ; clic droit sur CTCSS ENC / FREQ CTCSS / CODE DCS = liste de toutes les valeurs, Ctrl + clic droit = verrouiller.
+- **Fréquence sur 9 chiffres** pour les postes qui montent au-delà de 100 MHz (145.600.000 s'affichait 14.560.000).
+- **Listes longues** (plus de 20 valeurs : CTCSS, DCS…) : fenêtre avec ascenseur et molette au clic droit.
+- **Bouton TUNE** : case « Changer la puissance pendant le TUNE, puis la remettre » (Paramètres > TUNE, tous les postes) : la puissance de consigne est envoyée tout de suite, le TUNE démarre 0,7 s après, la puissance d'avant est remise à la fin ou à l'arrêt.
+- **Création de paire com0com** : en cas d'échec, la réponse de com0com est écrite dans le journal et affichée avec des pistes pour Windows 11 (intégrité de la mémoire, pilote non autorisé).
+- Simulateur de test : PR1 ; test du bouton MENU : 7 postes.
+
 ## 1.3 — 2026-11-20
 
 - **FT-991A** (remarques d'un utilisateur) : boutons de bande **144** et **430 MHz** ; potentiomètre **CLAR** (RC / RU / RD, par pas de 10 Hz, lu avec IF) ; potentiomètre **DT GAIN** (menu 073) ; bouton **MIC EQ** (PR1) ; **CTCSS / DCS** (mode, fréquence CTCSS 67,0 à 254,1 Hz, code DCS) ; **C4FM TX (AMS)** (menu 090). Le reste du C4FM (GM, écran propre) n'a pas de commande CAT : non reproduit. Le potentiomètre CLAR par RC / RU / RD est aussi rendu aux autres postes dont le catalogue n'a pas la commande CF.

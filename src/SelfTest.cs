@@ -114,7 +114,7 @@ namespace HamRadioLink
             for (int i = 0; i < top.Count; i++) for (int j = i + 1; j < top.Count; j++)
                 {
                     Ctl a = top[i], b = top[j]; bool ov = a.X < b.X + b.W && b.X < a.X + a.W && a.Y < b.Y + b.H && b.Y < a.Y + a.H;
-                    Check(!ov || (d.Key == "ft2000" && Ft2000UserOverlap(a.Id, b.Id)), d.Key + " : " + a.Id + " et " + b.Id + " se chevauchent");
+                    Check(!ov || ((a.Id == "ft8" || b.Id == "ft8") && (a.Id == "md0" || b.Id == "md0")) || (d.Key == "ft2000" && Ft2000UserOverlap(a.Id, b.Id)), d.Key + " : " + a.Id + " et " + b.Id + " se chevauchent");
                 }
             Info(d.Name + " : " + d.C.Count + " éléments, " + nCat + " avec commande CAT");
         }
@@ -554,7 +554,7 @@ namespace HamRadioLink
                 if (has != (m != null)) badBtn++; else if (has) { withBtn++; if (!m.Local || m.K != Kind.Action || m.W < 60 || m.H < 30 || m.X < 0 || m.Y < 118 || m.X + m.W > 1860 || m.Y + m.H > 980) badBtn++; } else noBtn++;
                 foreach (Ctl o in d.C) if (has && m != null && o != m && o.K != Kind.Frame && m.X < o.X + o.W && o.X < m.X + m.W && m.Y < o.Y + o.H && o.Y < m.Y + m.H) badBtn++;
             }
-            Check(withBtn == 6 && badBtn == 0, "Bouton MENU : sur les " + withBtn + " postes à menu (FT-2000, FTdx5000, FT-450, FT-950, FT-991A, FTdx3000), absent des " + noBtn + " autres, sans chevauchement (" + badBtn + " défaut)");
+            Check(withBtn == 7 && badBtn == 0, "Bouton MENU : sur les " + withBtn + " postes à menu (FT-2000, FTdx5000, FT-450, FT-950, FT-991A, FT-991A DF5DP, FTdx3000), absent des " + noBtn + " autres, sans chevauchement (" + badBtn + " défaut)");
             // étalonnage Width / CONT / RF PWR : disponible sur tous les postes qui ont ces boutons ; sans étalonnage l'affichage d'origine est conservé
             int kn = 0, knBad = 0;
             foreach (RadioDef d in Radios.All())
@@ -797,10 +797,11 @@ namespace HamRadioLink
                     w.SimClick(System.Windows.Forms.MouseButtons.Right); Check(hr.LockCount == 0, d.Key + " : " + c.Id + " : la case ne se déverrouille pas");
                     w.Dispose(); n++; continue;
                 }
-                w.SimClick(System.Windows.Forms.MouseButtons.Right); Check(w.Locked, d.Key + " : " + c.Id + " (" + c.K + ") : le clic droit ne verrouille pas");
+                bool dr = d.Key == "ft991a-df5dp" && (c.Id == "ctcss" || c.Id == "ctone" || c.Id == "dcsc");   // sur ces trois touches : clic droit = liste, Ctrl + clic droit = verrou
+                HW.CtrlOverride = dr; w.SimClick(System.Windows.Forms.MouseButtons.Right); HW.CtrlOverride = false; Check(w.Locked, d.Key + " : " + c.Id + " (" + c.K + ") : le clic droit ne verrouille pas");
                 long v0 = rig.Version; w.SimClick(System.Windows.Forms.MouseButtons.Left); w.SimWheel(120); w.SimWheel(-120);
                 Check(rig.Version == v0, d.Key + " : " + c.Id + " (" + c.K + ") : une commande part malgré le verrou");
-                w.SimClick(System.Windows.Forms.MouseButtons.Right); Check(!w.Locked, d.Key + " : " + c.Id + " : le second clic droit ne déverrouille pas"); HW.CtrlOverride = false;
+                HW.CtrlOverride = dr; w.SimClick(System.Windows.Forms.MouseButtons.Right); HW.CtrlOverride = false; Check(!w.Locked, d.Key + " : " + c.Id + " : le second clic droit ne déverrouille pas"); HW.CtrlOverride = false;
                 if (c.K == Kind.Toggle || w is HRow) { v0 = rig.Version; w.SimClick(System.Windows.Forms.MouseButtons.Left); Check(rig.Version != v0, d.Key + " : " + c.Id + " : déverrouillé, le clic ne fait rien"); }
                 w.Dispose(); n++;
             }

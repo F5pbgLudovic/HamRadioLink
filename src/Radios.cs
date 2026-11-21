@@ -70,7 +70,7 @@ namespace HamRadioLink
     {
         static List<RadioDef> Base()
         {
-            List<RadioDef> l = new List<RadioDef>(); l.Add(Ft2000()); l.Add(Ftdx5000()); l.Add(Ftdx10()); l.Add(Ft450()); l.Add(Ft710()); l.Add(Ft891()); l.Add(Ft950()); l.Add(Ft991a()); l.Add(Ftdx101()); l.Add(Ftdx3000()); l.Add(Ftdx1200()); l.Add(Ftdx9000()); l.Add(Ftx1()); l.Add(Ts480()); l.Add(Ts890()); l.Add(Ts590()); l.Add(Ts990()); l.Add(Ts2000()); l.Add(Tsb2000()); l.Add(Ts870()); l.Add(Ts570()); l.Add(Ts850()); l.Add(Ts50()); l.Add(Ts60()); l.Add(Ts450()); l.Add(Ts690()); l.Add(Ts790()); l.Add(Ts930()); l.Add(Ts940()); l.Add(Ts950()); l.Add(Ts950sdx()); l.Add(Ts440()); l.Add(Ts140()); l.Add(Ts680()); l.Add(Ts711()); l.Add(Ts811()); l.Add(K4()); l.Add(K3()); l.Add(Kx3()); l.Add(Kx2()); l.Add(K2()); return l;
+            List<RadioDef> l = new List<RadioDef>(); l.Add(Ft2000()); l.Add(Ftdx5000()); l.Add(Ftdx10()); l.Add(Ft450()); l.Add(Ft710()); l.Add(Ft891()); l.Add(Ft950()); l.Add(Ft991a()); l.Add(Ft991aDf5dp()); l.Add(Ftdx101()); l.Add(Ftdx3000()); l.Add(Ftdx1200()); l.Add(Ftdx9000()); l.Add(Ftx1()); l.Add(Ts480()); l.Add(Ts890()); l.Add(Ts590()); l.Add(Ts990()); l.Add(Ts2000()); l.Add(Tsb2000()); l.Add(Ts870()); l.Add(Ts570()); l.Add(Ts850()); l.Add(Ts50()); l.Add(Ts60()); l.Add(Ts450()); l.Add(Ts690()); l.Add(Ts790()); l.Add(Ts930()); l.Add(Ts940()); l.Add(Ts950()); l.Add(Ts950sdx()); l.Add(Ts440()); l.Add(Ts140()); l.Add(Ts680()); l.Add(Ts711()); l.Add(Ts811()); l.Add(K4()); l.Add(K3()); l.Add(Kx3()); l.Add(Kx2()); l.Add(K2()); return l;
         }
                 // Section « alimentation / émission » : la touche ÉMISSION (PTT) gagne en HAUTEUR (pas en largeur) ; les touches situées sous elle descendent
         // d'autant, sans changer de forme, pour occuper l'espace libre en bas du cadre ; l'espace restant en bas égale la marge de gauche (disposition symétrique).
@@ -128,7 +128,8 @@ namespace HamRadioLink
             int pb = p.Y + p.H; foreach (Ctl c in inner) if (c != p && c.Y >= pb) { c.Y += delta; c.DY += delta; }
             p.H += delta; p.DH += delta;
         }
-        public static List<RadioDef> All() { List<RadioDef> l = Base(); foreach (IM m in IcomModels()) l.Add(Icom(m)); l.AddRange(Y5All()); l.AddRange(LegAll()); l.Add(TciDef()); l.Sort(delegate(RadioDef a, RadioDef b) { return NatCmp(a.Name, b.Name); }); foreach (RadioDef x in l) Harmonize(x); return l; }
+        public static List<RadioDef> All() { List<RadioDef> l = Base(); foreach (IM m in IcomModels()) l.Add(Icom(m)); l.AddRange(Y5All()); l.AddRange(LegAll()); l.Add(TciDef()); l.Sort(delegate(RadioDef a, RadioDef b) { return NatCmp(a.Name, b.Name); });
+            foreach (RadioDef x in l) Harmonize(x); return l; }
         // ordre alphabétique « naturel » : marque, puis lettres, puis numéros dans l'ordre des nombres (IC-705 avant IC-7000, FT-450D avant FT-2000)
         public static int NatCmp(string a, string b)
         {
@@ -253,6 +254,8 @@ namespace HamRadioLink
             b.Knob("voxg", "VOX", 724, 796, 94, 96, 0, 100, "VG{v:3};", "VG;", @"^VG(?<v>\d{3});$", "raw");
             b.Tog("nb", "NB", 24, 906, 94, 52, "NB0{v};", "NB0;", @"^NB0(?<v>[01]);$");
             b.Tog("dnr", "DNR", 124, 906, 94, 52, "NR0{v};", "NR0;", @"^NR0(?<v>[01]);$");
+            c = b.Tog("meq", "MIC EQ", 424, 906, 94, 52, "PR1{v};", "PR1;", @"^PR1(?<v>[0-2]);$", "1", "0"); c.Hint = "Égaliseur paramétrique du micro (PR P1 = 1). Le manuel donne P2 = 1 arrêt / 2 marche ; même convention que PROC ici : si le bouton agit à l'envers, mettez allumé = 2 et éteint = 1.";
+            c = b.Tog("ft8", "FT8/FT4...", 729, 699, 96, 45, "", "", "", "1", "0"); c.Local = true; c.Accent = "cyan"; c.Hint = "Mode numérique : passe le poste en USB et coupe PROC et MIC EQ s'ils étaient actifs. En sortant (clic de nouveau, ou choix d'un autre mode), PROC et MIC EQ reviennent comme avant. PROC retrouve aussi son niveau.";
             c = b.Knob("nbl", "NB niv.", 224, 902, 94, 66, 0, 10, "NL0{v:3};", "NL0;", @"^NL0(?<v>\d{3});$", "raw");
             c = b.Knob("dnrl", "DNR niv.", 324, 902, 94, 66, 1, 15, "RL0{v:2};", "RL0;", @"^RL0(?<v>\d{2});$", "raw");
 

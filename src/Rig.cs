@@ -80,11 +80,68 @@ namespace HamRadioLink
         public void Set(Ctl c, string v)
         {
             if (v != null) V[c.Id] = v; Version++;
+            Hooks(c, v);
             if (c.Local) { if (c.K == Kind.Choice && v != null) Cfg.Set("local." + c.Id, v); return; }
             hold[c.Id] = clock.ElapsedMilliseconds + 900;
             if (string.IsNullOrEmpty(c.Set)) return;
             if (c.K == Kind.Knob || c.K == Kind.Freq) { lock (sync) coal[c.Id] = v; return; }
             Raw(Tpl.Fill(c.Set, v));
+        }
+        // Enchaînements propres au poste : PROC retrouve son niveau ; « FT8 / FT4 » met en USB et coupe PROC / MIC EQ, puis les remet
+        string plKeep, ft8Mode; bool ft8Proc, ft8Eq, ft8Quiet;
+        void Hooks(Ctl c, string v)
+        {
+            if (Def == null || v == null) return;
+            if (c.Id == "proc" && !c.Local)
+            {
+                if (c.IsOn(v)) { Ctl pl = Def.Find("procl"); if (pl != null && !string.IsNullOrEmpty(plKeep)) Set(pl, plKeep); }
+                else { string cur = Get("procl"); if (!string.IsNullOrEmpty(cur)) plKeep = cur; }
+            }
+            else if (c.Id == "ft8" && c.Local)
+            {
+                Ctl pr = Def.Find("proc"), eq = Def.Find("meq"), md = Def.Find("md0");
+                if (c.IsOn(v))
+                {
+                    ft8Proc = pr != null && IsOn(pr); ft8Eq = eq != null && IsOn(eq);
+                    List<KeyValuePair<Ctl, string>> q = new List<KeyValuePair<Ctl, string>>();
+                    ft8Mode = Get("md0"); if (md != null) q.Add(new KeyValuePair<Ctl, string>(md, "2"));
+                    if (ft8Proc) q.Add(new KeyValuePair<Ctl, string>(pr, pr.OffSend));
+                    if (ft8Eq) q.Add(new KeyValuePair<Ctl, string>(eq, eq.OffSend));
+                    Seq(q);
+                }
+                else
+                {
+                    List<KeyValuePair<Ctl, string>> q = new List<KeyValuePair<Ctl, string>>();
+                    if (!ft8Quiet && md != null && !string.IsNullOrEmpty(ft8Mode)) q.Add(new KeyValuePair<Ctl, string>(md, ft8Mode));
+                    if (ft8Proc && pr != null) q.Add(new KeyValuePair<Ctl, string>(pr, pr.OnSend));
+                    if (ft8Eq && eq != null) q.Add(new KeyValuePair<Ctl, string>(eq, eq.OnSend));
+                    Seq(q); ft8Proc = ft8Eq = false; ft8Mode = null;
+                }
+            }
+            else if (c.Id == "md0" && v != "2" && v != "C") { Ctl f = Def.Find("ft8"); if (f != null && IsOn(f)) { ft8Quiet = true; try { Set(f, f.OffSend); } finally { ft8Quiet = false; } } }
+        }
+        // Plusieurs ordres à la suite, avec une pause entre chacun : le poste en laisse tomber s'ils arrivent trop vite
+        void Seq(List<KeyValuePair<Ctl, string>> q)
+        {
+            StringBuilder sb = new StringBuilder(); long now = clock.ElapsedMilliseconds;
+            foreach (KeyValuePair<Ctl, string> p in q)
+            {
+                Ctl c = p.Key; string v = p.Value; if (c == null || string.IsNullOrEmpty(c.Set)) continue;
+                V[c.Id] = v; hold[c.Id] = now + 4000 + 400 * q.Count; sb.Append(Tpl.Fill(c.Set, v)).Append("{wait:350}");
+                if (c.Id == "proc")
+                {
+                    Ctl pl = Def.Find("procl");
+                    if (!c.IsOn(v)) { string cur = Get("procl"); if (!string.IsNullOrEmpty(cur)) plKeep = cur; }
+                    else if (pl != null && !string.IsNullOrEmpty(plKeep) && !string.IsNullOrEmpty(pl.Set)) { V[pl.Id] = plKeep; hold[pl.Id] = now + 4000 + 400 * q.Count; sb.Append(Tpl.Fill(pl.Set, plKeep)).Append("{wait:350}"); }
+                }
+            }
+            Version++; Raw(sb.ToString());
+        }
+        // envoi immédiat d'un réglage, sans regroupement avec les suivants : l'ordre part avant les commandes qui viennent après
+        public void SetNow(Ctl c, string v)
+        {
+            if (c == null || string.IsNullOrEmpty(c.Set) || v == null) return;
+            V[c.Id] = v; hold[c.Id] = clock.ElapsedMilliseconds + 2500; Version++; Raw(Tpl.Fill(c.Set, v));
         }
         // texte brut (déjà complet, peut contenir {wait:ms})
         public void Raw(string text) { if (string.IsNullOrEmpty(text)) return; lock (sync) outq.Enqueue(text); }

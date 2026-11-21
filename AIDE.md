@@ -131,3 +131,11 @@ Ce logiciel envoie des commandes à votre poste, y compris pour **émettre**. Es
 - **FT-991A** : boutons de bande **144** et **430 MHz** ; potentiomètre **CLAR** (pas de 10 Hz) ; potentiomètre **DT GAIN** (menu 073, niveau des modes DATA) ; bouton **MIC EQ** (égaliseur du micro) ; **CTCSS / DCS** (mode, fréquence CTCSS, code DCS) ; **C4FM TX (AMS)** (menu 090).
 - Le reste du C4FM (GM, écran propre) n'a pas de commande CAT : non reproduit. Rien de tout cela n'est encore essayé sur un vrai FT-991A : en cas d'écart (ex. MIC EQ à l'envers), clic droit en vue config pour corriger.
 - Le potentiomètre CLAR par RC / RU / RD est aussi rendu aux autres postes Yaesu dont le catalogue n'a pas la commande CF.
+
+## 4 nonies. Nouveautés de la 1.4 (FTdx10, FT-991A DF5DP, TUNE)
+- **FTdx10** : bouton **MIC EQ** ; **PROC** retrouve son niveau au rallumage ; bouton **FT8/FT4...** (grille des modes, après DATA-FM-N) : USB + PROC et MIC EQ coupés ; au retour, mode, PROC (niveau compris) et MIC EQ d'avant. Choisir un autre mode sort aussi de FT8/FT4. Ordres espacés de 350 ms. Même bouton sur les postes Yaesu dont la grille des modes a une case libre.
+- **Poste « Yaesu FT-991A DF5DP »** : copie du FT-991A avec sa propre disposition (`data\ft991a-df5dp.*`). Clic droit sur CTCSS ENC / FREQ CTCSS / CODE DCS : liste de toutes les valeurs ; Ctrl + clic droit : verrouiller.
+- **Fréquences sur 9 chiffres** (postes au-delà de 100 MHz) ; **listes longues** (plus de 20 valeurs) avec ascenseur et molette.
+- **TUNE** : case « Changer la puissance pendant le TUNE » (Paramètres > TUNE) : valeur de consigne envoyée avant l'émission, puissance d'avant remise après.
+- **Paire com0com** : si la création échoue, le message affiche la réponse de com0com (et le journal la garde).
+- Rien de nouveau n'est encore essayé sur un vrai poste.
