@@ -11,7 +11,7 @@ namespace HamRadioLink
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Cfg.Load(); Theme.Load(); HW.WheelPct = Math.Max(1, Math.Min(10, Cfg.GetInt("wheelpct", 1)));
+            Cfg.Load(); MigrateFt991(); Theme.Load(); HW.WheelPct = Math.Max(1, Math.Min(10, Cfg.GetInt("wheelpct", 1)));
             Application.ThreadException += delegate(object s, System.Threading.ThreadExceptionEventArgs e) { Log(e.Exception); };
             AppDomain.CurrentDomain.UnhandledException += delegate(object s, UnhandledExceptionEventArgs e) { Log(e.ExceptionObject as Exception); };
             foreach (string a in args) if (a.StartsWith("--dump=") || a.StartsWith("--selftest=")) Journal.WsjtListener.Disabled = true;
@@ -45,6 +45,22 @@ namespace HamRadioLink
             }
             Application.Run(f);
             GC.KeepAlive(single); GC.KeepAlive(wake);   // le verrou « une seule instance » doit vivre jusqu'à la fin
+        }
+        // 1.6 : les dispositions des deux FT-991A sont intÃ©grÃ©es Ã  l'exe ; les anciens fichiers data\ft991a*.layout.ini / .cat.ini (parfois inversÃ©s) sont rangÃ©s dans data\ancien-ft991a, une seule fois
+        static void MigrateFt991()
+        {
+            try
+            {
+                if (Cfg.Get("mig.ft991", "") == "1") return;
+                string bak = System.IO.Path.Combine(Cfg.Dir, "ancien-ft991a");
+                foreach (string k in new[] { "ft991a", "ft991a-df5dp" }) foreach (string s in new[] { "layout", "cat" })
+                {
+                    string src = System.IO.Path.Combine(Cfg.Dir, k + "." + s + ".ini"); if (!System.IO.File.Exists(src)) continue;
+                    System.IO.Directory.CreateDirectory(bak); string dst = System.IO.Path.Combine(bak, k + "." + s + ".ini"); if (System.IO.File.Exists(dst)) System.IO.File.Delete(dst); System.IO.File.Move(src, dst);
+                }
+                Cfg.Set("mig.ft991", "1"); Cfg.Save();
+            }
+            catch { }
         }
         static void Log(Exception ex)
         {

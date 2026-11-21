@@ -132,3 +132,7 @@ This software sends commands to your radio, **including transmit**. Try the virt
 - **↶ ↷** (Ctrl+Z / Ctrl+Y): undo / redo add, edit, delete (50 operations). **Ctrl+C / X / V** copy, cut, paste rows; **Ctrl+A** select all; **Ctrl+N** add; **Enter** validates the add window.
 - **Command server**: radio not connected → "set" commands are refused, the radio keeps its frequency.
 - Not covered by automatic tests: copy / paste, batch band change, theme window. Translations not reviewed by native speakers.
+
+## 4 undecies. What's new in 1.6 (built-in layouts)
+- **Default layouts inside the exe**: FT-991A DF5DP, FTdx10, FTdx5000 and FT-2000 no longer need files in `data`; the layout is the one built into the exe.
+- **FT-991A / DF5DP swapped**: at first start, old `data\ft991a*.layout.ini` and `.cat.ini` files are moved once to `data\ancien-ft991a` (recoverable). Your later key moves are still saved (**Validate**).

@@ -147,3 +147,7 @@ Ce logiciel envoie des commandes à votre poste, y compris pour **émettre**. Es
 - **↶ ↷** (Ctrl+Z / Ctrl+Y) : annuler / refaire ajout, modification, suppression (50 opérations). **Ctrl+C / X / V** copier, couper, coller des lignes ; **Ctrl+A** tout sélectionner ; **Ctrl+N** ajouter ; **Entrée** valide la fenêtre d'ajout.
 - **Serveur de commande** : poste non connecté → les ordres « set » sont refusés, le poste garde sa fréquence.
 - Non couverts par les tests automatiques : copier / coller, changement de bande par lot, fenêtre des thèmes. Traductions non relues par des locuteurs natifs.
+
+## 4 undecies. Nouveautés de la 1.6 (dispositions intégrées)
+- **Dispositions par défaut dans l'exe** : FT-991A DF5DP, FTdx10, FTdx5000 et FT-2000 n'ont plus besoin de fichiers dans data ; la disposition est celle de l'exe.
+- **FT-991A / DF5DP inversés** : au premier démarrage, les anciens fichiers data\ft991a*.layout.ini et .cat.ini sont rangés dans data\ancien-ft991a (récupérables). Vos déplacements de touches suivants sont toujours enregistrés (**Valider**).

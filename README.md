@@ -40,6 +40,7 @@
 - **FT-991A (1.3)** : bandes 144 / 430 MHz, CLAR, DT GAIN, MIC EQ, CTCSS / DCS, AMS du C4FM.
 - **FTdx10 / FT-991A DF5DP / TUNE (1.4)** : MIC EQ, FT8/FT4... (retour au mode d'avant), PROC retrouve son niveau, poste FT-991A DF5DP, fréquences sur 9 chiffres, puissance de consigne pendant le TUNE.
 - **Journal (1.5)** : 23 langues (Configuration > Langue), durée des spots 5-30 min, 13 thèmes de plus, annuler / refaire, copier / couper / coller, changement de bande par lot, poste non connecté = ordres refusés.
+- **Dispositions intégrées (1.6)** : FT-991A DF5DP, FTdx10, FTdx5000, FT-2000 sans fichier dans data ; anciens fichiers FT-991A inversés rangés automatiquement.
 - **Moniteur CAT** et **journal des commandes** (un fichier par jour, purgé, envoyable pour diagnostiquer).
 - **IC-7760** : fenêtre complète reprise d'[IC7760Link](https://github.com/F5pbgLudovic/IC7760Link).
 

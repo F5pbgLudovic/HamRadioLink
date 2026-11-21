@@ -1,5 +1,10 @@
 # Historique des versions
 
+## 1.6 — 2026-11-21
+
+- **Dispositions de postes intégrées à l'exe** : FT-991A DF5DP (positions des touches et libellé « Signal »), FTdx10 (SHIFT, WIDTH, NOTCH F), FTdx5000 (FA, MD1), FT-2000 (TUNE MIC) ne dépendent plus de fichiers du dossier data ; ce sont les dispositions par défaut partout.
+- **Correction FT-991A / FT-991A DF5DP inversés** : au premier démarrage, les anciens fichiers data\ft991a*.layout.ini / .cat.ini (qui pouvaient être inversés) sont rangés une seule fois dans data\ancien-ft991a. Vos modifications ultérieures (Valider) restent enregistrées dans data comme avant, seules les différences avec la disposition par défaut.
+
 ## 1.5 — 2026-11-21
 
 - **Journal (LOG) traduit en 23 langues** (les mêmes que SDRLink ; français par défaut) : **Configuration > Langue / Language...**, appliquée à la réouverture du journal. Seul le journal est traduit (pas la télécommande). Traductions non relues par des locuteurs natifs.

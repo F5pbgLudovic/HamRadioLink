@@ -114,7 +114,7 @@ namespace HamRadioLink
             for (int i = 0; i < top.Count; i++) for (int j = i + 1; j < top.Count; j++)
                 {
                     Ctl a = top[i], b = top[j]; bool ov = a.X < b.X + b.W && b.X < a.X + a.W && a.Y < b.Y + b.H && b.Y < a.Y + a.H;
-                    Check(!ov || ((a.Id == "ft8" || b.Id == "ft8") && (a.Id == "md0" || b.Id == "md0")) || (d.Key == "ft2000" && Ft2000UserOverlap(a.Id, b.Id)), d.Key + " : " + a.Id + " et " + b.Id + " se chevauchent");
+                    Check(!ov || ((a.Id == "ft8" || b.Id == "ft8") && (a.Id == "md0" || b.Id == "md0")) || (d.Key == "ft2000" && Ft2000UserOverlap(a.Id, b.Id)) || (d.Key == "ft991a-df5dp" && Df5dpOverlap(a.Id, b.Id)), d.Key + " : " + a.Id + " et " + b.Id + " se chevauchent");
                 }
             Info(d.Name + " : " + d.C.Count + " éléments, " + nCat + " avec commande CAT");
         }
@@ -613,6 +613,12 @@ namespace HamRadioLink
             Info("Menu interne du FT-2000 vérifié");
         }
         // chevauchements présents dans la disposition d'origine du FT-2000 (celle validée sur le poste de l'utilisateur) : tolérés, signalés à l'utilisateur
+        static bool Df5dpOverlap(string a, string b)   // chevauchements voulus de la disposition intégrée du FT-991A DF5DP
+        {
+            string p = a + "+" + b, q = b + "+" + a;
+            foreach (string s in new string[] { "fa+l_busy", "fa+l_tx", "fa+l_mem", "dial+step" }) if (s == p || s == q) return true;
+            return false;
+        }
         static bool Ft2000UserOverlap(string a, string b)
         {
             string p = a + "+" + b, q = b + "+" + a;
