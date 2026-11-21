@@ -13,7 +13,7 @@ namespace HamRadioLink.Journal
         public static Icon AppIcon { get { try { return Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { return null; } } }
 
         // ---------------- langue : anglais (d'origine) ou français pour les menus et barres d'outils ----------------
-        public static bool French { get { return App.Cfg != null && App.Cfg.Get("lang", "en") == "fr"; } }
+        public static bool French { get { return Tr.Code == "fr"; } }
         static readonly Dictionary<string, string> Fr = MakeFr();
         static Dictionary<string, string> MakeFr()
         {
@@ -24,7 +24,7 @@ namespace HamRadioLink.Journal
                 "CAT Command Manager|Gestionnaire de commandes CAT", "Display|Afficher", "Options|Options", "Enter Frequency|Saisir une fréquence", "Split on/off|Split marche/arrêt", "VFO A = B|VFO A = B", "Swap VFO A/B|Échanger les VFO A/B", "Scan...|Balayage (scan)...", "Spectrum (sweep)...|Spectre (balayage)...",
                 "Command Tester|Testeur de commandes", "Rotator|Rotor", "Satellite Tracking|Suivi des satellites", "Mapper|Carte", "Sync (two logbooks)...|Synchroniser (deux journaux)...", "IP Server / UDP / serial sharing...|Serveur IP / UDP / partage série...", "Online services...|Services en ligne...", "Hardware|Matériel", "About|À propos",
                 "Import l'autre logiciel themes (.opt)...|Importer des thèmes l'autre logiciel (.opt)...", "Language|Langue", "New log...|Nouveau journal...", "New Rig window (another transceiver)|Nouvelle fenetre Rig (autre emetteur-recepteur)", "Colors...|Couleurs...", "Band map|Carte de bande", "Look|Allure des boutons", "Setup assistant...|Assistant de configuration...", "MariaDB engine...|Moteur MariaDB...",
-                "Open database...|Ouvrir une base...", "Import ADIF...|Importer un ADIF...", "Export ADIF (selection or all)...|Exporter en ADIF (sélection ou tout)...", "View / Edit|Voir / Modifier", "Delete|Supprimer", "Edit selections...|Modifier la sélection...", "Copy|Copier",
+                "Open database...|Ouvrir une base...", "Import ADIF...|Importer un ADIF...", "Export ADIF (selection or all)...|Exporter en ADIF (sélection ou tout)...", "View / Edit|Voir / Modifier", "Delete|Supprimer", "Edit selections...|Modifier la sélection...", "Copy|Copier", "Cut|Couper", "Paste|Coller", "Cut|Couper", "Paste|Coller",
                 "Refresh|Actualiser", "Show all|Tout afficher", "Columns (Layout)...|Colonnes (disposition)...", "DX Cluster|DX Cluster", "Calendar|Calendrier", "Calendar...|Calendrier...", "Countries|Pays", "Countries / DXCC...|Pays / DXCC...",
                 "Awards tracking...|Suivi des diplômes...", "Statistics...|Statistiques...", "Find duplicates...|Chercher les doublons...", "Backup (ADIF)...|Sauvegarde (ADIF)...", "Update countries from QRZ/HamQTH data|Mettre à jour les pays",
                 "Upload selection to QRZ.com Logbook|Envoyer la sélection au journal QRZ.com", "Upload selection to Club Log|Envoyer la sélection à Club Log", "Upload selection to eQSL.cc|Envoyer la sélection à eQSL.cc", "Upload selection to LoTW (TQSL)|Envoyer la sélection à LoTW (TQSL)",
@@ -36,7 +36,7 @@ namespace HamRadioLink.Journal
         // Traduit (ou remet en anglais) tous les éléments d'un menu ou d'une barre d'outils.
         public static void Translate(ToolStrip ts)
         {
-            if (ts == null) return; string lg = App.Cfg != null ? App.Cfg.Get("lang", "en") : "en";
+            if (ts == null) return; string lg = Tr.Code;
             foreach (ToolStripItem it in ts.Items) TranslateItem(it, lg);
         }
         static void TranslateItem(ToolStripItem it, string lg)
@@ -45,7 +45,7 @@ namespace HamRadioLink.Journal
             {
                 string o; if (!orig.TryGetValue(it, out o)) { o = it.Text; orig[it] = o; }
                 string key = o, tail = ""; int t = o.IndexOf('\t'); if (t >= 0) { key = o.Substring(0, t); tail = o.Substring(t); }
-                string tr = null; if (lg == "fr") Fr.TryGetValue(key, out tr); it.Text = tr != null ? tr + tail : o;
+                string tr = null; if (lg != "en") { Fr.TryGetValue(key, out tr); if (lg != "fr") tr = Tr.T(tr ?? key); } it.Text = tr != null ? tr + tail : o;
             }
             ToolStripDropDownItem dd = it as ToolStripDropDownItem; if (dd != null) foreach (ToolStripItem c in dd.DropDownItems) TranslateItem(c, lg);
         }

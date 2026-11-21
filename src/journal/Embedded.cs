@@ -41,22 +41,22 @@ namespace HamRadioLink.Journal
                     if (svc != null)
                         foreach (string n in svc.GetSubKeyNames())
                         {
-                            if (!Regex.IsMatch(n, "maria|mysql", RegexOptions.IgnoreCase)) continue;
+                            if (!Regex.IsMatch(n, Tr.T("maria|mysql"), RegexOptions.IgnoreCase)) continue;
                             using (Microsoft.Win32.RegistryKey k = svc.OpenSubKey(n))
                             {
                                 string img = (k == null ? null : k.GetValue("ImagePath") as string) ?? "";
-                                if (Regex.IsMatch(img, "mariadbd|mysqld", RegexOptions.IgnoreCase) && img.IndexOf(EngineDir, StringComparison.OrdinalIgnoreCase) < 0) return "service Windows « " + n + " »";
+                                if (Regex.IsMatch(img, Tr.T("mariadbd|mysqld"), RegexOptions.IgnoreCase) && img.IndexOf(EngineDir, StringComparison.OrdinalIgnoreCase) < 0) return Tr.T("service Windows « ") + n + " »";
                             }
                         }
             }
             catch { }
-            foreach (string pf in new[] { Environment.GetEnvironmentVariable("ProgramFiles"), Environment.GetEnvironmentVariable("ProgramFiles(x86)") })
+            foreach (string pf in new[] { Environment.GetEnvironmentVariable("ProgramFiles"), Environment.GetEnvironmentVariable(Tr.T("ProgramFiles(x86)")) })
             {
                 if (string.IsNullOrEmpty(pf) || !Directory.Exists(pf)) continue;
-                try { foreach (string d in Directory.GetDirectories(pf, "MariaDB*")) if (File.Exists(Path.Combine(d, "bin", "mariadbd.exe"))) return "dossier " + d; } catch { }
-                try { foreach (string d in Directory.GetDirectories(pf, "MySQL*")) if (File.Exists(Path.Combine(d, "bin", "mysqld.exe"))) return "dossier " + d; } catch { }
+                try { foreach (string d in Directory.GetDirectories(pf, "MariaDB*")) if (File.Exists(Path.Combine(d, "bin", "mariadbd.exe"))) return Tr.T("dossier ") + d; } catch { }
+                try { foreach (string d in Directory.GetDirectories(pf, "MySQL*")) if (File.Exists(Path.Combine(d, "bin", "mysqld.exe"))) return Tr.T("dossier ") + d; } catch { }
             }
-            if (PortOpen(3306)) return "serveur à l'écoute sur le port 3306";
+            if (PortOpen(3306)) return Tr.T("serveur à l'écoute sur le port 3306");
             return null;
         }
 
@@ -93,18 +93,18 @@ namespace HamRadioLink.Journal
         // Crée les données du serveur (mot de passe root aléatoire, écoute locale uniquement).
         public static void InitData(string rootPassword)
         {
-            if (!EnginePresent) throw new Exception("Le moteur MariaDB est absent (" + EngineDir + ").");
+            if (!EnginePresent) throw new Exception(Tr.T("Le moteur MariaDB est absent (") + EngineDir + ").");
             Directory.CreateDirectory(DataDir);
             int code; string o = Run(Bin("mariadb-install-db.exe"), "--datadir=\"" + DataDir + "\" --password=" + rootPassword, 120000, out code);
-            if (code != 0 || !DataReady) throw new Exception("Création des données MariaDB impossible :\r\n" + o);
+            if (code != 0 || !DataReady) throw new Exception(Tr.T("Création des données MariaDB impossible :\r\n") + o);
         }
 
         // Démarre le serveur sur 127.0.0.1:port (ou le réutilise s'il répond déjà avec ces identifiants).
         public static void Start(int port, string rootPassword)
         {
             if (TryConnect(port, rootPassword)) return;
-            if (!EnginePresent || !DataReady) throw new Exception("MariaDB intégré non installé.");
-            if (PortOpen(port)) throw new Exception("Le port " + port + " est occupé par un autre programme.");
+            if (!EnginePresent || !DataReady) throw new Exception(Tr.T("MariaDB intégré non installé."));
+            if (PortOpen(port)) throw new Exception(Tr.T("Le port ") + port + Tr.T(" est occupé par un autre programme."));
             string args = "--defaults-file=\"" + Path.Combine(DataDir, "my.ini") + "\" --datadir=\"" + DataDir + "\" --basedir=\"" + EngineDir + "\" --port=" + port + " --bind-address=127.0.0.1 --skip-name-resolve"
                 + " --character-set-server=utf8mb4 --log-error=\"" + Path.Combine(DataDir, "mariadb.err") + "\" --innodb-buffer-pool-size=128M --max-allowed-packet=64M";
             ProcessStartInfo si = new ProcessStartInfo(Bin("mariadbd.exe"), args) { UseShellExecute = false, CreateNoWindow = true, WorkingDirectory = Path.Combine(EngineDir, "bin") };
@@ -112,11 +112,11 @@ namespace HamRadioLink.Journal
             DateTime end = DateTime.UtcNow.AddSeconds(90);
             while (DateTime.UtcNow < end)
             {
-                if (proc.HasExited) throw new Exception("MariaDB s'est arrêté au démarrage (voir " + Path.Combine(DataDir, "mariadb.err") + ").");
+                if (proc.HasExited) throw new Exception(Tr.T("MariaDB s'est arrêté au démarrage (voir ") + Path.Combine(DataDir, "mariadb.err") + ").");
                 if (TryConnect(port, rootPassword)) return;
                 Thread.Sleep(400);
             }
-            throw new Exception("MariaDB ne répond pas après 90 s.");
+            throw new Exception(Tr.T("MariaDB ne répond pas après 90 s."));
         }
 
         static bool TryConnect(int port, string pass)
@@ -216,16 +216,16 @@ namespace HamRadioLink.Journal
         {
             string tmp = Path.Combine(Path.GetTempPath(), "hrl-mariadb-" + r.Version); Directory.CreateDirectory(tmp);
             string zip = Path.Combine(tmp, r.FileName);
-            log("Téléchargement de " + r.FileName + " ...");
+            log(Tr.T("Téléchargement de ") + r.FileName + " ...");
             ServicePointManager.SecurityProtocol = (SecurityProtocolType)3072 | (SecurityProtocolType)768 | SecurityProtocolType.Tls;
             using (WebClient w = new WebClient()) { w.Headers[HttpRequestHeader.UserAgent] = "HamRadioLink/" + App.Version; w.DownloadFile(r.Url, zip); }
-            log("Vérification de la somme de contrôle SHA-256 ...");
+            log(Tr.T("Vérification de la somme de contrôle SHA-256 ..."));
             string sha; using (FileStream fs = File.OpenRead(zip)) using (SHA256 h = SHA256.Create()) sha = BitConverter.ToString(h.ComputeHash(fs)).Replace("-", "").ToLowerInvariant();
-            if (sha != r.Sha256) { File.Delete(zip); throw new Exception("Somme de contrôle incorrecte : fichier rejeté."); }
+            if (sha != r.Sha256) { File.Delete(zip); throw new Exception(Tr.T("Somme de contrôle incorrecte : fichier rejeté.")); }
 
             string neu = EngineDir + ".new", old = EngineDir + ".old";
             if (Directory.Exists(neu)) Directory.Delete(neu, true);
-            log("Extraction du moteur ...");
+            log(Tr.T("Extraction du moteur ..."));
             using (System.IO.Compression.ZipArchive za = System.IO.Compression.ZipFile.OpenRead(zip))
             {
                 Directory.CreateDirectory(Path.Combine(neu, "bin"));
@@ -237,38 +237,38 @@ namespace HamRadioLink.Journal
                     string dst = Path.Combine(neu, rel.Replace('/', '\\')); Directory.CreateDirectory(Path.GetDirectoryName(dst)); System.IO.Compression.ZipFileExtensions.ExtractToFile(e, dst, true);
                 }
             }
-            if (!File.Exists(Path.Combine(neu, "bin", "mariadbd.exe")) || !File.Exists(Path.Combine(neu, "bin", "server.dll"))) throw new Exception("Archive inattendue : moteur introuvable.");
+            if (!File.Exists(Path.Combine(neu, "bin", "mariadbd.exe")) || !File.Exists(Path.Combine(neu, "bin", "server.dll"))) throw new Exception(Tr.T("Archive inattendue : moteur introuvable."));
             if (!File.Exists(Path.Combine(neu, "bin", "mysqld.exe"))) File.Copy(Path.Combine(neu, "bin", "mariadbd.exe"), Path.Combine(neu, "bin", "mysqld.exe"));
 
             string before = InstalledVersion(); int port = App.Cfg.GetInt("emb.port", 3307); string pass = App.Cfg.Get("emb.pass", "");
-            log("Arrêt du serveur ...");
+            log(Tr.T("Arrêt du serveur ..."));
             if (weStarted) Stop(); else if (TryConnect(port, pass)) { try { using (MySqlClient c = new MySqlClient("127.0.0.1", port, "root", pass, "mysql")) { c.Open(); try { c.Exec("SHUTDOWN"); } catch { } } } catch { } Thread.Sleep(4000); }
             string bak = Path.Combine(BackupDir, "data-" + DateTime.Now.ToString("yyyy-MM-dd_HHmm") + "-" + before);
-            log("Sauvegarde des données dans " + bak + " ...");
+            log(Tr.T("Sauvegarde des données dans ") + bak + " ...");
             CopyDir(DataDir, bak);
-            log("Remplacement du moteur ...");
+            log(Tr.T("Remplacement du moteur ..."));
             if (Directory.Exists(old)) Directory.Delete(old, true);
             MoveRetry(EngineDir, old);
             try { MoveRetry(neu, EngineDir); }
-            catch { try { MoveRetry(old, EngineDir); } catch { } throw new Exception("Impossible d'installer le nouveau moteur (fichiers verrouillés ?) : ancien moteur conservé."); }
+            catch { try { MoveRetry(old, EngineDir); } catch { } throw new Exception(Tr.T("Impossible d'installer le nouveau moteur (fichiers verrouillés ?) : ancien moteur conservé.")); }
             try
             {
-                log("Démarrage avec le nouveau moteur ...");
+                log(Tr.T("Démarrage avec le nouveau moteur ..."));
                 Start(port, pass);
                 int code; string o = Run(Bin("mariadb-upgrade.exe"), "--host=127.0.0.1 --port=" + port + " --user=root --password=" + pass, 300000, out code);
-                log("mariadb-upgrade : " + (code == 0 ? "terminé" : "code " + code + " " + o.Trim()));
-                if (InstalledVersion() == "") throw new Exception("Le nouveau moteur ne répond pas.");
-                log("Mise à jour terminée : " + before + " -> " + InstalledVersion());
+                log(Tr.T("mariadb-upgrade : ") + (code == 0 ? "terminé" : Tr.T("code ") + code + " " + o.Trim()));
+                if (InstalledVersion() == "") throw new Exception(Tr.T("Le nouveau moteur ne répond pas."));
+                log(Tr.T("Mise à jour terminée : ") + before + " -> " + InstalledVersion());
             }
             catch (Exception ex)
             {
-                log("ÉCHEC (" + ex.Message + ") : retour à l'ancien moteur et aux données sauvegardées.");
+                log(Tr.T("ÉCHEC (") + ex.Message + Tr.T(") : retour à l'ancien moteur et aux données sauvegardées."));
                 Stop(); try { if (proc != null) proc.Kill(); } catch { } Thread.Sleep(2000);
                 if (Directory.Exists(EngineDir)) Directory.Delete(EngineDir, true);
                 Directory.Move(old, EngineDir);
                 Directory.Delete(DataDir, true); CopyDir(bak, DataDir);
                 Start(port, pass);
-                throw new Exception("Mise à jour annulée, ancien moteur remis en service : " + ex.Message);
+                throw new Exception(Tr.T("Mise à jour annulée, ancien moteur remis en service : ") + ex.Message);
             }
             try { File.Delete(zip); } catch { }
         }

@@ -105,6 +105,8 @@ namespace HamRadioLink
         {
             Commands++; if (rig == null || D == null) return "ERROR"; Match m = Regex.Match(cmd, @"^\[\d+\]\s*(.*)$"); if (m.Success) cmd = m.Groups[1].Value.Trim();
             string lc = cmd.ToLowerInvariant();
+            // poste non joignable : toute commande de changement (fréquence, mode, PTT…) est refusée, l'affichage garde la dernière valeur réelle
+            if (lc.StartsWith("set ") && !rig.Connected) { CatLog.Event("serveur " + Port, "refusé, poste non connecté : " + cmd); Bad.Add(cmd); return "ERROR"; }
             switch (lc)
             {
                 case "get context": return "1";

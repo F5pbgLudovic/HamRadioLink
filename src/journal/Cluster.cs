@@ -21,7 +21,7 @@ namespace HamRadioLink.Journal
         public override string ToString() { return Name + "  (" + Host + ":" + Port + ")"; }
     }
 
-    public class Spot { public string Call, Spotter, Comment, Band, Time; public double Khz; }
+    public class Spot { public string Call, Spotter, Comment, Band, Time; public double Khz; public DateTime Got = DateTime.Now; }
 
     // Client DX Cluster (telnet) : liste des clusters enregistrés, connexion, spots, trames brutes.
     public static class DxCluster
@@ -62,7 +62,7 @@ namespace HamRadioLink.Journal
         {
             int k = KindOf(s); string c = (s.Comment ?? "").ToUpperInvariant();
             if (k == 1) return "CW";
-            if (k == 0) return c.Contains("RTTY") ? "RTTY|RTTY-L|DATA-LSB|LSB" : "DATA-USB|USB-D|PKT-USB|USB";
+            if (k == 0) return c.Contains("RTTY") ? Tr.T("RTTY|RTTY-L|DATA-LSB|LSB") : Tr.T("DATA-USB|USB-D|PKT-USB|USB");
             if (c.Contains("FM")) return "FM"; if (Regex.IsMatch(c, @"\bAM\b")) return "AM";
             if (c.Contains("LSB")) return "LSB"; if (c.Contains("USB")) return "USB";
             return s.Khz < 10000 ? "LSB" : "USB";
@@ -126,7 +126,7 @@ namespace HamRadioLink.Journal
         public static void Connect(ClusterDef d)
         {
             Disconnect(); ui = SynchronizationContext.Current ?? ui; Current = d; run = true; int my = ++gen; App.Cfg.Set("cl.sel", d.Name);
-            Status = "Connexion à " + d.Host + ":" + d.Port + "…"; Raise();
+            Status = Tr.T("Connexion à ") + d.Host + ":" + d.Port + "…"; Raise();
             Thread th = new Thread(delegate() { Loop(d, my); }) { IsBackground = true, Name = "dx-cluster" }; th.Start();
         }
 
@@ -138,7 +138,7 @@ namespace HamRadioLink.Journal
             {
                 try
                 {
-                    TcpClient c = new TcpClient(); c.Connect(d.Host, d.Port); tcp = c; Status = "Connecté à " + d.Name; Raise();
+                    TcpClient c = new TcpClient(); c.Connect(d.Host, d.Port); tcp = c; Status = Tr.T("Connecté à ") + d.Name; Raise();
                     Stream s = c.GetStream(); byte[] buf = new byte[4096]; StringBuilder line = new StringBuilder(); bool sentL = false, sentP = false;
                     string login = d.Login.Length > 0 ? d.Login : App.Cfg.Get("me.call", "");
                     ThreadPool.QueueUserWorkItem(delegate { try { Thread.Sleep(4000); if (run && my == gen) Send(s, "sh/dx 30"); } catch { } });   // derniers spots, puis le flux continu
@@ -156,11 +156,11 @@ namespace HamRadioLink.Journal
                         else if (!sentP && d.Pass.Length > 0 && p.EndsWith("password:")) { Send(s, d.Pass); sentP = true; Line(line.ToString()); line.Length = 0; }
                     }
                 }
-                catch (Exception ex) { Status = "Erreur : " + ex.Message; Raise(); }
+                catch (Exception ex) { Status = Tr.T("Erreur : ") + ex.Message; Raise(); }
                 try { if (tcp != null) tcp.Close(); } catch { }
                 if (!run || my != gen) return;
                 if (!AutoReconnect) { run = false; Status = "Déconnecté"; Raise(); return; }
-                Status = "Reconnexion dans 15 s…"; Raise();
+                Status = Tr.T("Reconnexion dans 15 s…"); Raise();
                 for (int i = 0; i < 15 && run && my == gen; i++) Thread.Sleep(1000);
             }
         }
@@ -195,18 +195,25 @@ namespace HamRadioLink.Journal
     // curseurs du VFO A (rouge) et du VFO B (bleu). Automatique = bande du VFO A, ou bande choisie à la main.
     public class ClusterStrip : Panel
     {
-        readonly ComboBox band; readonly Ruler ruler; readonly Label state; readonly ZoomPair zp;
+        readonly ComboBox band, dur; readonly Panel top; readonly Ruler ruler; readonly Label state; readonly ZoomPair zp;
         // zoom du texte de la réglette (bande, indicatifs, état), propre à cette zone
-        public void ApplyZoom() { float z = LogZoom.Factor("cl"); ruler.Zoom = z; Font fb = new Font(Ui.Normal.FontFamily, Ui.Normal.Size * z); band.Font = fb; state.Font = fb; state.Height = (int)Math.Ceiling(fb.Height * 2.2); }
+        public void ApplyZoom() { float z = LogZoom.Factor("cl"); ruler.Zoom = z; Font fb = new Font(Ui.Normal.FontFamily, Ui.Normal.Size * z); band.Font = fb; dur.Font = fb; top.Height = band.Height; state.Font = fb; state.Height = (int)Math.Ceiling(fb.Height * 2.2); }
         public ClusterStrip()
         {
             Dock = DockStyle.Right; Width = 200; Font = Ui.Normal;
-            band = new ComboBox { Dock = DockStyle.Top, DropDownStyle = ComboBoxStyle.DropDownList }; band.Items.Add("Auto (bande du poste)"); foreach (string s in WsjtListener.BandNames) band.Items.Add(s); band.SelectedIndex = 0;
+            top = new Panel { Dock = DockStyle.Top, Height = 24 };
+            band = new ComboBox { Dock = DockStyle.Fill, DropDownStyle = ComboBoxStyle.DropDownList }; band.Items.Add(Tr.T("Auto (bande du poste)")); foreach (string s in WsjtListener.BandNames) band.Items.Add(s); band.SelectedIndex = 0;
             band.SelectedIndexChanged += delegate { Fill(); };
+            // durée d'affichage d'un spot : 5 à 30 minutes (pas de 5), mémorisée
+            dur = new ComboBox { Dock = DockStyle.Right, DropDownStyle = ComboBoxStyle.DropDownList, Width = 64 };
+            for (int m = 5; m <= 30; m += 5) dur.Items.Add(m + " min");
+            dur.SelectedIndex = Math.Max(0, Math.Min(5, App.Cfg.GetInt("cl.spotmin", 30) / 5 - 1));
+            dur.SelectedIndexChanged += delegate { App.Cfg.Set("cl.spotmin", ((dur.SelectedIndex + 1) * 5).ToString()); try { App.Cfg.Save(); } catch { } Fill(); };
+            top.Controls.Add(band); top.Controls.Add(dur);
             state = new Label { Dock = DockStyle.Bottom, Height = 34, ForeColor = SystemColors.GrayText };
             ruler = new Ruler { Dock = DockStyle.Fill };
             zp = new ZoomPair { Dock = DockStyle.Top, Height = 26, Right = true }; zp.Step += delegate(int d) { LogZoom.Step("cl", d); ApplyZoom(); };
-            Controls.Add(ruler); Controls.Add(zp); Controls.Add(band); Controls.Add(state); ApplyZoom();
+            Controls.Add(ruler); Controls.Add(zp); Controls.Add(top); Controls.Add(state); ApplyZoom();
             DxCluster.Changed += Fill; Disposed += delegate { DxCluster.Changed -= Fill; };
             System.Windows.Forms.Timer t = new System.Windows.Forms.Timer { Interval = 700 }; t.Tick += delegate { Fill(); }; t.Start(); Disposed += delegate { t.Dispose(); };
             Fill();
@@ -218,7 +225,7 @@ namespace HamRadioLink.Journal
         {
             string b = CurBand(); int bi = Array.IndexOf(WsjtListener.BandNames, b); if (bi < 0) return;
             state.Text = DxCluster.Status + (band.SelectedIndex == 0 ? "\r\nBande : " + b + (RigState.Hz > 0 ? "" : " (poste non connecté)") : "");
-            List<Spot> l = new List<Spot>(); lock (DxCluster.Spots) foreach (Spot s in DxCluster.Spots) if (s.Band == b && DxCluster.Allowed(s)) l.Add(s);
+            List<Spot> l = new List<Spot>(); lock (DxCluster.Spots) { DateTime lim = DateTime.Now.AddMinutes(-(dur.SelectedIndex + 1) * 5); foreach (Spot s in DxCluster.Spots) if (s.Band == b && s.Got >= lim && DxCluster.Allowed(s)) l.Add(s); }
             ruler.Set(WsjtListener.Bands[bi][0] * 1000, WsjtListener.Bands[bi][1] * 1000, l, DxCluster.ShowVfoA ? RigState.Hz / 1000.0 : 0, DxCluster.ShowVfoB ? RigState.HzB / 1000.0 : 0);
         }
     }
@@ -265,9 +272,9 @@ namespace HamRadioLink.Journal
         void Menu(Point p)
         {
             ContextMenuStrip m = new ContextMenuStrip();
-            string[] t = { "Afficher les contacts numériques (FT8, FT4, FT2, RTTY)", "Afficher les contacts CW (morse)", "Afficher les contacts phonie (LSB, USB, SSB, AM, FM)", "Afficher les contacts phonie FreeDV" };
+            string[] t = { Tr.T("Afficher les contacts numériques (FT8, FT4, FT2, RTTY)"), Tr.T("Afficher les contacts CW (morse)"), Tr.T("Afficher les contacts phonie (LSB, USB, SSB, AM, FM)"), Tr.T("Afficher les contacts phonie FreeDV") };
             for (int i = 0; i < 4; i++) { int n = i; ToolStripMenuItem mi = new ToolStripMenuItem(t[i]) { Checked = DxCluster.Shows(n), CheckOnClick = true }; mi.Click += delegate { DxCluster.SetShows(n, mi.Checked); }; m.Items.Add(mi); }
-            m.Items.Add(new ToolStripSeparator()); m.Items.Add("Zoom : tout voir", null, delegate { View(lo, hi - lo); });
+            m.Items.Add(new ToolStripSeparator()); m.Items.Add(Tr.T("Zoom : tout voir"), null, delegate { View(lo, hi - lo); });
             m.Show(this, p);
         }
         protected override void OnPaint(PaintEventArgs e)
@@ -293,7 +300,7 @@ namespace HamRadioLink.Journal
         {
             if (khz < vlo || khz > vhi) return; float y = Y(khz);
             using (Pen p = new Pen(c, 2)) using (Brush b = new SolidBrush(c)) using (StringFormat sf = new StringFormat { Alignment = StringAlignment.Far })
-            { g.DrawLine(p, 36, y, Width, y); g.FillPolygon(b, new[] { new PointF(30, y - 5), new PointF(30, y + 5), new PointF(42, y) }); g.DrawString("VFO " + n + " " + khz.ToString("0.00", CultureInfo.InvariantCulture), Font, b, new RectangleF(40, y - 15, Width - 44, 14), sf); }
+            { g.DrawLine(p, 36, y, Width, y); g.FillPolygon(b, new[] { new PointF(30, y - 5), new PointF(30, y + 5), new PointF(42, y) }); g.DrawString(Tr.T("VFO ") + n + " " + khz.ToString("0.00", CultureInfo.InvariantCulture), Font, b, new RectangleF(40, y - 15, Width - 44, 14), sf); }
         }
     }
 
@@ -320,7 +327,7 @@ namespace HamRadioLink.Journal
         protected override void OnPaint(PaintEventArgs e)
         {
             Graphics g = e.Graphics; Color bg = Theme.Get("lb.btn.back"); g.Clear(hot ? Theme.Lift(bg, 0.25f) : bg); Rectangle r = new Rectangle(0, 0, Width + 1, Height + 1);
-            using (Font f = new Font("Segoe UI", 9.5f, FontStyle.Bold))
+            using (Font f = new Font(Tr.T("Segoe UI"), 9.5f, FontStyle.Bold))
             { Color tc = Looks.DrawButton(g, r, null, Theme.Get("lb.btn.text"), hot, false, true, bg); TextRenderer.DrawText(g, Text, f, r, tc, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding | TextFormatFlags.EndEllipsis); }
         }
     }
@@ -333,7 +340,7 @@ namespace HamRadioLink.Journal
             Dock = DockStyle.Bottom; Height = 120;
             tb = new TextBox { Dock = DockStyle.Fill, Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical, Font = Ui.Mono, WordWrap = false };
             bAl = new TabButton("Alerte", 80) { Anchor = AnchorStyles.Top | AnchorStyles.Right }; bAl.Clicked = delegate { using (AlertForm f = new AlertForm()) f.ShowDialog(FindForm()); };
-            bCl = new TabButton("Aucun cluster", 150) { Anchor = AnchorStyles.Top | AnchorStyles.Right }; bCl.Clicked = ClusterMenu;
+            bCl = new TabButton(Tr.T("Aucun cluster"), 150) { Anchor = AnchorStyles.Top | AnchorStyles.Right }; bCl.Clicked = ClusterMenu;
             zp = new ZoomPair { Width = 56 }; zp.Step += delegate(int d) { LogZoom.Step("bot", d); ApplyZoom(); };
             Controls.Add(tb); Controls.Add(bAl); Controls.Add(bCl); Controls.Add(zp); bAl.BringToFront(); bCl.BringToFront(); zp.BringToFront(); ApplyZoom();
             Layout += delegate { zp.Location = new Point(Width - zp.Width - 22, 0); bAl.Location = new Point(zp.Left - bAl.Width - 4, 2); bCl.Location = new Point(bAl.Left - bCl.Width - 4, 2); };
@@ -349,15 +356,15 @@ namespace HamRadioLink.Journal
                 ClusterDef c = d; ToolStripMenuItem mi = new ToolStripMenuItem(d.Name + "  (" + d.Host + ":" + d.Port + ")") { Checked = DxCluster.Connected && DxCluster.Current != null && DxCluster.Current.Name == d.Name };
                 mi.Click += delegate { DxCluster.Connect(c); }; m.Items.Add(mi);
             }
-            if (m.Items.Count == 0) m.Items.Add(new ToolStripMenuItem("Aucun cluster enregistré") { Enabled = false });
+            if (m.Items.Count == 0) m.Items.Add(new ToolStripMenuItem(Tr.T("Aucun cluster enregistré")) { Enabled = false });
             m.Items.Add(new ToolStripSeparator());
             if (DxCluster.Connected) m.Items.Add("Déconnecter", null, delegate { DxCluster.Disconnect(); });
-            m.Items.Add("Configurer les clusters...", null, delegate { using (ClusterForm f = new ClusterForm()) f.ShowDialog(FindForm()); });
+            m.Items.Add(Tr.T("Configurer les clusters..."), null, delegate { using (ClusterForm f = new ClusterForm()) f.ShowDialog(FindForm()); });
             m.Show(bCl, new Point(0, bCl.Height));
         }
         void Fill()
         {
-            string nm = DxCluster.Connected && DxCluster.Current != null ? DxCluster.Current.Name : "Aucun cluster"; if (bCl.Text != nm) bCl.Text = nm;
+            string nm = DxCluster.Connected && DxCluster.Current != null ? DxCluster.Current.Name : Tr.T("Aucun cluster"); if (bCl.Text != nm) bCl.Text = nm;
             string[] a; lock (DxCluster.Frames) a = DxCluster.Frames.ToArray(); int from = Math.Max(0, a.Length - 100); tb.Text = string.Join("\r\n", a, from, a.Length - from); tb.SelectionStart = tb.TextLength; tb.ScrollToCaret();
         }
     }
@@ -368,17 +375,17 @@ namespace HamRadioLink.Journal
         const int N = 8; readonly TextBox[] tb = new TextBox[N]; readonly ComboBox[] op = new ComboBox[N]; CheckBox on;
         public AlertForm()
         {
-            Text = "Alertes du DX Cluster"; ClientSize = new Size(560, 370); StartPosition = FormStartPosition.CenterParent; FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; MinimizeBox = false; Font = Ui.Normal; Icon = Ui.AppIcon;
-            on = Ui.Chk(this, "Alertes actives : un bip retentit quand un spot en direct correspond", 12, 12, 530); on.Checked = DxCluster.AlertsOn;
-            Label l = Ui.Lbl(this, "Chaque ligne cherche son texte dans l'indicatif, le commentaire et la fréquence du spot (majuscules ou minuscules, espaces compris). Les lignes sont combinées de haut en bas.", 12, 40, 536); l.Height = 38; l.ForeColor = SystemColors.GrayText;
+            Text = Tr.T("Alertes du DX Cluster"); ClientSize = new Size(560, 370); StartPosition = FormStartPosition.CenterParent; FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; MinimizeBox = false; Font = Ui.Normal; Icon = Ui.AppIcon;
+            on = Ui.Chk(this, Tr.T("Alertes actives : un bip retentit quand un spot en direct correspond"), 12, 12, 530); on.Checked = DxCluster.AlertsOn;
+            Label l = Ui.Lbl(this, Tr.T("Chaque ligne cherche son texte dans l'indicatif, le commentaire et la fréquence du spot (majuscules ou minuscules, espaces compris). Les lignes sont combinées de haut en bas."), 12, 40, 536); l.Height = 38; l.ForeColor = SystemColors.GrayText;
             List<DxCluster.AlertLine> a = DxCluster.LoadAlerts(); int y = 90;
             for (int i = 0; i < N; i++)
             {
-                op[i] = Ui.Combo(this, 12, y - 2, 60, new[] { "ou", "et" }); op[i].DropDownStyle = ComboBoxStyle.DropDownList; op[i].SelectedIndex = i < a.Count && a[i].Op == "et" ? 1 : 0; if (i == 0) { op[i].Visible = false; Ui.Lbl(this, "Alerte :", 12, y); }
+                op[i] = Ui.Combo(this, 12, y - 2, 60, new[] { "ou", "et" }); op[i].DropDownStyle = ComboBoxStyle.DropDownList; op[i].SelectedIndex = i < a.Count && a[i].Op == "et" ? 1 : 0; if (i == 0) { op[i].Visible = false; Ui.Lbl(this, Tr.T("Alerte :"), 12, y); }
                 tb[i] = Ui.Txt(this, 80, y - 2, 460); tb[i].Text = i < a.Count ? a[i].Text : ""; y += 30;
             }
-            Ui.Btn(this, "Tester le bip", 12, 330, 110, 28, (s, e) => DxCluster.Beep());
-            Button ok = Ui.Btn(this, "OK", 370, 330, 80, 28, (s, e) => Save()); Ui.Btn(this, "Annuler", 458, 330, 80, 28, (s, e) => Close()); AcceptButton = ok;
+            Ui.Btn(this, Tr.T("Tester le bip"), 12, 330, 110, 28, (s, e) => DxCluster.Beep());
+            Button ok = Ui.Btn(this, "OK", 370, 330, 80, 28, (s, e) => Save()); Ui.Btn(this, Tr.T("Annuler"), 458, 330, 80, 28, (s, e) => Close()); AcceptButton = ok;
         }
         void Save()
         {
@@ -393,18 +400,18 @@ namespace HamRadioLink.Journal
         TextBox call, name, grid;
         public StationForm()
         {
-            Text = "Configuration : Station"; ClientSize = new Size(740, 230); StartPosition = FormStartPosition.CenterParent; FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; MinimizeBox = false; Font = Ui.Normal; Icon = Ui.AppIcon;
+            Text = Tr.T("Configuration : Station"); ClientSize = new Size(740, 230); StartPosition = FormStartPosition.CenterParent; FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; MinimizeBox = false; Font = Ui.Normal; Icon = Ui.AppIcon;
             int y = 16;
-            Ui.Lbl(this, "Indicatif station :", 12, y); call = Ui.Txt(this, 170, y - 2, 140); call.Text = App.Cfg.Get("me.call", ""); Label ex = Ui.Lbl(this, "Radioamateur ou non, exemple : F5PBG  14VL73", 320, y, 400); ex.AutoSize = false; ex.Width = 400; y += 38;
-            Ui.Lbl(this, "Prénom :", 12, y); name = Ui.Txt(this, 170, y - 2, 200); name.Text = App.Cfg.Get("me.name", ""); y += 38;
-            Ui.Lbl(this, "QTH Locator (Grid) :", 12, y); grid = Ui.Txt(this, 170, y - 2, 100); grid.Text = App.Cfg.Get("me.grid", ""); Ui.Lbl(this, "ex. IN78TI", 280, y); y += 30;
-            Label l = Ui.Lbl(this, "Ce locator sert à calculer la distance de chaque contact (colonne Distance) dès sa réception.", 12, y, 716); l.Height = 36; l.ForeColor = SystemColors.GrayText;
-            Button ok = Ui.Btn(this, "OK", 550, 190, 80, 28, (s, e) => Save()); Ui.Btn(this, "Annuler", 638, 190, 80, 28, (s, e) => Close()); AcceptButton = ok;
+            Ui.Lbl(this, Tr.T("Indicatif station :"), 12, y); call = Ui.Txt(this, 170, y - 2, 140); call.Text = App.Cfg.Get("me.call", ""); Label ex = Ui.Lbl(this, Tr.T("Radioamateur ou non, exemple : F5PBG  14VL73"), 320, y, 400); ex.AutoSize = false; ex.Width = 400; y += 38;
+            Ui.Lbl(this, Tr.T("Prénom :"), 12, y); name = Ui.Txt(this, 170, y - 2, 200); name.Text = App.Cfg.Get("me.name", ""); y += 38;
+            Ui.Lbl(this, Tr.T("QTH Locator (Grid) :"), 12, y); grid = Ui.Txt(this, 170, y - 2, 100); grid.Text = App.Cfg.Get("me.grid", ""); Ui.Lbl(this, "ex. IN78TI", 280, y); y += 30;
+            Label l = Ui.Lbl(this, Tr.T("Ce locator sert à calculer la distance de chaque contact (colonne Distance) dès sa réception."), 12, y, 716); l.Height = 36; l.ForeColor = SystemColors.GrayText;
+            Button ok = Ui.Btn(this, "OK", 550, 190, 80, 28, (s, e) => Save()); Ui.Btn(this, Tr.T("Annuler"), 638, 190, 80, 28, (s, e) => Close()); AcceptButton = ok;
         }
         void Save()
         {
             string g = grid.Text.Trim().ToUpperInvariant();
-            if (g.Length > 0 && !Geo.Valid(g)) { MessageBox.Show(this, "Locator invalide (ex. IN78TI)."); return; }
+            if (g.Length > 0 && !Geo.Valid(g)) { MessageBox.Show(this, Tr.T("Locator invalide (ex. IN78TI).")); return; }
             App.Cfg.Set("me.call", call.Text.Trim().ToUpperInvariant()); App.Cfg.Set("me.name", name.Text.Trim()); App.Cfg.Set("me.grid", g); HamRadioLink.Cfg.Save(); Close();
         }
     }
@@ -415,39 +422,39 @@ namespace HamRadioLink.Journal
         ListBox list; List<ClusterDef> defs; Label status; CheckBox cAuto, cReco, cStrip, cFrames, cVa, cVb; Button bConn;
         public ClusterForm()
         {
-            Text = "Configuration : DX Cluster"; ClientSize = new Size(640, 400); StartPosition = FormStartPosition.CenterParent; FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; MinimizeBox = false; Font = Ui.Normal; Icon = Ui.AppIcon;
+            Text = Tr.T("Configuration : DX Cluster"); ClientSize = new Size(640, 400); StartPosition = FormStartPosition.CenterParent; FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; MinimizeBox = false; Font = Ui.Normal; Icon = Ui.AppIcon;
             defs = DxCluster.Load();
-            Ui.Lbl(this, "DX Cluster enregistrés :", 12, 12);
+            Ui.Lbl(this, Tr.T("DX Cluster enregistrés :"), 12, 12);
             list = new ListBox { Left = 12, Top = 36, Width = 470, Height = 130 }; Controls.Add(list);
-            Ui.Btn(this, "Ajouter...", 494, 36, 134, 28, (s, e) => Edit(null)); Ui.Btn(this, "Modifier...", 494, 70, 134, 28, (s, e) => { if (list.SelectedIndex >= 0) Edit(defs[list.SelectedIndex]); });
-            Ui.Btn(this, "Supprimer", 494, 104, 134, 28, (s, e) => { if (list.SelectedIndex >= 0) { defs.RemoveAt(list.SelectedIndex); DxCluster.Save(defs); Fill(); } });
-            bConn = Ui.Btn(this, "Connecter", 494, 138, 134, 28, (s, e) => Conn());
-            cAuto = Ui.Chk(this, "Connexion automatique au démarrage du journal", 12, 180, 500); cAuto.Checked = DxCluster.AutoConnect;
-            cReco = Ui.Chk(this, "Reconnexion automatique (toutes les 15 s)", 12, 208, 500); cReco.Checked = DxCluster.AutoReconnect;
-            cStrip = Ui.Chk(this, "Afficher la réglette à droite (indicatifs de la bande ; Auto = bande du poste, ou bande choisie)", 12, 236, 620); cStrip.Checked = DxCluster.ShowStrip;
-            cFrames = Ui.Chk(this, "Afficher les trames du cluster dans la partie basse du journal", 12, 264, 620); cFrames.Checked = DxCluster.ShowFrames;
-            cVa = Ui.Chk(this, "Afficher le curseur du VFO A", 12, 292, 300); cVa.Checked = DxCluster.ShowVfoA;
-            cVb = Ui.Chk(this, "Afficher le curseur du VFO B", 320, 292, 300); cVb.Checked = DxCluster.ShowVfoB;
+            Ui.Btn(this, Tr.T("Ajouter..."), 494, 36, 134, 28, (s, e) => Edit(null)); Ui.Btn(this, Tr.T("Modifier..."), 494, 70, 134, 28, (s, e) => { if (list.SelectedIndex >= 0) Edit(defs[list.SelectedIndex]); });
+            Ui.Btn(this, Tr.T("Supprimer"), 494, 104, 134, 28, (s, e) => { if (list.SelectedIndex >= 0) { defs.RemoveAt(list.SelectedIndex); DxCluster.Save(defs); Fill(); } });
+            bConn = Ui.Btn(this, Tr.T("Connecter"), 494, 138, 134, 28, (s, e) => Conn());
+            cAuto = Ui.Chk(this, Tr.T("Connexion automatique au démarrage du journal"), 12, 180, 500); cAuto.Checked = DxCluster.AutoConnect;
+            cReco = Ui.Chk(this, Tr.T("Reconnexion automatique (toutes les 15 s)"), 12, 208, 500); cReco.Checked = DxCluster.AutoReconnect;
+            cStrip = Ui.Chk(this, Tr.T("Afficher la réglette à droite (indicatifs de la bande ; Auto = bande du poste, ou bande choisie)"), 12, 236, 620); cStrip.Checked = DxCluster.ShowStrip;
+            cFrames = Ui.Chk(this, Tr.T("Afficher les trames du cluster dans la partie basse du journal"), 12, 264, 620); cFrames.Checked = DxCluster.ShowFrames;
+            cVa = Ui.Chk(this, Tr.T("Afficher le curseur du VFO A"), 12, 292, 300); cVa.Checked = DxCluster.ShowVfoA;
+            cVb = Ui.Chk(this, Tr.T("Afficher le curseur du VFO B"), 320, 292, 300); cVb.Checked = DxCluster.ShowVfoB;
             status = Ui.Lbl(this, "", 12, 324, 616); status.Height = 30;
-            Ui.Btn(this, "OK", 460, 360, 80, 28, (s, e) => { Apply(); Close(); }); Ui.Btn(this, "Annuler", 548, 360, 80, 28, (s, e) => Close());
+            Ui.Btn(this, "OK", 460, 360, 80, 28, (s, e) => { Apply(); Close(); }); Ui.Btn(this, Tr.T("Annuler"), 548, 360, 80, 28, (s, e) => Close());
             Fill(); DxCluster.Changed += Stat; Disposed += delegate { DxCluster.Changed -= Stat; }; Stat();
         }
         void Fill() { list.Items.Clear(); foreach (ClusterDef c in defs) list.Items.Add(c.ToString()); if (list.Items.Count > 0) { int i = defs.FindIndex(x => x.Name == App.Cfg.Get("cl.sel", "")); list.SelectedIndex = i >= 0 ? i : 0; } }
-        void Stat() { status.Text = "État : " + DxCluster.Status; bConn.Text = DxCluster.Connected ? "Déconnecter" : "Connecter"; }
-        void Conn() { if (DxCluster.Connected) { DxCluster.Disconnect(); return; } if (list.SelectedIndex < 0) { MessageBox.Show(this, "Choisissez ou ajoutez un cluster."); return; } Apply(); DxCluster.Connect(defs[list.SelectedIndex]); }
+        void Stat() { status.Text = Tr.T("État : ") + DxCluster.Status; bConn.Text = DxCluster.Connected ? "Déconnecter" : "Connecter"; }
+        void Conn() { if (DxCluster.Connected) { DxCluster.Disconnect(); return; } if (list.SelectedIndex < 0) { MessageBox.Show(this, Tr.T("Choisissez ou ajoutez un cluster.")); return; } Apply(); DxCluster.Connect(defs[list.SelectedIndex]); }
         void Apply() { DxCluster.AutoConnect = cAuto.Checked; DxCluster.AutoReconnect = cReco.Checked; DxCluster.ShowStrip = cStrip.Checked; DxCluster.ShowFrames = cFrames.Checked; DxCluster.ShowVfoA = cVa.Checked; DxCluster.ShowVfoB = cVb.Checked; if (list.SelectedIndex >= 0) App.Cfg.Set("cl.sel", defs[list.SelectedIndex].Name); HamRadioLink.Cfg.Save(); Hub.ClusterChanged(); }
         void Edit(ClusterDef d)
         {
             bool isNew = d == null; if (isNew) d = new ClusterDef();
-            using (Form f = new Form { Text = isNew ? "Ajout de DX Cluster" : "Modifier le DX Cluster", ClientSize = new Size(440, 250), StartPosition = FormStartPosition.CenterParent, FormBorderStyle = FormBorderStyle.FixedDialog, MaximizeBox = false, MinimizeBox = false, Font = Ui.Normal })
+            using (Form f = new Form { Text = isNew ? Tr.T("Ajout de DX Cluster") : Tr.T("Modifier le DX Cluster"), ClientSize = new Size(440, 250), StartPosition = FormStartPosition.CenterParent, FormBorderStyle = FormBorderStyle.FixedDialog, MaximizeBox = false, MinimizeBox = false, Font = Ui.Normal })
             {
-                Ui.Lbl(f, "Nom affiché :", 12, 16); TextBox n = Ui.Txt(f, 150, 14, 270); n.Text = d.Name;
-                Ui.Lbl(f, "Hôte :", 12, 52); TextBox h = Ui.Txt(f, 150, 50, 270); h.Text = d.Host;
-                Ui.Lbl(f, "Port :", 12, 88); TextBox p = Ui.Txt(f, 150, 86, 80); p.Text = d.Port.ToString();
-                Ui.Lbl(f, "Login (facultatif) :", 12, 124); TextBox lg = Ui.Txt(f, 150, 122, 160); lg.Text = d.Login;
-                Ui.Lbl(f, "Mot de passe (facultatif) :", 12, 160); TextBox pw = Ui.Txt(f, 190, 158, 160); pw.Text = d.Pass; pw.UseSystemPasswordChar = true;
-                Button ok = Ui.Btn(f, "OK", 250, 205, 80, 28, (s, e) => { int pt; if (n.Text.Trim().Length == 0 || h.Text.Trim().Length == 0 || !int.TryParse(p.Text.Trim(), out pt) || pt < 1 || pt > 65535) { MessageBox.Show(f, "Nom, hôte et port (1-65535) obligatoires."); return; } f.DialogResult = DialogResult.OK; });
-                Ui.Btn(f, "Annuler", 338, 205, 80, 28, (s, e) => f.DialogResult = DialogResult.Cancel); f.AcceptButton = ok;
+                Ui.Lbl(f, Tr.T("Nom affiché :"), 12, 16); TextBox n = Ui.Txt(f, 150, 14, 270); n.Text = d.Name;
+                Ui.Lbl(f, Tr.T("Hôte :"), 12, 52); TextBox h = Ui.Txt(f, 150, 50, 270); h.Text = d.Host;
+                Ui.Lbl(f, Tr.T("Port :"), 12, 88); TextBox p = Ui.Txt(f, 150, 86, 80); p.Text = d.Port.ToString();
+                Ui.Lbl(f, Tr.T("Login (facultatif) :"), 12, 124); TextBox lg = Ui.Txt(f, 150, 122, 160); lg.Text = d.Login;
+                Ui.Lbl(f, Tr.T("Mot de passe (facultatif) :"), 12, 160); TextBox pw = Ui.Txt(f, 190, 158, 160); pw.Text = d.Pass; pw.UseSystemPasswordChar = true;
+                Button ok = Ui.Btn(f, "OK", 250, 205, 80, 28, (s, e) => { int pt; if (n.Text.Trim().Length == 0 || h.Text.Trim().Length == 0 || !int.TryParse(p.Text.Trim(), out pt) || pt < 1 || pt > 65535) { MessageBox.Show(f, Tr.T("Nom, hôte et port (1-65535) obligatoires.")); return; } f.DialogResult = DialogResult.OK; });
+                Ui.Btn(f, Tr.T("Annuler"), 338, 205, 80, 28, (s, e) => f.DialogResult = DialogResult.Cancel); f.AcceptButton = ok;
                 if (f.ShowDialog(this) != DialogResult.OK) return;
                 d.Name = n.Text.Trim(); d.Host = h.Text.Trim(); d.Port = int.Parse(p.Text.Trim()); d.Login = lg.Text.Trim(); d.Pass = pw.Text;
                 if (isNew) defs.Add(d); DxCluster.Save(defs); Fill();

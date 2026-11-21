@@ -41,7 +41,7 @@ items.Clear(); box = null;   // la zone de recherche n'est plus affichée (elle 
         {
             Graphics g = e.Graphics; Color back = Theme.Get("lb.back"); g.Clear(back); Looks.Dark = Theme.IsDark(back); rects.Clear();
             int x = 6; Color tt = Theme.Get("lb.tool.text");
-            using (Font f = new Font("Segoe UI", 9.5f, FontStyle.Bold))
+            using (Font f = new Font(Tr.T("Segoe UI"), 9.5f, FontStyle.Bold))
             {
                 for (int i = 0; i < App.Logs.Count; i++)
                 {
@@ -99,8 +99,8 @@ items.Clear(); box = null;   // la zone de recherche n'est plus affichée (elle 
             {
                 ContextMenuStrip m = new ContextMenuStrip();
                 m.Items.Add(Ui.French ? "Renommer..." : "Rename...", null, (s, a) => { Action<LogRef> h = RenameRequested; if (h != null) h(l); });
-                m.Items.Add(Ui.French ? "Retirer de la liste (la base n'est pas supprimée)" : "Remove from list (database is kept)", null, (s, a) => { Action<LogRef> h = RemoveRequested; if (h != null) h(l); });
-                ToolStripMenuItem del = new ToolStripMenuItem(Ui.French ? "Retirer de la liste ET SUPPRIMER la base..." : "Remove from list AND DELETE database...", null, (s, a) => { Action<LogRef> h = DeleteRequested; if (h != null) h(l); }) { ForeColor = Color.FromArgb(190, 0, 0), Font = new Font(Font, FontStyle.Bold) };
+                m.Items.Add(Ui.French ? Tr.T("Retirer de la liste (la base n'est pas supprimée)") : Tr.T("Remove from list (database is kept)"), null, (s, a) => { Action<LogRef> h = RemoveRequested; if (h != null) h(l); });
+                ToolStripMenuItem del = new ToolStripMenuItem(Ui.French ? Tr.T("Retirer de la liste ET SUPPRIMER la base...") : Tr.T("Remove from list AND DELETE database..."), null, (s, a) => { Action<LogRef> h = DeleteRequested; if (h != null) h(l); }) { ForeColor = Color.FromArgb(190, 0, 0), Font = new Font(Font, FontStyle.Bold) };
                 m.Items.Add(new ToolStripSeparator()); m.Items.Add(del);
                 m.Show(this, e.Location);
             }
@@ -133,26 +133,26 @@ items.Clear(); box = null;   // la zone de recherche n'est plus affichée (elle 
 
         public NewLogForm(string preset = "")
         {
-            bool fr = Ui.French; Text = fr ? "Nouveau journal" : "New log"; Font = Ui.Normal; Icon = Ui.AppIcon; ClientSize = new Size(560, 400); StartPosition = FormStartPosition.CenterParent; FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; MinimizeBox = false;
-            Ui.Lbl(this, fr ? "Nom du journal :" : "Log name:", 14, 16); tName = Ui.Txt(this, 130, 14, 250);
-            rEmpty = new RadioButton { Left = 14, Top = 52, Width = 530, Text = fr ? "Journal vide" : "Empty log", Checked = true }; Controls.Add(rEmpty);
-            rAdif = new RadioButton { Left = 14, Top = 80, Width = 530, Text = fr ? "Journal vide, puis importer un fichier ADIF (.adi)" : "Empty log, then import an ADIF file" }; Controls.Add(rAdif);
-            rAttach = new RadioButton { Left = 14, Top = 108, Width = 530, Text = fr ? "Attacher une base MariaDB existante (journal au format compatible)" : "Attach an existing MariaDB database (compatible format)" }; Controls.Add(rAttach);
-            Ui.Lbl(this, fr ? "Serveur" : "Server", 34, 204); tHost = Ui.Txt(this, 100, 202, 130); tHost.Text = "127.0.0.1"; Ui.Lbl(this, "Port", 240, 204); tPort = Ui.Txt(this, 275, 202, 60); tPort.Text = "3306";
-            Ui.Lbl(this, fr ? "Utilisateur" : "User", 34, 238); tUser = Ui.Txt(this, 100, 236, 130); tUser.Text = "root"; Ui.Lbl(this, fr ? "Mot de passe" : "Password", 240, 238); tPass = Ui.Txt(this, 330, 236, 150); tPass.UseSystemPasswordChar = true;
-            Ui.Lbl(this, fr ? "Base (schema)" : "Database", 34, 272); tSchema = Ui.Txt(this, 130, 270, 200);
-            Ui.Lbl(this, fr ? "Le nouveau journal apparaît comme un onglet en haut du Logbook. Une base de plus est créée sur le serveur actuel : le journal en cours n'est pas touché." : "The new log appears as a tab at the top of the Logbook. A new database is created on the current server; the current log is not touched.", 14, 312, 530);
+            bool fr = Ui.French; Text = fr ? Tr.T("Nouveau journal") : Tr.T("New log"); Font = Ui.Normal; Icon = Ui.AppIcon; ClientSize = new Size(560, 400); StartPosition = FormStartPosition.CenterParent; FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; MinimizeBox = false;
+            Ui.Lbl(this, fr ? Tr.T("Nom du journal :") : Tr.T("Log name:"), 14, 16); tName = Ui.Txt(this, 130, 14, 250);
+            rEmpty = new RadioButton { Left = 14, Top = 52, Width = 530, Text = fr ? Tr.T("Journal vide") : Tr.T("Empty log"), Checked = true }; Controls.Add(rEmpty);
+            rAdif = new RadioButton { Left = 14, Top = 80, Width = 530, Text = fr ? Tr.T("Journal vide, puis importer un fichier ADIF (.adi)") : Tr.T("Empty log, then import an ADIF file") }; Controls.Add(rAdif);
+            rAttach = new RadioButton { Left = 14, Top = 108, Width = 530, Text = fr ? Tr.T("Attacher une base MariaDB existante (journal au format compatible)") : Tr.T("Attach an existing MariaDB database (compatible format)") }; Controls.Add(rAttach);
+            Ui.Lbl(this, fr ? "Serveur" : "Server", 34, 204); tHost = Ui.Txt(this, 100, 202, 130); tHost.Text = "127.0.0.1"; Ui.Lbl(this, Tr.T("Port"), 240, 204); tPort = Ui.Txt(this, 275, 202, 60); tPort.Text = "3306";
+            Ui.Lbl(this, fr ? "Utilisateur" : "User", 34, 238); tUser = Ui.Txt(this, 100, 236, 130); tUser.Text = "root"; Ui.Lbl(this, fr ? Tr.T("Mot de passe") : "Password", 240, 238); tPass = Ui.Txt(this, 330, 236, 150); tPass.UseSystemPasswordChar = true;
+            Ui.Lbl(this, fr ? Tr.T("Base (schema)") : "Database", 34, 272); tSchema = Ui.Txt(this, 130, 270, 200);
+            Ui.Lbl(this, fr ? Tr.T("Le nouveau journal apparaît comme un onglet en haut du Logbook. Une base de plus est créée sur le serveur actuel : le journal en cours n'est pas touché.") : Tr.T("The new log appears as a tab at the top of the Logbook. A new database is created on the current server; the current log is not touched."), 14, 312, 530);
             Button ok = Ui.Btn(this, "OK", 370, 358, 80, 30, (s, e) => Validate2()); Ui.Btn(this, fr ? "Annuler" : "Cancel", 460, 358, 80, 30, (s, e) => { DialogResult = DialogResult.Cancel; Close(); }); AcceptButton = ok;
         }
 
         void Validate2()
         {
-            string name = tName.Text.Trim(); if (name.Length == 0) { MessageBox.Show(this, Ui.French ? "Donnez un nom au journal." : "Give the log a name.", "HamRadioLink"); return; }
-            foreach (LogRef l in App.Logs) if (string.Equals(l.Name, name, StringComparison.OrdinalIgnoreCase)) { MessageBox.Show(this, Ui.French ? "Ce nom existe déjà." : "This name already exists.", "HamRadioLink"); return; }
+            string name = tName.Text.Trim(); if (name.Length == 0) { MessageBox.Show(this, Ui.French ? Tr.T("Donnez un nom au journal.") : Tr.T("Give the log a name."), "HamRadioLink"); return; }
+            foreach (LogRef l in App.Logs) if (string.Equals(l.Name, name, StringComparison.OrdinalIgnoreCase)) { MessageBox.Show(this, Ui.French ? Tr.T("Ce nom existe déjà.") : Tr.T("This name already exists."), "HamRadioLink"); return; }
             LogRef r = new LogRef { Name = name };
             if (rAttach.Checked)
             {
-                int p; if (tSchema.Text.Trim().Length == 0 || !int.TryParse(tPort.Text, out p)) { MessageBox.Show(this, Ui.French ? "Indiquez le serveur, le port et la base." : "Enter server, port and database.", "HamRadioLink"); return; }
+                int p; if (tSchema.Text.Trim().Length == 0 || !int.TryParse(tPort.Text, out p)) { MessageBox.Show(this, Ui.French ? Tr.T("Indiquez le serveur, le port et la base.") : Tr.T("Enter server, port and database."), "HamRadioLink"); return; }
                 r.Host = tHost.Text.Trim(); r.Port = p; r.User = tUser.Text.Trim(); r.Pass = tPass.Text; r.Schema = tSchema.Text.Trim();
             }
             else

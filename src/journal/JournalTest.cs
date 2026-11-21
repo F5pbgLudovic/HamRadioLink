@@ -38,6 +38,13 @@ namespace HamRadioLink.Journal
                 Qso q = new Qso(); q["COL_CALL"] = "DL1ABC"; q["COL_TIME_ON"] = "2026-11-18 10:00:00"; q["COL_FREQ"] = "7074000"; q["COL_MODE"] = "FT8"; q["COL_BAND"] = "40m"; q["COL_RST_SENT"] = "-10"; q["COL_RST_RCVD"] = "-12"; q["COL_COUNTRY"] = "Germany"; q["COL_COMMENT"] = "é à ç essai";
                 App.Log.ApplyDefaults(q); int id = App.Log.Insert(q); check(id > 0 && App.Log.Count("") == 1, "Journal : un QSO enregistré");
                 Qso b = App.Log.Get(id); check(b != null && b.S("COL_CALL") == "DL1ABC" && b.S("COL_COMMENT") == "é à ç essai", "Journal : QSO relu (accents conservés)");
+                {   // Annuler / Refaire : modification puis suppression
+                    Dictionary<int, Qso> bf = LogUndo.Snap(App.Log, new[] { id }); Qso ch = new Qso(); ch["COL_FREQ"] = "14074000"; App.Log.Update(id, ch); LogUndo.Record("t", App.Log, bf, new[] { id });
+                    bool s1 = App.Log.Get(id).S("COL_FREQ") == "14074000"; LogUndo.Undo(); bool s2 = App.Log.Get(id).S("COL_FREQ") == "7074000"; LogUndo.Redo(); bool s3 = App.Log.Get(id).S("COL_FREQ") == "14074000";
+                    LogUndo.Undo(); bf = LogUndo.Snap(App.Log, new[] { id }); App.Log.Delete(new[] { id }); LogUndo.Record("t", App.Log, bf, new[] { id }); bool s4 = App.Log.Get(id) == null;
+                    LogUndo.Undo(); Qso rb = App.Log.Get(id); bool s5 = rb != null && rb.S("COL_CALL") == "DL1ABC" && rb.S("COL_COMMENT") == "é à ç essai" && App.Log.Count("") == 1;
+                    check(s1 && s2 && s3 && s4 && s5 && LogUndo.CanRedo, "Annuler / Refaire : modification, suppression et rétablissement du contact (" + s1 + s2 + s3 + s4 + s5 + ")");
+                }
                 string adi = Path.Combine(tmp, "essai.adi"); File.WriteAllText(adi, "ADIF test\r\n<ADIF_VER:5>3.1.0 <EOH>\r\n<CALL:5>F6ABC <QSO_DATE:8>20261101 <TIME_ON:4>1230 <FREQ:5>14.07 <MODE:3>CW <BAND:3>20m <EOR>\r\n<CALL:5>F6ABD <QSO_DATE:8>20261102 <TIME_ON:4>0815 <FREQ:5>7.074 <MODE:3>FT8 <BAND:3>40m <EOR>\r\n");
                 int a, du; AdifImport.Run(App.Log, adi, delegate(string s) { }, out a, out du); check(a == 2 && App.Log.Count("") == 3, "Journal : import ADIF (2 QSO ajoutés, total " + App.Log.Count("") + ")");
                 AdifImport.Run(App.Log, adi, delegate(string s) { }, out a, out du); check(du == 2 && App.Log.Count("") == 3, "Journal : réimport ADIF : doublons ignorés (" + du + ")");
@@ -72,6 +79,10 @@ namespace HamRadioLink.Journal
                     using (ColorPicker cp = new ColorPicker("Fond des fenêtres", Theme.C(0x20C997))) { cp.StartPosition = FormStartPosition.Manual; cp.Location = new Point(-3000, 0); cp.Show(); Skin.ApplyAll(); Pump(400); Snap(cp, Path.Combine(dir, "selecteur.png")); cp.Close(); }
                     Theme.ResetTheme(1); check(saved && Theme.All[1].Back == orig && App.Cfg.Get(Theme.Key(1, false, 0), "") == "", "Couleurs du thème : personnalisée, mémorisée par thème, puis rétablie");
                     Theme.Set(0); Skin.ApplyAll(); check(Theme.All.Count >= 40, "Thèmes : " + Theme.All.Count + " thèmes disponibles, appliqués aux fenêtres sans erreur");
+                {   // Langues du journal : chaque langue traduit, le français reste le texte d'origine
+                    int ok = 0; string frT = "Fichiers ADIF à importer"; foreach (string lc in Tr.Codes) { Tr.Code = lc; string t = Tr.T(frT); if (lc == "fr" ? t == frT : (t != frT && t.Length > 3 && Tr.T("  Annuler ") .Trim().Length > 0)) ok++; }
+                    Tr.Code = "fr"; check(ok == Tr.Codes.Length && Tr.T(frT) == frT, "Langues du journal : " + ok + " / " + Tr.Codes.Length + " langues traduisent, le français reste par défaut");
+                }
                     lb.Close();
                 }
                 using (DbForm f = new DbForm())

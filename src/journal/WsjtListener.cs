@@ -24,11 +24,11 @@ namespace HamRadioLink.Journal
     public static class WsjtListener
     {
         public static readonly PortDef[] Ports = {
-            new PortDef("wsjt", "Serveur UDP de WSJT-X (Réglages > Rapports)", 2237, "réglage Serveur UDP de WSJT-X ; ex. 2237"),
-            new PortDef("n1mm", "Diffusion de WSJT-X (option « N1MM Logger+ »)", 2333, "à saisir aussi dans WSJT-X, Réglages > Rapports, case N1MM"),
-            new PortDef("adif", "ADIF brut en UDP", 7825, "ex. 7825, 12060"),
-            new PortDef("x1", "Port libre n° 1 (0 = inutilisé)", 0, "ex. 2238 pour une seconde instance de WSJT-X"),
-            new PortDef("x2", "Port libre n° 2 (0 = inutilisé)", 0, "ex. 2239 pour une troisième instance de WSJT-X") };
+            new PortDef("wsjt", Tr.T("Serveur UDP de WSJT-X (Réglages > Rapports)"), 2237, Tr.T("réglage Serveur UDP de WSJT-X ; ex. 2237")),
+            new PortDef("n1mm", Tr.T("Diffusion de WSJT-X (option « N1MM Logger+ »)"), 2333, Tr.T("à saisir aussi dans WSJT-X, Réglages > Rapports, case N1MM")),
+            new PortDef("adif", Tr.T("ADIF brut en UDP"), 7825, "ex. 7825, 12060"),
+            new PortDef("x1", Tr.T("Port libre n° 1 (0 = inutilisé)"), 0, Tr.T("ex. 2238 pour une seconde instance de WSJT-X")),
+            new PortDef("x2", Tr.T("Port libre n° 2 (0 = inutilisé)"), 0, Tr.T("ex. 2239 pour une troisième instance de WSJT-X")) };
 
         static readonly List<UdpClient> socks = new List<UdpClient>(); static SynchronizationContext ui; static volatile bool run;
         public static bool Disabled; public static int Received = 0; public static string Error = ""; public static List<int> Open = new List<int>();
@@ -46,7 +46,7 @@ namespace HamRadioLink.Journal
                     u.Client.Bind(new IPEndPoint(IPAddress.Any, port)); socks.Add(u); Open.Add(port);
                     Thread th = new Thread(delegate() { Loop(u); }) { IsBackground = true, Name = "qso-udp-" + port }; th.Start();
                 }
-                catch (Exception ex) { Error += "port UDP " + port + " : " + ex.Message + "\r\n"; }
+                catch (Exception ex) { Error += Tr.T("port UDP ") + port + " : " + ex.Message + "\r\n"; }
             }
         }
 
@@ -131,25 +131,25 @@ namespace HamRadioLink.Journal
         TextBox[] tb = new TextBox[WsjtListener.Ports.Length]; Label status;
         public PortsForm()
         {
-            Text = "Réglages des ports"; ClientSize = new Size(880, 420); StartPosition = FormStartPosition.CenterParent; FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; MinimizeBox = false; Font = Ui.Normal; Icon = Ui.AppIcon;
-            int y = 12; Ui.Lbl(this, "Ports UDP écoutés par HamRadioLink pour recevoir les QSO de WSJT-X (0 = inutilisé).", 12, y); Controls[Controls.Count - 1].Width = 856; Controls[Controls.Count - 1].Height = 34; y += 40;
+            Text = Tr.T("Réglages des ports"); ClientSize = new Size(880, 420); StartPosition = FormStartPosition.CenterParent; FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; MinimizeBox = false; Font = Ui.Normal; Icon = Ui.AppIcon;
+            int y = 12; Ui.Lbl(this, Tr.T("Ports UDP écoutés par HamRadioLink pour recevoir les QSO de WSJT-X (0 = inutilisé)."), 12, y); Controls[Controls.Count - 1].Width = 856; Controls[Controls.Count - 1].Height = 34; y += 40;
             for (int i = 0; i < WsjtListener.Ports.Length; i++)
             {
                 PortDef p = WsjtListener.Ports[i]; Ui.Lbl(this, p.Label, 12, y); tb[i] = Ui.Txt(this, 330, y - 2, 70); tb[i].Text = p.Value.ToString();
-                Label ex = Ui.Lbl(this, "Défaut " + p.Default + " — " + p.Example, 410, y); ex.Width = 460; ex.ForeColor = SystemColors.GrayText; y += 32;
+                Label ex = Ui.Lbl(this, Tr.T("Défaut ") + p.Default + " — " + p.Example, 410, y); ex.Width = 460; ex.ForeColor = SystemColors.GrayText; y += 32;
             }
-            y += 8; Ui.Lbl(this, "Autres ports (réglés ailleurs) :", 12, y); y += 24;
-            string[] info = { "Serveur de commande IP (WSJT-X, SDRLink…) : 7809 — bouton Serveur de la fenêtre principale", "Base MariaDB installée : 3306 — bouton Base… du journal", "MariaDB intégré à HamRadioLink : 3307 (ou le premier libre au-dessus)" };
+            y += 8; Ui.Lbl(this, Tr.T("Autres ports (réglés ailleurs) :"), 12, y); y += 24;
+            string[] info = { Tr.T("Serveur de commande IP (WSJT-X, SDRLink…) : 7809 — bouton Serveur de la fenêtre principale"), Tr.T("Base MariaDB installée : 3306 — bouton Base… du journal"), Tr.T("MariaDB intégré à HamRadioLink : 3307 (ou le premier libre au-dessus)") };
             foreach (string s in info) { Label l = Ui.Lbl(this, s, 28, y); l.Width = 840; y += 22; }
             status = Ui.Lbl(this, "", 12, y + 6); status.Width = 856; status.Height = 40;
-            Ui.Btn(this, "Appliquer", 660, 420 - 40, 100, 28, (s, e) => Apply()); Ui.Btn(this, "Fermer", 768, 420 - 40, 100, 28, (s, e) => Close());
-            Ui.Btn(this, "Valeurs par défaut", 12, 420 - 40, 140, 28, (s, e) => { for (int i = 0; i < tb.Length; i++) tb[i].Text = WsjtListener.Ports[i].Default.ToString(); });
+            Ui.Btn(this, Tr.T("Appliquer"), 660, 420 - 40, 100, 28, (s, e) => Apply()); Ui.Btn(this, Tr.T("Fermer"), 768, 420 - 40, 100, 28, (s, e) => Close());
+            Ui.Btn(this, Tr.T("Valeurs par défaut"), 12, 420 - 40, 140, 28, (s, e) => { for (int i = 0; i < tb.Length; i++) tb[i].Text = WsjtListener.Ports[i].Default.ToString(); });
             ShowState();
         }
-        void ShowState() { status.Text = WsjtListener.Open.Count == 0 ? "Aucun port ouvert." + (WsjtListener.Error.Length > 0 ? "\r\n" + WsjtListener.Error : "") : "Ports ouverts : " + string.Join(", ", WsjtListener.Open.ConvertAll(x => x.ToString()).ToArray()) + (WsjtListener.Error.Length > 0 ? "\r\nOccupés : " + WsjtListener.Error.Replace("\r\n", " ; ") : ""); }
+        void ShowState() { status.Text = WsjtListener.Open.Count == 0 ? Tr.T("Aucun port ouvert.") + (WsjtListener.Error.Length > 0 ? "\r\n" + WsjtListener.Error : "") : Tr.T("Ports ouverts : ") + string.Join(", ", WsjtListener.Open.ConvertAll(x => x.ToString()).ToArray()) + (WsjtListener.Error.Length > 0 ? "\r\nOccupés : " + WsjtListener.Error.Replace("\r\n", " ; ") : ""); }
         void Apply()
         {
-            for (int i = 0; i < tb.Length; i++) { int v; if (!int.TryParse(tb[i].Text.Trim(), out v) || v < 0 || v > 65535) { MessageBox.Show(this, "Port invalide : " + WsjtListener.Ports[i].Label); return; } WsjtListener.Ports[i].Value = v; }
+            for (int i = 0; i < tb.Length; i++) { int v; if (!int.TryParse(tb[i].Text.Trim(), out v) || v < 0 || v > 65535) { MessageBox.Show(this, Tr.T("Port invalide : ") + WsjtListener.Ports[i].Label); return; } WsjtListener.Ports[i].Value = v; }
             HamRadioLink.Cfg.Save(); WsjtListener.Restart(); ShowState();
         }
     }

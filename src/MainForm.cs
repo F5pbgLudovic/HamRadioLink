@@ -40,7 +40,7 @@ namespace HamRadioLink
 
     public class MainForm : Form
     {
-        public const string Version = "1.4";
+        public const string Version = "1.5";
         const int DesignW = 1860, DesignH = 944; const double Ratio = DesignW / (double)DesignH;
         readonly List<RadioDef> radios = Radios.All(); RadioDef cur; Rig rig = new Rig();      // cur / rig / widgets = poste ACTIF (plusieurs postes peuvent être connectés en même temps)
         readonly Panel stage = new Panel(); readonly ToolTip tip = new ToolTip();
@@ -776,7 +776,7 @@ namespace HamRadioLink
                     case "ros": RosGuard.Test(rig); break;
                     case "rostx": RosTxTest(); break;
                     case "maj": UpdateNow(); break;
-                    case "majdlg": { Updater.Info ui = new Updater.Info(); ui.Version = "1.4"; ui.Notes = "- Nouveauté A" + Environment.NewLine + "- Nouveauté B"; UpdateDlg ud = new UpdateDlg(ui, true); ud.StartPosition = FormStartPosition.CenterScreen; ud.Show(this); } break;
+                    case "majdlg": { Updater.Info ui = new Updater.Info(); ui.Version = "1.5"; ui.Notes = "- Nouveauté A" + Environment.NewLine + "- Nouveauté B"; UpdateDlg ud = new UpdateDlg(ui, true); ud.StartPosition = FormStartPosition.CenterScreen; ud.Show(this); } break;
                     case "pwr060": { if (rig.Link == null) ToggleConnect(); string lg = System.IO.Path.Combine(Cfg.Dir ?? ".", "rostx.txt"); Ctl pcx = RosGuard.PowerCtl(rig); System.Windows.Forms.Timer q = new System.Windows.Forms.Timer(); q.Interval = 6000; int st2 = 0; q.Tick += delegate { string v = pcx == null ? "?" : rig.Get(pcx.Id); System.IO.File.AppendAllText(lg, DateTime.Now.ToString("HH:mm:ss") + " pwr=" + v + " etape " + st2 + Environment.NewLine); if (st2 == 0 && v != "060" && pcx != null) rig.Set(pcx, "60"); st2++; if (st2 >= 3) q.Stop(); }; q.Start(); } break;
                     case "longmsg": notice = "Attention : le poste répond ID0252 (FT-2000D) mais « Yaesu FT-2000 » est choisi. Choisissez le bon poste. Ceci est un long message de test pour vérifier le retour à la ligne. Troisième phrase."; noticeUntil = Environment.TickCount + 60000; lastVer = -1; break;
                     case "analog": foreach (HW w in widgets) { HMeter m = w as HMeter; if (m != null) m.Analog = true; } break;

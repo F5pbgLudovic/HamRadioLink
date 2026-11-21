@@ -32,7 +32,7 @@ namespace HamRadioLink.Journal
     public class Ini
     {
         const string P = "jn.";
-        public string Get(string k, string def) { if (k == "lang") return "fr"; return HamRadioLink.Cfg.Get(P + k, def); }
+        public string Get(string k, string def) { if (k == "lang") return Tr.Code; return HamRadioLink.Cfg.Get(P + k, def); }
         public int GetInt(string k, int def) { return HamRadioLink.Cfg.GetInt(P + k, def); }
         public bool GetBool(string k, bool def) { return HamRadioLink.Cfg.GetBool(P + k, def); }
         public void Set(string k, object v) { string s = v is bool ? ((bool)v ? "1" : "0") : Convert.ToString(v, System.Globalization.CultureInfo.InvariantCulture); HamRadioLink.Cfg.Set(P + k, s ?? ""); }
@@ -153,7 +153,7 @@ namespace HamRadioLink.Journal
                 Connect(owner);
                 Create(); win.Show();
             }
-            catch (Exception ex) { MessageBox.Show(owner, ex.Message, "Journal", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
+            catch (Exception ex) { MessageBox.Show(owner, ex.Message, Tr.T("Journal"), MessageBoxButtons.OK, MessageBoxIcon.Warning); }
         }
 
         // Connexion à la base du journal (MariaDB intégré démarré au besoin). owner = null : en silence (réception WSJT-X sans fenêtre).
@@ -162,8 +162,8 @@ namespace HamRadioLink.Journal
             App.Init();
             if (App.Db != null && App.Log != null) return true;
             if (!App.Cfg.GetBool("setup.done", false) && App.Cfg.Get("db.host", "").Length == 0) return false;
-            if (App.Cfg.Get("db.mode", "") == "embedded") { try { Embedded.EnsureRunning(); } catch (Exception ex) { if (owner != null) MessageBox.Show(owner, "MariaDB intégré : " + ex.Message, "Journal"); else return false; } }
-            if (App.Cfg.Get("db.host", "").Length > 0) { try { App.ConnectDb(); } catch (Exception ex) { if (owner != null) MessageBox.Show(owner, "Connexion au journal impossible : " + ex.Message + "\r\n\r\nChoisissez la base dans la fenêtre suivante.", "Journal"); return false; } }
+            if (App.Cfg.Get("db.mode", "") == "embedded") { try { Embedded.EnsureRunning(); } catch (Exception ex) { if (owner != null) MessageBox.Show(owner, Tr.T("MariaDB intégré : ") + ex.Message, "Journal"); else return false; } }
+            if (App.Cfg.Get("db.host", "").Length > 0) { try { App.ConnectDb(); } catch (Exception ex) { if (owner != null) MessageBox.Show(owner, Tr.T("Connexion au journal impossible : ") + ex.Message + "\r\n\r\nChoisissez la base dans la fenêtre suivante.", "Journal"); return false; } }
             return App.Log != null;
         }
 

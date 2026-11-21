@@ -32,21 +32,21 @@ namespace HamRadioLink.Journal
         static List<ColDef> AllCols()
         {
             return new List<ColDef> {
-                new ColDef("QSO date", "COL_TIME_ON", 90, true), new ColDef("Time on", "COL_TIME_ON", 80, true), new ColDef("Call", "COL_CALL", 110, true), new ColDef("Locator", "COL_GRIDSQUARE", 70, true),
+                new ColDef(Tr.T("QSO date"), "COL_TIME_ON", 90, true), new ColDef(Tr.T("Time on"), "COL_TIME_ON", 80, true), new ColDef("Call", "COL_CALL", 110, true), new ColDef("Locator", "COL_GRIDSQUARE", 70, true),
                 new ColDef("Name", "COL_NAME", 130, true), new ColDef("QTH", "COL_QTH", 90, true), new ColDef("Freq", "COL_FREQ", 90, true, true), new ColDef("Mode", "COL_MODE", 60, true),
                 new ColDef("Distance", "COL_DISTANCE", 70, true, true), new ColDef("Sent", "COL_RST_SENT", 50, true), new ColDef("Rcvd", "COL_RST_RCVD", 50, true),
-                new ColDef("eQSL sent", "COL_EQSL_QSL_SENT", 80, true), new ColDef("LOTW sent", "COL_LOTW_QSL_SENT", 80, true), new ColDef("Club Log sent", "COL_CLUBLOG_LOCAL", 90, true), new ColDef("QRZ.com sent", "COL_QRZ_LOCAL", 90, true), new ColDef("Country", "COL_COUNTRY", 150, true), new ColDef("Comment", "COL_COMMENT", 300, true),
-                new ColDef("Band", "COL_BAND", 50, false), new ColDef("Submode", "COL_SUBMODE", 70, false), new ColDef("Time off", "COL_TIME_OFF", 80, false), new ColDef("State", "COL_STATE", 60, false),
+                new ColDef(Tr.T("eQSL sent"), "COL_EQSL_QSL_SENT", 80, true), new ColDef(Tr.T("LOTW sent"), "COL_LOTW_QSL_SENT", 80, true), new ColDef(Tr.T("Club Log sent"), "COL_CLUBLOG_LOCAL", 90, true), new ColDef(Tr.T("QRZ.com sent"), "COL_QRZ_LOCAL", 90, true), new ColDef("Country", "COL_COUNTRY", 150, true), new ColDef("Comment", "COL_COMMENT", 300, true),
+                new ColDef("Band", "COL_BAND", 50, false), new ColDef("Submode", "COL_SUBMODE", 70, false), new ColDef(Tr.T("Time off"), "COL_TIME_OFF", 80, false), new ColDef("State", "COL_STATE", 60, false),
                 new ColDef("Continent", "COL_CONT", 40, false), new ColDef("DXCC", "COL_DXCC", 50, false), new ColDef("CQ", "COL_CQZ", 40, false, true), new ColDef("ITU", "COL_ITUZ", 40, false, true),
-                new ColDef("IOTA", "COL_IOTA", 60, false), new ColDef("QSL sent", "COL_QSL_SENT", 70, false), new ColDef("QSL rcvd", "COL_QSL_RCVD", 70, false), new ColDef("LOTW rcvd", "COL_LOTW_QSL_RCVD", 80, false),
-                new ColDef("eQSL rcvd", "COL_EQSL_QSL_RCVD", 80, false), new ColDef("QSL via", "COL_QSL_VIA", 80, false), new ColDef("Station", "COL_STATION_CALLSIGN", 90, false), new ColDef("Operator", "COL_OPERATOR", 90, false),
+                new ColDef("IOTA", "COL_IOTA", 60, false), new ColDef(Tr.T("QSL sent"), "COL_QSL_SENT", 70, false), new ColDef(Tr.T("QSL rcvd"), "COL_QSL_RCVD", 70, false), new ColDef(Tr.T("LOTW rcvd"), "COL_LOTW_QSL_RCVD", 80, false),
+                new ColDef(Tr.T("eQSL rcvd"), "COL_EQSL_QSL_RCVD", 80, false), new ColDef(Tr.T("QSL via"), "COL_QSL_VIA", 80, false), new ColDef("Station", "COL_STATION_CALLSIGN", 90, false), new ColDef("Operator", "COL_OPERATOR", 90, false),
                 new ColDef("Prefix", "COL_PFX", 60, false), new ColDef("Contest", "COL_CONTEST_ID", 90, false), new ColDef("Notes", "COL_NOTES", 200, false), new ColDef("E-mail", "COL_EMAIL", 150, false),
                 new ColDef("Power", "COL_TX_PWR", 50, false, true), new ColDef("Satellite", "COL_SAT_NAME", 80, false), new ColDef("Rig", "COL_MY_RIG", 100, false) };
         }
 
         public LogbookForm()
         {
-            Text = "HamRadioLink " + App.Version + " Logbook - [" + App.Cfg.Get("db.name", "F5PBG") + "]";
+            Text = Tr.T("HamRadioLink ") + App.Version + " Logbook - [" + App.Cfg.Get("db.name", "F5PBG") + "]";
             Size = new Size(1300, 860); Font = Ui.Normal; StartPosition = FormStartPosition.CenterScreen; Icon = Ui.AppIcon; Ui.RememberWindow(this, "lb");
             cols = AllCols();
             string vis = App.Cfg.Get("lb.cols", "");
@@ -55,17 +55,17 @@ namespace HamRadioLink.Journal
             foreach (string kv in App.Cfg.Get("lb.colw", "").Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries)) { int q = kv.LastIndexOf('='), wv; if (q > 0 && int.TryParse(kv.Substring(q + 1), out wv)) foreach (ColDef c in cols) if (c.Title == kv.Substring(0, q)) c.Width = Math.Max(20, wv); }   // largeurs mémorisées (à 100 % de zoom)
 
             MenuStrip ms = new ClickMenuStrip();
-            ToolStripMenuItem file = M("File", M("Fenêtre de télécommande", (s, e) => { Action a = Hub.ShowMain; if (a != null) a(); }), new ToolStripSeparator(), M("Open database...", (s, e) => OpenDb()), M("Importer / partager une base...", (s, e) => OpenSetup()), M("Réglages des ports...", (s, e) => { using (PortsForm f = new PortsForm()) f.ShowDialog(this); }), M("Moteur MariaDB...",(s, e) => { using (EngineForm f = new EngineForm()) f.ShowDialog(this); }), M("New log...", (s, e) => NewLog("")), M("Import ADIF...", (s, e) => ImportAdif()), M("Export ADIF (selection or all)...", (s, e) => ExportAdif()), new ToolStripSeparator(), M("Exit", (s, e) => Close()));
-            ToolStripMenuItem edit = M("Edit", M("Add\tCtrl+A", (s, e) => AddQso()), M("View / Edit\tEnter", (s, e) => EditSelected()), M("Delete\tDel", (s, e) => DeleteSelected()), new ToolStripSeparator(), M("Edit selections...", (s, e) => EditSelections()), M("Copy", (s, e) => CopySel()));
+            ToolStripMenuItem file = M("File", M(Tr.T("Fenêtre de télécommande"), (s, e) => { Action a = Hub.ShowMain; if (a != null) a(); }), new ToolStripSeparator(), M("Open database...", (s, e) => OpenDb()), M(Tr.T("Importer / partager une base..."), (s, e) => OpenSetup()), M(Tr.T("Réglages des ports..."), (s, e) => { using (PortsForm f = new PortsForm()) f.ShowDialog(this); }), M(Tr.T("Moteur MariaDB..."),(s, e) => { using (EngineForm f = new EngineForm()) f.ShowDialog(this); }), M("New log...", (s, e) => NewLog("")), M("Import ADIF...", (s, e) => ImportAdif()), M("Export ADIF (selection or all)...", (s, e) => ExportAdif()), new ToolStripSeparator(), M("Exit", (s, e) => Close()));
+            ToolStripMenuItem edit = M("Edit", M("Add\tCtrl+N", (s, e) => AddQso()), M("View / Edit\tEnter", (s, e) => EditSelected()), M("Delete\tDel", (s, e) => DeleteSelected()), new ToolStripSeparator(), M("Edit selections...", (s, e) => EditSelections()), M("Copy	Ctrl+C", (s, e) => CopyRows()), M("Cut	Ctrl+X", (s, e) => CutRows()), M("Paste	Ctrl+V", (s, e) => PasteRows()));
             ToolStripMenuItem view = M("View", M("Refresh\tF5", (s, e) => Reload()), M("Show all", (s, e) => { where = ""; search.Text = ""; Reload(); }), M("Columns (Layout)...", (s, e) => ChooseColumns()));
-            ToolStripMenuItem logb = M("Logbook", M("Awards tracking...", (s, e) => ShowAwards(0)), M("Statistics...", (s, e) => Stats()), M("Find duplicates...", (s, e) => FindDupes()), M("QSL à envoyer (filtre)", (s, e) => SetFilter("COL_QSL_SENT='Y' AND COL_QSL_RCVD<>'Y'")), M("Backup (ADIF)...", (s, e) => ExportAdif(true)), M("Update countries from QRZ/HamQTH data", (s, e) => UpdateFromCountries()));
-            ToolStripMenuItem tools = M("Tools", M("Vérifier les distances", (s, e) => CheckDistances()), M("Online services...", (s, e) => { using (OnlineForm f = new OnlineForm()) f.ShowDialog(this); }), M("Envoyer à tous les logs en ligne...", (s, e) => SendAllOnline()), M("Exporter pour LoTW (fichier à importer à la main)...", (s, e) => ExportLotw()),
+            ToolStripMenuItem logb = M("Logbook", M("Awards tracking...", (s, e) => ShowAwards(0)), M("Statistics...", (s, e) => Stats()), M("Find duplicates...", (s, e) => FindDupes()), M(Tr.T("QSL à envoyer (filtre)"), (s, e) => SetFilter("COL_QSL_SENT='Y' AND COL_QSL_RCVD<>'Y'")), M("Backup (ADIF)...", (s, e) => ExportAdif(true)), M("Update countries from QRZ/HamQTH data", (s, e) => UpdateFromCountries()));
+            ToolStripMenuItem tools = M("Tools", M(Tr.T("Vérifier les distances"), (s, e) => CheckDistances()), M("Online services...", (s, e) => { using (OnlineForm f = new OnlineForm()) f.ShowDialog(this); }), M(Tr.T("Envoyer à tous les logs en ligne..."), (s, e) => SendAllOnline()), M(Tr.T("Exporter pour LoTW (fichier à importer à la main)..."), (s, e) => ExportLotw()),
                 new ToolStripSeparator(), M("Upload selection to QRZ.com Logbook", (s, e) => SendAllOnline("qrz")),
                 M("Upload selection to Club Log", (s, e) => SendAllOnline("clublog")), M("Upload selection to eQSL.cc", (s, e) => SendAllOnline("eqsl")), M("Upload selection to LoTW (TQSL)", (s, e) => SendAllOnline("lotw")),
                 new ToolStripSeparator());
-            ToolStripMenuItem conf = M("Configuration", M("Station...", (s, e) => { using (StationForm f = new StationForm()) f.ShowDialog(this); }), M("DX Cluster...", (s, e) => { using (ClusterForm f = new ClusterForm()) f.ShowDialog(this); }), M("Importer / partager...", (s, e) => OpenSetup()), M("Sauvegarde (ADIF)...", (s, e) => ExportAdif(true)), M("Base...", (s, e) => OpenDb()), M("Ports...", (s, e) => { using (PortsForm f = new PortsForm()) f.ShowDialog(this); }));
-            ToolStripMenuItem themes = M("Thèmes"); BuildThemeMenu(themes);
-            ToolStripMenuItem help = M("Help", M("About", (s, e) => MessageBox.Show(this, "HamRadioLink " + App.Version + "\r\nJournal MariaDB.", "About")));
+            ToolStripMenuItem conf = M(Tr.T("Configuration"), M("Langue / Language...", (s, e) => { using (LangForm f = new LangForm()) f.ShowDialog(this); }), M(Tr.T("Station..."), (s, e) => { using (StationForm f = new StationForm()) f.ShowDialog(this); }), M(Tr.T("DX Cluster..."), (s, e) => { using (ClusterForm f = new ClusterForm()) f.ShowDialog(this); }), M(Tr.T("Importer / partager..."), (s, e) => OpenSetup()), M(Tr.T("Sauvegarde (ADIF)..."), (s, e) => ExportAdif(true)), M(Tr.T("Base..."), (s, e) => OpenDb()), M(Tr.T("Ports..."), (s, e) => { using (PortsForm f = new PortsForm()) f.ShowDialog(this); }));
+            ToolStripMenuItem themes = M(Tr.T("Thèmes")); BuildThemeMenu(themes);
+            ToolStripMenuItem help = M("Help", M("About", (s, e) => MessageBox.Show(this, Tr.T("HamRadioLink ") + App.Version + "\r\nJournal MariaDB.", "About")));
             ms.Items.AddRange(new ToolStripItem[] { file, edit, view, logb, tools, conf, themes, help });
             MainMenuStrip = ms; menuStrip = ms;
 
@@ -79,6 +79,7 @@ namespace HamRadioLink.Journal
             ts.Items.Add(B("Filter", (s, e) => AdvancedFilter())); ts.Items.Add(B("All", (s, e) => { search.Text = ""; SetFilter(""); }));
             ts.Items.Add(B("▲", (s, e) => { if (grid.RowCount > 0) { grid.FirstDisplayedScrollingRowIndex = 0; foreach (DataGridViewColumn c in grid.Columns) if (c.Visible) { grid.CurrentCell = grid[c.Index, 0]; break; } grid.ClearSelection(); grid.Rows[0].Selected = true; } }));   // remonter tout en haut
             ts.Items.Add(B("↔", (s, e) => FitColumns()));   // ajuste la largeur de chaque colonne à son contenu
+            ts.Items.Add(B("↶", (s, e) => DoUndo(true))); ts.Items.Add(B("↷", (s, e) => DoUndo(false)));   // annuler / refaire (Ctrl+Z / Ctrl+Y)
 
             grid = new DataGridView
             {
@@ -95,19 +96,22 @@ namespace HamRadioLink.Journal
             {
                 if (e.Button != MouseButtons.Right || e.RowIndex < 0) return;
                 if (!grid.Rows[e.RowIndex].Selected) { grid.ClearSelection(); grid.Rows[e.RowIndex].Selected = true; grid.CurrentCell = grid[Math.Max(0, e.ColumnIndex), e.RowIndex]; }
-                ContextMenuStrip m = new ContextMenuStrip(); m.Items.Add("Supprimer le contact", null, (a, b) => DeleteSelected()); m.Items.Add(new ToolStripSeparator());
-                m.Items.Add("Exporter la sélection (ADIF)...", null, (a, b) => ExportAdif(false, true)); m.Items.Add("Exporter la sélection pour LoTW...", null, (a, b) => ExportLotw());
-                ToolStripMenuItem snd = new ToolStripMenuItem("Envoyer la sélection à");
-                snd.DropDownItems.Add("QRZ.com", null, (a, b) => SendAllOnline("qrz")); snd.DropDownItems.Add("Club Log", null, (a, b) => SendAllOnline("clublog"));
-                snd.DropDownItems.Add("eQSL.cc", null, (a, b) => SendAllOnline("eqsl")); snd.DropDownItems.Add("LoTW (TQSL)", null, (a, b) => SendAllOnline("lotw"));
-                snd.DropDownItems.Add(new ToolStripSeparator()); snd.DropDownItems.Add("Tous les logs en ligne...", null, (a, b) => SendAllOnline());
+                ContextMenuStrip m = new ContextMenuStrip(); m.Items.Add(Tr.T("Supprimer le contact"), null, (a, b) => DeleteSelected()); m.Items.Add(new ToolStripSeparator());
+                m.Items.Add(Tr.T("Exporter la sélection (ADIF)..."), null, (a, b) => ExportAdif(false, true)); m.Items.Add(Tr.T("Exporter la sélection pour LoTW..."), null, (a, b) => ExportLotw());
+                ToolStripMenuItem snd = new ToolStripMenuItem(Tr.T("Envoyer la sélection à"));
+                snd.DropDownItems.Add("QRZ.com", null, (a, b) => SendAllOnline("qrz")); snd.DropDownItems.Add(Tr.T("Club Log"), null, (a, b) => SendAllOnline("clublog"));
+                snd.DropDownItems.Add("eQSL.cc", null, (a, b) => SendAllOnline("eqsl")); snd.DropDownItems.Add(Tr.T("LoTW (TQSL)"), null, (a, b) => SendAllOnline("lotw"));
+                snd.DropDownItems.Add(new ToolStripSeparator()); snd.DropDownItems.Add(Tr.T("Tous les logs en ligne..."), null, (a, b) => SendAllOnline());
                 m.Items.Add(snd);
                 m.Items.Add(new ToolStripSeparator());
-                string[] ks = { "qrz", "clublog", "eqsl", "lotw", "all" }, ns = { "QRZ.com", "Club Log", "eQSL.cc", "LoTW", "Tous les services" };
-                ToolStripMenuItem yes = new ToolStripMenuItem("Marquer la sélection comme envoyée à"), no = new ToolStripMenuItem("Marquer la sélection comme NON envoyée à");
+                string[] ks = { "qrz", "clublog", "eqsl", "lotw", "all" }, ns = { "QRZ.com", Tr.T("Club Log"), "eQSL.cc", "LoTW", Tr.T("Tous les services") };
+                ToolStripMenuItem yes = new ToolStripMenuItem(Tr.T("Marquer la sélection comme envoyée à")), no = new ToolStripMenuItem(Tr.T("Marquer la sélection comme NON envoyée à"));
                 for (int i = 0; i < ks.Length; i++) { string k = ks[i]; yes.DropDownItems.Add(ns[i], null, (a, b) => MarkSent(k, true)); no.DropDownItems.Add(ns[i], null, (a, b) => MarkSent(k, false)); }
-                m.Items.Add(yes); m.Items.Add(no); m.Show(grid, grid.PointToClient(Cursor.Position));
+                m.Items.Add(yes); m.Items.Add(no);
+                ToolStripMenuItem cb = new ToolStripMenuItem(Tr.T("Changer la bande / fréquence de la sélection")); foreach (string bn in BandSet) { string b2 = bn; cb.DropDownItems.Add(bn, null, (a, b) => ChangeBand(b2)); }
+                m.Items.Add(new ToolStripSeparator()); m.Items.Add(cb); m.Show(grid, grid.PointToClient(Cursor.Position));
             };
+            grid.KeyDown += (s, e) => { if (e.Control && e.KeyCode == Keys.Z) { DoUndo(true); e.Handled = true; } else if (e.Control && e.KeyCode == Keys.Y) { DoUndo(false); e.Handled = true; } };
             grid.CellDoubleClick += (s, e) => { if (e.RowIndex >= 0) EditSelected(); };
             grid.ColumnWidthChanged += (s, e) => { ColDef c = e.Column.Tag as ColDef; if (c != null) c.Width = e.Column.Width; };
             grid.KeyDown += (s, e) =>
@@ -115,7 +119,11 @@ namespace HamRadioLink.Journal
                 if (e.KeyCode == Keys.Enter) { EditSelected(); e.Handled = true; }
                 else if (e.KeyCode == Keys.Delete) { DeleteSelected(); e.Handled = true; }
                 else if (e.KeyCode == Keys.F5) { Reload(); e.Handled = true; }
-                else if (e.Control && e.KeyCode == Keys.A) { AddQso(); e.Handled = true; }
+                else if (e.Control && e.KeyCode == Keys.N) { AddQso(); e.Handled = true; }
+                else if (e.Control && e.KeyCode == Keys.A) { grid.SelectAll(); e.Handled = true; }
+                else if (e.Control && e.KeyCode == Keys.C) { CopyRows(); e.Handled = true; e.SuppressKeyPress = true; }
+                else if (e.Control && e.KeyCode == Keys.X) { CutRows(); e.Handled = true; e.SuppressKeyPress = true; }
+                else if (e.Control && e.KeyCode == Keys.V) { PasteRows(); e.Handled = true; }
             };
 
             StatusStrip status = new StatusStrip();
@@ -148,13 +156,13 @@ namespace HamRadioLink.Journal
         void CheckDistances()
         {
             if (App.Log == null) return;
-            double la, lo; if (!Geo.MyPos(out la, out lo)) { MessageBox.Show(this, "Renseignez d'abord votre locator : Configuration > Station.", "Distances"); return; }
-            Bg.Run(this, "Vérifier les distances", (log, db, say, cancelled) =>
+            double la, lo; if (!Geo.MyPos(out la, out lo)) { MessageBox.Show(this, Tr.T("Renseignez d'abord votre locator : Configuration > Station."), "Distances"); return; }
+            Bg.Run(this, Tr.T("Vérifier les distances"), (log, db, say, cancelled) =>
             {
                 int done = 0, last = 0;
                 while (!cancelled())
                 {
-                    List<Qso> l = log.Fetch("(COL_DISTANCE IS NULL OR COL_DISTANCE=0) AND COL_GRIDSQUARE<>'' AND COL_PRIMARY_KEY>" + last, "COL_PRIMARY_KEY ASC", 0, 500);
+                    List<Qso> l = log.Fetch(Tr.T("(COL_DISTANCE IS NULL OR COL_DISTANCE=0) AND COL_GRIDSQUARE<>'' AND COL_PRIMARY_KEY>") + last, "COL_PRIMARY_KEY ASC", 0, 500);
                     if (l.Count == 0) break;
                     foreach (Qso q in l) { last = Math.Max(last, q.Id); if (Geo.FillDistance(q)) { Qso c = new Qso(); c["COL_DISTANCE"] = q.S("COL_DISTANCE"); log.Update(q.Id, c); done++; } }
                     say(done + " distance(s) ajoutée(s)…", -1); System.Threading.Thread.Sleep(10);
@@ -170,7 +178,7 @@ namespace HamRadioLink.Journal
         void SwitchLog(LogRef r)
         {
             if (r == App.CurrentLog) return; LogRef before = App.CurrentLog;
-            try { Cursor = Cursors.WaitCursor; App.ConnectTo(r); where = ""; if (search != null) search.Text = ""; Text = "HamRadioLink " + App.Version + " Logbook - [" + r.Name + "]"; Reload(); logTabs.Invalidate(); }
+            try { Cursor = Cursors.WaitCursor; App.ConnectTo(r); where = ""; if (search != null) search.Text = ""; Text = Tr.T("HamRadioLink ") + App.Version + " Logbook - [" + r.Name + "]"; Reload(); logTabs.Invalidate(); }
             catch (Exception ex) { Ui.Err(this, ex); try { if (before != null) App.ConnectTo(before); } catch { } logTabs.Invalidate(); }
             finally { Cursor = Cursors.Default; }
         }
@@ -185,7 +193,7 @@ namespace HamRadioLink.Journal
                     if (r.Host.Length == 0)
                     {
                         string host, user, pass; int port; App.ServerOf(new LogRef(), out host, out port, out user, out pass);
-                        Busy.Run(this, Ui.French ? "Création du journal" : "Creating the log", say =>
+                        Busy.Run(this, Ui.French ? Tr.T("Création du journal") : Tr.T("Creating the log"), say =>
                         {
                             using (MySqlClient c = new MySqlClient(host, port, user, pass, "mysql"))
                             {
@@ -203,37 +211,37 @@ namespace HamRadioLink.Journal
 
         void RenameLog(LogRef l)
         {
-            using (Form f = new Form { Text = Ui.French ? "Renommer le journal" : "Rename the log", ClientSize = new Size(340, 90), StartPosition = FormStartPosition.CenterParent, FormBorderStyle = FormBorderStyle.FixedDialog, MaximizeBox = false, MinimizeBox = false, Font = Ui.Normal })
+            using (Form f = new Form { Text = Ui.French ? Tr.T("Renommer le journal") : Tr.T("Rename the log"), ClientSize = new Size(340, 90), StartPosition = FormStartPosition.CenterParent, FormBorderStyle = FormBorderStyle.FixedDialog, MaximizeBox = false, MinimizeBox = false, Font = Ui.Normal })
             {
                 TextBox t = Ui.Txt(f, 12, 14, 316); t.Text = l.Name; Button ok = Ui.Btn(f, "OK", 160, 48, 80, 28, (s, e) => f.DialogResult = DialogResult.OK); Ui.Btn(f, Ui.French ? "Annuler" : "Cancel", 248, 48, 80, 28, (s, e) => f.DialogResult = DialogResult.Cancel); f.AcceptButton = ok;
                 if (f.ShowDialog(this) != DialogResult.OK || t.Text.Trim().Length == 0) return;
-                l.Name = t.Text.Trim(); LogRef.SaveAll(App.Logs); if (l == App.CurrentLog) { App.Cfg.Set("db.name", l.Name); App.Cfg.Set("log.current", l.Name); App.Cfg.Save(); Text = "HamRadioLink " + App.Version + " Logbook - [" + l.Name + "]"; } logTabs.Invalidate();
+                l.Name = t.Text.Trim(); LogRef.SaveAll(App.Logs); if (l == App.CurrentLog) { App.Cfg.Set("db.name", l.Name); App.Cfg.Set("log.current", l.Name); App.Cfg.Save(); Text = Tr.T("HamRadioLink ") + App.Version + " Logbook - [" + l.Name + "]"; } logTabs.Invalidate();
             }
         }
 
         void RemoveLog(LogRef l)
         {
-            if (App.Logs.Count <= 1) { MessageBox.Show(this, Ui.French ? "Il faut garder au moins un journal." : "Keep at least one log.", "HamRadioLink"); return; }
-            if (!Ui.Ask(this, (Ui.French ? "Retirer « " : "Remove \"") + l.Name + (Ui.French ? " » de la liste ? Les QSO restent dans la base (rien n'est supprimé)." : "\" from the list? The QSOs stay in the database (nothing is deleted)."))) return;
+            if (App.Logs.Count <= 1) { MessageBox.Show(this, Ui.French ? Tr.T("Il faut garder au moins un journal.") : Tr.T("Keep at least one log."), "HamRadioLink"); return; }
+            if (!Ui.Ask(this, (Ui.French ? Tr.T("Retirer « ") : Tr.T("Remove \"")) + l.Name + (Ui.French ? " » de la liste ? Les QSO restent dans la base (rien n'est supprimé)." : Tr.T("\" from the list? The QSOs stay in the database (nothing is deleted).")))) return;
             bool cur = l == App.CurrentLog; App.Logs.Remove(l); LogRef.SaveAll(App.Logs); if (cur) { App.CurrentLog = null; SwitchLog(App.Logs[0]); } logTabs.Invalidate();
         }
         // Retire le journal de la liste ET supprime sa base. Encart rouge, nom a retaper : aucune suppression par megarde.
         static readonly string[] SysSchemas = { "mysql", "information_schema", "performance_schema", "sys" };
         void DeleteLog(LogRef l)
         {
-            if (App.Logs.Count <= 1) { MessageBox.Show(this, Ui.French ? "Il faut garder au moins un journal." : "Keep at least one log.", "HamRadioLink"); return; }
+            if (App.Logs.Count <= 1) { MessageBox.Show(this, Ui.French ? Tr.T("Il faut garder au moins un journal.") : Tr.T("Keep at least one log."), "HamRadioLink"); return; }
             bool sys = Array.IndexOf(SysSchemas, l.Schema.ToLowerInvariant()) >= 0; bool shared = App.Logs.Exists(x => x != l && x.Schema == l.Schema && x.Host == l.Host && x.Port == l.Port);
             long n = 0; try { if (l == App.CurrentLog && App.Log != null) n = App.Log.Count(""); } catch { }
-            string what = sys ? "la TABLE du journal « " + PeerLog.Table + " » dans la base système « " + l.Schema + " » (la base elle-même est conservée)" : "TOUTE la base « " + l.Schema + " »";
-            if (shared) what = "RIEN dans le serveur (un autre onglet utilise la même base : seul cet onglet est retiré)";
-            string msg = "ATTENTION - SUPPRESSION DÉFINITIVE\r\n\r\nJournal : « " + l.Name + " »" + (n > 0 ? "  (" + n + " QSO)" : "") + "\r\nVa être supprimé : " + what + ".\r\n\r\nTous les QSO concernés seront PERDUS. Cette action est IRRÉVERSIBLE : pensez à faire une sauvegarde ADIF avant.";
-            using (Form f = new Form { Text = "SUPPRESSION DÉFINITIVE", ClientSize = new Size(560, 330), StartPosition = FormStartPosition.CenterParent, FormBorderStyle = FormBorderStyle.FixedDialog, MaximizeBox = false, MinimizeBox = false, ShowInTaskbar = false, BackColor = Color.FromArgb(150, 0, 0), ForeColor = Color.White, Font = new Font("Segoe UI", 10f) })
+            string what = sys ? Tr.T("la TABLE du journal « ") + PeerLog.Table + " » dans la base système « " + l.Schema + " » (la base elle-même est conservée)" : Tr.T("TOUTE la base « ") + l.Schema + " »";
+            if (shared) what = Tr.T("RIEN dans le serveur (un autre onglet utilise la même base : seul cet onglet est retiré)");
+            string msg = Tr.T("ATTENTION - SUPPRESSION DÉFINITIVE\r\n\r\nJournal : « ") + l.Name + " »" + (n > 0 ? "  (" + n + " QSO)" : "") + Tr.T("\r\nVa être supprimé : ") + what + Tr.T(".\r\n\r\nTous les QSO concernés seront PERDUS. Cette action est IRRÉVERSIBLE : pensez à faire une sauvegarde ADIF avant.");
+            using (Form f = new Form { Text = Tr.T("SUPPRESSION DÉFINITIVE"), ClientSize = new Size(560, 330), StartPosition = FormStartPosition.CenterParent, FormBorderStyle = FormBorderStyle.FixedDialog, MaximizeBox = false, MinimizeBox = false, ShowInTaskbar = false, BackColor = Color.FromArgb(150, 0, 0), ForeColor = Color.White, Font = new Font(Tr.T("Segoe UI"), 10f) })
             {
-                Label t = new Label { Left = 16, Top = 14, Width = 528, Height = 170, Text = msg, Font = new Font("Segoe UI", 10.5f, FontStyle.Bold) }; f.Controls.Add(t);
-                Label k = new Label { Left = 16, Top = 192, Width = 528, Height = 22, Text = "Pour confirmer, retapez exactement le nom du journal :" }; f.Controls.Add(k);
-                TextBox tb = new TextBox { Left = 16, Top = 218, Width = 528, Font = new Font("Segoe UI", 11f) }; f.Controls.Add(tb);
-                Button del = new Button { Left = 16, Top = 270, Width = 300, Height = 38, Text = "SUPPRIMER DÉFINITIVEMENT", Enabled = false, BackColor = Color.White, ForeColor = Color.FromArgb(150, 0, 0), FlatStyle = FlatStyle.Flat, Font = new Font("Segoe UI", 10f, FontStyle.Bold), DialogResult = DialogResult.OK };
-                Button no = new Button { Left = 336, Top = 270, Width = 208, Height = 38, Text = "Annuler (ne rien faire)", BackColor = Color.White, ForeColor = Color.Black, FlatStyle = FlatStyle.Flat, DialogResult = DialogResult.Cancel }; f.Controls.Add(del); f.Controls.Add(no);
+                Label t = new Label { Left = 16, Top = 14, Width = 528, Height = 170, Text = msg, Font = new Font(Tr.T("Segoe UI"), 10.5f, FontStyle.Bold) }; f.Controls.Add(t);
+                Label k = new Label { Left = 16, Top = 192, Width = 528, Height = 22, Text = Tr.T("Pour confirmer, retapez exactement le nom du journal :") }; f.Controls.Add(k);
+                TextBox tb = new TextBox { Left = 16, Top = 218, Width = 528, Font = new Font(Tr.T("Segoe UI"), 11f) }; f.Controls.Add(tb);
+                Button del = new Button { Left = 16, Top = 270, Width = 300, Height = 38, Text = Tr.T("SUPPRIMER DÉFINITIVEMENT"), Enabled = false, BackColor = Color.White, ForeColor = Color.FromArgb(150, 0, 0), FlatStyle = FlatStyle.Flat, Font = new Font(Tr.T("Segoe UI"), 10f, FontStyle.Bold), DialogResult = DialogResult.OK };
+                Button no = new Button { Left = 336, Top = 270, Width = 208, Height = 38, Text = Tr.T("Annuler (ne rien faire)"), BackColor = Color.White, ForeColor = Color.Black, FlatStyle = FlatStyle.Flat, DialogResult = DialogResult.Cancel }; f.Controls.Add(del); f.Controls.Add(no);
                 tb.TextChanged += (s, e) => del.Enabled = tb.Text == l.Name; f.CancelButton = no;
                 if (f.ShowDialog(this) != DialogResult.OK) return;
             }
@@ -242,7 +250,7 @@ namespace HamRadioLink.Journal
                 if (!shared)
                 {
                     string host, user, pass; int port; App.ServerOf(l, out host, out port, out user, out pass);
-                    using (MySqlClient c = new MySqlClient(host, port, user, pass, "mysql")) { c.Open(); if (sys) c.Exec("DROP TABLE IF EXISTS " + MySqlClient.Ident(l.Schema) + "." + MySqlClient.Ident(PeerLog.Table)); else c.Exec("DROP DATABASE IF EXISTS " + MySqlClient.Ident(l.Schema)); }
+                    using (MySqlClient c = new MySqlClient(host, port, user, pass, "mysql")) { c.Open(); if (sys) c.Exec(Tr.T("DROP TABLE IF EXISTS ") + MySqlClient.Ident(l.Schema) + "." + MySqlClient.Ident(PeerLog.Table)); else c.Exec(Tr.T("DROP DATABASE IF EXISTS ") + MySqlClient.Ident(l.Schema)); }
                 }
             }
             catch (Exception ex) { Ui.Err(this, ex); return; }
@@ -297,10 +305,13 @@ namespace HamRadioLink.Journal
         ColorsForm colorsWin;
         void BuildThemeMenu(ToolStripMenuItem m)
         {
-            for (int i = 0; i < Theme.All.Count; i++) { int n = i; ToolStripMenuItem it = new ToolStripMenuItem(Theme.All[i].Name); it.Click += (s, e) => Theme.Set(n); m.DropDownItems.Add(it); }
-            m.DropDownItems.Add(new ToolStripSeparator());
-            m.DropDownItems.Add(new ToolStripMenuItem("Personnaliser les couleurs du thème actuel...", null, (s, e) => { if (colorsWin == null || colorsWin.IsDisposed) { colorsWin = new ColorsForm(); colorsWin.Show(this); } else colorsWin.Activate(); }));
-            m.DropDownOpening += (s, e) => { for (int i = 0; i < Theme.All.Count; i++) ((ToolStripMenuItem)m.DropDownItems[i]).Checked = i == Theme.Index; };
+            // « Thèmes » ouvre une petite fenêtre : liste défilante (ascenseur + molette), un clic applique le thème sans la refermer, ligne « Personnaliser » toujours visible en bas ;
+            // un clic ailleurs la ferme.
+            m.Click += (s, e) =>
+            {
+                Point p = m.Owner.PointToScreen(new Point(m.Bounds.Left, m.Bounds.Bottom));
+                ThemePicker f = new ThemePicker(() => { if (colorsWin == null || colorsWin.IsDisposed) { colorsWin = new ColorsForm(); colorsWin.Show(this); } else colorsWin.Activate(); }); f.Location = p; f.Show(this);
+            };
         }
         public void ApplyLanguage() { Ui.Translate(menuStrip); Ui.Translate(toolStrip); if (logTabs != null) logTabs.SetItems(toolStrip, search); }
         static ToolStripMenuItem M(string t, params ToolStripItem[] items) { ToolStripMenuItem m = new ToolStripMenuItem(t); m.DropDownItems.AddRange(items); return m; }
@@ -352,12 +363,12 @@ namespace HamRadioLink.Journal
 
         void ChooseColumns()
         {
-            using (Form f = new Form { Text = "Layout : colonnes affichées", Size = new Size(320, 560), StartPosition = FormStartPosition.CenterParent, Font = Ui.Normal })
+            using (Form f = new Form { Text = Tr.T("Layout : colonnes affichées"), Size = new Size(320, 560), StartPosition = FormStartPosition.CenterParent, Font = Ui.Normal })
             {
                 CheckedListBox l = new CheckedListBox { Dock = DockStyle.Fill, CheckOnClick = true };
                 foreach (ColDef c in cols) l.Items.Add(c.Title, c.Visible);
                 Panel p = new Panel { Dock = DockStyle.Bottom, Height = 44 };
-                Button ok = Ui.Btn(p, "OK", 130, 8, 80, 28, (s, e) => f.DialogResult = DialogResult.OK); Ui.Btn(p, "Annuler", 215, 8, 80, 28, (s, e) => f.DialogResult = DialogResult.Cancel);
+                Button ok = Ui.Btn(p, "OK", 130, 8, 80, 28, (s, e) => f.DialogResult = DialogResult.OK); Ui.Btn(p, Tr.T("Annuler"), 215, 8, 80, 28, (s, e) => f.DialogResult = DialogResult.Cancel);
                 f.Controls.Add(l); f.Controls.Add(p); f.AcceptButton = ok;
                 if (f.ShowDialog(this) != DialogResult.OK) return;
                 for (int i = 0; i < cols.Count; i++) cols[i].Visible = l.GetItemChecked(i);
@@ -372,11 +383,11 @@ namespace HamRadioLink.Journal
             try
             {
                 pages.Clear(); pageOrder.Clear();
-                order = sortCol + (sortDesc ? " DESC" : " ASC") + ", COL_PRIMARY_KEY " + (sortDesc ? "DESC" : "ASC");
+                order = sortCol + (sortDesc ? " DESC" : " ASC") + Tr.T(", COL_PRIMARY_KEY ") + (sortDesc ? "DESC" : "ASC");
                 total = App.Log.Count(where);
                 grid.RowCount = 0; grid.RowCount = (int)Math.Min(total, int.MaxValue);
                 lblCount.Text = total.ToString("N0", CultureInfo.CurrentCulture) + " QSO";
-                lblFilter.Text = where.Length == 0 ? "All" : "Filtered"; lblDb.Text = "MySQL " + App.Db.ServerVersion;
+                lblFilter.Text = where.Length == 0 ? "All" : "Filtered"; lblDb.Text = Tr.T("MySQL ") + App.Db.ServerVersion;
             }
             catch (Exception ex) { Ui.Err(this, ex); }
         }
@@ -468,11 +479,83 @@ namespace HamRadioLink.Journal
                         ShowQso(new QsoForm(s[0], null, null), () => { int r = grid.CurrentRow != null ? grid.CurrentRow.Index : 0; Reload(); if (r < grid.RowCount && grid.ColumnCount > 0) grid.CurrentCell = grid[0, r]; });
         }
 
+        // Changement de bande par lot : la fréquence prend la valeur habituelle du mode (FT8 / FT4), sinon le début de la bande
+        static readonly string[] BandSet = { "160m", "80m", "60m", "40m", "30m", "20m", "17m", "15m", "12m", "10m", "6m", "2m", "70cm" };
+        static readonly long[] BandStart = { 1800000, 3500000, 5351500, 7000000, 10100000, 14000000, 18068000, 21000000, 24890000, 28000000, 50000000, 144000000, 430000000 };
+        static readonly long[] BandFt8 = { 1840000, 3573000, 5357000, 7074000, 10136000, 14074000, 18100000, 21074000, 24915000, 28074000, 50313000, 144174000, 432174000 };
+        static readonly long[] BandFt4 = { 1840000, 3575000, 5357000, 7047500, 10140000, 14080000, 18104000, 21140000, 24919000, 28180000, 50318000, 144170000, 432174000 };
+        void ChangeBand(string band)
+        {
+            List<Qso> sel = Selected(); int bi = Array.IndexOf(BandSet, band); if (sel.Count == 0 || bi < 0 || App.Log == null) return;
+            try
+            {
+                Dictionary<long, List<int>> g = new Dictionary<long, List<int>>();
+                foreach (Qso q in sel)
+                {
+                    string md = (q.S("COL_MODE") + " " + q.S("COL_SUBMODE")).ToUpperInvariant(); long f = BandStart[bi];
+                    if (md.Contains("FT8")) f = BandFt8[bi]; else if (md.Contains("FT4")) f = BandFt4[bi];
+                    List<int> l; if (!g.TryGetValue(f, out l)) { l = new List<int>(); g[f] = l; } l.Add(q.Id);
+                }
+                List<int> uid = new List<int>(); foreach (Qso q in sel) uid.Add(q.Id); Dictionary<int, Qso> bef = LogUndo.Snap(App.Log, uid);
+                long n = 0; bool hasBand = App.Log.Has("COL_BAND");
+                foreach (KeyValuePair<long, List<int>> kv in g)
+                    for (int i = 0; i < kv.Value.Count; i += 500)
+                    {
+                        List<string> ids = new List<string>(); for (int j = i; j < Math.Min(i + 500, kv.Value.Count); j++) ids.Add(kv.Value[j].ToString());
+                        n += App.Db.Exec("UPDATE " + App.Log.TableRef() + " SET COL_FREQ=" + MySqlClient.Quote(kv.Key.ToString()) + (hasBand ? Tr.T(", COL_BAND=") + MySqlClient.Quote(band) : "") + " WHERE COL_PRIMARY_KEY IN (" + string.Join(",", ids.ToArray()) + ")");
+                    }
+                LogUndo.Record(Tr.T("Changement de bande"), App.Log, bef, uid); ReloadKeep();
+            }
+            catch (Exception ex) { Ui.Err(this, ex); }
+        }
+
+        // Annuler / Refaire : ↶ et ↷ (ou Ctrl+Z / Ctrl+Y dans la liste)
+        void DoUndo(bool back)
+        {
+            try
+            {
+                string n = back ? LogUndo.Undo() : LogUndo.Redo();
+                if (n == null) { MessageBox.Show(this, back ? Tr.T("Rien à annuler.") : Tr.T("Rien à refaire."), back ? "Annuler" : "Refaire"); return; }
+                ReloadKeep();
+            }
+            catch (Exception ex) { Ui.Err(this, ex); }
+        }
+
+        // Copier / Coller de contacts (Ctrl+C / Ctrl+V) : le collage crée de nouveaux contacts (nouveau numéro), dans le journal affiché ; annulable
+        static List<Qso> copied = new List<Qso>();
+        void CopyRows()
+        {
+            List<Qso> s = Selected(); if (s.Count == 0) return;
+            copied = new List<Qso>(); foreach (Qso q in s) { Qso c = new Qso(); foreach (KeyValuePair<string, string> kv in q) c[kv.Key] = kv.Value; copied.Add(c); }
+            CopySel();
+        }
+        // Couper (Ctrl+X) : copie puis supprime les contacts sélectionnés (annulable avec Ctrl+Z)
+        void CutRows()
+        {
+            List<Qso> s = Selected(); if (s.Count == 0 || App.Log == null) return;
+            CopyRows();
+            try { List<int> ids = new List<int>(); foreach (Qso q in s) ids.Add(q.Id); Dictionary<int, Qso> bef = LogUndo.Snap(App.Log, ids); App.Log.Delete(ids); LogUndo.Record(Tr.T("Couper ") + ids.Count + " contact(s)", App.Log, bef, ids); ReloadKeep(); }
+            catch (Exception ex) { Ui.Err(this, ex); }
+        }
+
+        void PasteRows()
+        {
+            if (copied.Count == 0 || App.Log == null) return;
+            try
+            {
+                List<int> ids = new List<int>();
+                foreach (Qso q in copied) { Qso c = new Qso(); foreach (KeyValuePair<string, string> kv in q) if (kv.Key != "COL_PRIMARY_KEY") c[kv.Key] = kv.Value; ids.Add(App.Log.Insert(c)); }
+                Dictionary<int, Qso> bef = new Dictionary<int, Qso>(); foreach (int i in ids) bef[i] = null;
+                LogUndo.Record(Tr.T("Coller ") + ids.Count + " contact(s)", App.Log, bef, ids); ReloadKeep();
+            }
+            catch (Exception ex) { Ui.Err(this, ex); }
+        }
+
         void DeleteSelected()
         {
             List<Qso> s = Selected(); if (s.Count == 0) return;
-            if (!Ui.Ask(this, "Supprimer " + s.Count + " QSO de la base ?\r\nCette opération est définitive.")) return;
-            try { List<int> ids = new List<int>(); foreach (Qso q in s) ids.Add(q.Id); App.Log.Delete(ids); ReloadKeep(); } catch (Exception ex) { Ui.Err(this, ex); }
+            if (!Ui.Ask(this, Tr.T("Supprimer ") + s.Count + " QSO de la base ?\r\nCette opération est définitive.")) return;
+            try { List<int> ids = new List<int>(); foreach (Qso q in s) ids.Add(q.Id); Dictionary<int, Qso> bef = LogUndo.Snap(App.Log, ids); App.Log.Delete(ids); LogUndo.Record("Suppression", App.Log, bef, ids); ReloadKeep(); } catch (Exception ex) { Ui.Err(this, ex); }
         }
 
         void CopySel()
@@ -486,24 +569,24 @@ namespace HamRadioLink.Journal
         void EditSelections()
         {
             List<Qso> sel = Selected();
-            using (Form f = new Form { Text = "Edit selections", Size = new Size(430, 250), StartPosition = FormStartPosition.CenterParent, FormBorderStyle = FormBorderStyle.FixedDialog, MaximizeBox = false, MinimizeBox = false, Font = Ui.Normal })
+            using (Form f = new Form { Text = Tr.T("Edit selections"), Size = new Size(430, 250), StartPosition = FormStartPosition.CenterParent, FormBorderStyle = FormBorderStyle.FixedDialog, MaximizeBox = false, MinimizeBox = false, Font = Ui.Normal })
             {
-                Ui.Lbl(f, "Champ :", 12, 18); ComboBox c = Ui.Combo(f, 90, 16, 300, new[] { "COL_QSL_SENT", "COL_QSL_RCVD", "COL_LOTW_QSL_SENT", "COL_LOTW_QSL_RCVD", "COL_EQSL_QSL_SENT", "COL_EQSL_QSL_RCVD", "COL_COMMENT", "COL_NOTES", "COL_QSL_VIA", "COL_MY_RIG", "COL_STATION_CALLSIGN", "COL_OPERATOR", "COL_CONTEST_ID", "COL_SUBMODE" }, true); c.SelectedIndex = 0;
-                Ui.Lbl(f, "Valeur :", 12, 50); TextBox v = Ui.Txt(f, 90, 48, 300); v.Text = "Y";
-                RadioButton r1 = new RadioButton { Left = 90, Top = 84, Width = 300, Text = "Les " + sel.Count + " QSO sélectionnés", Checked = sel.Count > 0, Enabled = sel.Count > 0 }; f.Controls.Add(r1);
-                RadioButton r2 = new RadioButton { Left = 90, Top = 108, Width = 320, Text = "Tous les " + total.ToString("N0") + " QSO du filtre actuel", Checked = sel.Count == 0 }; f.Controls.Add(r2);
-                Button ok = Ui.Btn(f, "Appliquer", 220, 160, 90, 28, (s, e) => f.DialogResult = DialogResult.OK); Ui.Btn(f, "Annuler", 320, 160, 80, 28, (s, e) => f.DialogResult = DialogResult.Cancel); f.AcceptButton = ok;
+                Ui.Lbl(f, Tr.T("Champ :"), 12, 18); ComboBox c = Ui.Combo(f, 90, 16, 300, new[] { "COL_QSL_SENT", "COL_QSL_RCVD", "COL_LOTW_QSL_SENT", "COL_LOTW_QSL_RCVD", "COL_EQSL_QSL_SENT", "COL_EQSL_QSL_RCVD", "COL_COMMENT", "COL_NOTES", "COL_QSL_VIA", "COL_MY_RIG", "COL_STATION_CALLSIGN", "COL_OPERATOR", "COL_CONTEST_ID", "COL_SUBMODE" }, true); c.SelectedIndex = 0;
+                Ui.Lbl(f, Tr.T("Valeur :"), 12, 50); TextBox v = Ui.Txt(f, 90, 48, 300); v.Text = "Y";
+                RadioButton r1 = new RadioButton { Left = 90, Top = 84, Width = 300, Text = Tr.T("Les ") + sel.Count + " QSO sélectionnés", Checked = sel.Count > 0, Enabled = sel.Count > 0 }; f.Controls.Add(r1);
+                RadioButton r2 = new RadioButton { Left = 90, Top = 108, Width = 320, Text = Tr.T("Tous les ") + total.ToString("N0") + " QSO du filtre actuel", Checked = sel.Count == 0 }; f.Controls.Add(r2);
+                Button ok = Ui.Btn(f, Tr.T("Appliquer"), 220, 160, 90, 28, (s, e) => f.DialogResult = DialogResult.OK); Ui.Btn(f, Tr.T("Annuler"), 320, 160, 80, 28, (s, e) => f.DialogResult = DialogResult.Cancel); f.AcceptButton = ok;
                 if (f.ShowDialog(this) != DialogResult.OK) return;
                 try
                 {
-                    string field = c.Text.Trim(); if (!App.Log.Has(field)) { MessageBox.Show(this, "Champ inconnu : " + field); return; }
+                    string field = c.Text.Trim(); if (!App.Log.Has(field)) { MessageBox.Show(this, Tr.T("Champ inconnu : ") + field); return; }
                     string w = where;
                     if (r1.Checked) { List<string> ids = new List<string>(); foreach (Qso q in sel) ids.Add(q.Id.ToString()); w = "COL_PRIMARY_KEY IN (" + string.Join(",", ids.ToArray()) + ")"; }
-                    else if (!Ui.Ask(this, "Modifier " + total.ToString("N0") + " QSO ?")) return;
+                    else if (!Ui.Ask(this, Tr.T("Modifier ") + total.ToString("N0") + " QSO ?")) return;
                     string upd = MySqlClient.Ident(field) + "=" + MySqlClient.Quote(v.Text);
-                    if (field.EndsWith("_SENT") || field.EndsWith("_RCVD")) { string d = field.Replace("_RCVD", "RDATE").Replace("_SENT", "SDATE"); if (App.Log.Has(d) && v.Text == "Y") upd += "," + MySqlClient.Ident(d) + "=NOW()"; }
-                    string wf = w, uf = upd;
-                    Bg.Run(this, "Modification de la colonne " + field, (log, db, say, cancelled) => { say("Mise à jour en cours…", -1); long n = UpdateChunked(db, log, uf, wf, cancelled, say); return n + " QSO modifiés" + (cancelled() ? " (annulé)" : "") + "."; }, () => ReloadKeep());
+                    if (field.EndsWith("_SENT") || field.EndsWith("_RCVD")) { string d = field.Replace("_RCVD", "RDATE").Replace("_SENT", "SDATE"); if (App.Log.Has(d) && v.Text == "Y") upd += "," + MySqlClient.Ident(d) + Tr.T("=NOW()"); }
+                    string wf = w, uf = upd; List<int> uid = new List<int>(); Dictionary<int, Qso> bef = null; if (r1.Checked) { foreach (Qso q in sel) uid.Add(q.Id); bef = LogUndo.Snap(App.Log, uid); }
+                    Bg.Run(this, Tr.T("Modification de la colonne ") + field, (log, db, say, cancelled) => { say(Tr.T("Mise à jour en cours…"), -1); long n = UpdateChunked(db, log, uf, wf, cancelled, say); return n + " QSO modifiés" + (cancelled() ? " (annulé)" : "") + "."; }, () => { if (bef != null) LogUndo.Record(Tr.T("Modification en bloc"), App.Log, bef, uid); ReloadKeep(); });
                 }
                 catch (Exception ex) { Ui.Err(this, ex); }
             }
@@ -513,14 +596,14 @@ namespace HamRadioLink.Journal
         {
             using (Form f = new Form { Text = "Filter", Size = new Size(430, 330), StartPosition = FormStartPosition.CenterParent, FormBorderStyle = FormBorderStyle.FixedDialog, MaximizeBox = false, MinimizeBox = false, Font = Ui.Normal })
             {
-                Ui.Lbl(f, "Indicatif :", 12, 16); TextBox call = Ui.Txt(f, 100, 14, 140);
-                Ui.Lbl(f, "Bande :", 12, 48); ComboBox band = Ui.Combo(f, 100, 46, 100, Ui.Bands, true);
-                Ui.Lbl(f, "Mode :", 12, 80); ComboBox mode = Ui.Combo(f, 100, 78, 100, Ui.Modes, true);
-                Ui.Lbl(f, "Pays :", 12, 112); TextBox ctry = Ui.Txt(f, 100, 110, 200);
+                Ui.Lbl(f, Tr.T("Indicatif :"), 12, 16); TextBox call = Ui.Txt(f, 100, 14, 140);
+                Ui.Lbl(f, Tr.T("Bande :"), 12, 48); ComboBox band = Ui.Combo(f, 100, 46, 100, Ui.Bands, true);
+                Ui.Lbl(f, Tr.T("Mode :"), 12, 80); ComboBox mode = Ui.Combo(f, 100, 78, 100, Ui.Modes, true);
+                Ui.Lbl(f, Tr.T("Pays :"), 12, 112); TextBox ctry = Ui.Txt(f, 100, 110, 200);
                 Ui.Lbl(f, "Du :", 12, 144); DateTimePicker d1 = new DateTimePicker { Left = 100, Top = 142, Width = 110, Format = DateTimePickerFormat.Short, ShowCheckBox = true, Checked = false }; f.Controls.Add(d1);
                 Ui.Lbl(f, "Au :", 220, 144); DateTimePicker d2 = new DateTimePicker { Left = 255, Top = 142, Width = 110, Format = DateTimePickerFormat.Short, ShowCheckBox = true, Checked = false }; f.Controls.Add(d2);
-                Ui.Lbl(f, "Texte libre :", 12, 178); TextBox sql = Ui.Txt(f, 100, 176, 300); new ToolTip().SetToolTip(sql, "Cherche ce texte dans l'indicatif, le nom, le QTH, le pays, le commentaire et le locator");
-                Button ok = Ui.Btn(f, "Filtrer", 220, 230, 90, 28, (s, e) => f.DialogResult = DialogResult.OK); Ui.Btn(f, "Annuler", 320, 230, 80, 28, (s, e) => f.DialogResult = DialogResult.Cancel); f.AcceptButton = ok;
+                Ui.Lbl(f, Tr.T("Texte libre :"), 12, 178); TextBox sql = Ui.Txt(f, 100, 176, 300); new ToolTip().SetToolTip(sql, Tr.T("Cherche ce texte dans l'indicatif, le nom, le QTH, le pays, le commentaire et le locator"));
+                Button ok = Ui.Btn(f, Tr.T("Filtrer"), 220, 230, 90, 28, (s, e) => f.DialogResult = DialogResult.OK); Ui.Btn(f, Tr.T("Annuler"), 320, 230, 80, 28, (s, e) => f.DialogResult = DialogResult.Cancel); f.AcceptButton = ok;
                 if (f.ShowDialog(this) != DialogResult.OK) return;
                 List<string> w = new List<string>();
                 if (call.Text.Trim().Length > 0) w.Add("COL_CALL LIKE " + MySqlClient.Quote(call.Text.Trim().Replace("*", "%") + (call.Text.Contains("*") ? "" : "%")));
@@ -539,16 +622,16 @@ namespace HamRadioLink.Journal
         void OpenSetup()
         {
             using (SetupForm f = new SetupForm(true)) f.ShowDialog(this);
-            if (App.Log != null) { App.LoadLogs(); logTabs.Invalidate(); Text = "HamRadioLink " + App.Version + " Logbook - [" + App.Cfg.Get("db.name", "Journal") + "]"; Reload(); }
+            if (App.Log != null) { App.LoadLogs(); logTabs.Invalidate(); Text = Tr.T("HamRadioLink ") + App.Version + " Logbook - [" + App.Cfg.Get("db.name", "Journal") + "]"; Reload(); }
         }
         void OpenDb()
         {
-            using (DbForm f = new DbForm()) if (f.ShowDialog(this) == DialogResult.OK) { Text = "HamRadioLink " + App.Version + " Logbook - [" + App.Cfg.Get("db.name", "F5PBG") + "]"; Reload(); }
+            using (DbForm f = new DbForm()) if (f.ShowDialog(this) == DialogResult.OK) { Text = Tr.T("HamRadioLink ") + App.Version + " Logbook - [" + App.Cfg.Get("db.name", "F5PBG") + "]"; Reload(); }
         }
 
         void ImportAdif()
         {
-            using (OpenFileDialog o = new OpenFileDialog { Filter = "ADIF (*.adi;*.adif)|*.adi;*.adif|All|*.*" })
+            using (OpenFileDialog o = new OpenFileDialog { Filter = Tr.T("ADIF (*.adi;*.adif)|*.adi;*.adif|All|*.*") })
             {
                 if (o.ShowDialog(this) != DialogResult.OK) return;
                 try
@@ -556,7 +639,7 @@ namespace HamRadioLink.Journal
                     List<Dictionary<string, string>> recs = Adif.Parse(File.ReadAllText(o.FileName, Encoding.UTF8));
                     if (!Ui.Ask(this, recs.Count + " QSO trouvés. Les ajouter au journal ?")) return;
                     string me = App.Cfg.Get("me.call", "");
-                    Bg.Run(this, "Import ADIF", (log, db, say, cancelled) =>
+                    Bg.Run(this, Tr.T("Import ADIF"), (log, db, say, cancelled) =>
                     {
                         int n = 0, dup = 0, k = 0;
                         foreach (Dictionary<string, string> r in recs)
@@ -579,7 +662,7 @@ namespace HamRadioLink.Journal
 
         void ExportAdif(bool all = false, bool onlySel = false)
         {
-            using (SaveFileDialog sd = new SaveFileDialog { Filter = "ADIF (*.adi)|*.adi", FileName = "HamRadioLink-" + DateTime.Now.ToString("yyyy-MM-dd") + ".adi" })
+            using (SaveFileDialog sd = new SaveFileDialog { Filter = Tr.T("ADIF (*.adi)|*.adi"), FileName = "HamRadioLink-" + DateTime.Now.ToString("yyyy-MM-dd") + ".adi" })
             {
                 if (sd.ShowDialog(this) != DialogResult.OK) return;
                 try
@@ -587,7 +670,7 @@ namespace HamRadioLink.Journal
                     Cursor = Cursors.WaitCursor; List<Qso> list = new List<Qso>(); List<Qso> sel = all ? new List<Qso>() : Selected();
                     if (sel.Count > 1 || (onlySel && sel.Count == 1)) list = sel; else for (int off = 0; ; off += 2000) { List<Qso> p = App.Log.Fetch(all ? "" : where, "COL_TIME_ON ASC", off, 2000); list.AddRange(p); if (p.Count < 2000) break; }
                     File.WriteAllText(sd.FileName, Adif.Export(list), new UTF8Encoding(false)); Cursor = Cursors.Default;
-                    MessageBox.Show(this, list.Count + " QSO exportés.", "Export ADIF");
+                    MessageBox.Show(this, list.Count + " QSO exportés.", Tr.T("Export ADIF"));
                 }
                 catch (Exception ex) { Cursor = Cursors.Default; Ui.Err(this, ex); }
             }
@@ -599,34 +682,34 @@ namespace HamRadioLink.Journal
         {
             if (App.Log == null) return;
             List<Qso> sel = Selected(); bool useSel = sel.Count > 1;
-            string wl = (where.Length > 0 ? "(" + where + ") AND " : "") + "(COL_LOTW_QSL_SENT IS NULL OR COL_LOTW_QSL_SENT<>'Y')"; long cnt;
+            string wl = (where.Length > 0 ? "(" + where + Tr.T(") AND ") : "") + Tr.T("(COL_LOTW_QSL_SENT IS NULL OR COL_LOTW_QSL_SENT<>'Y')"); long cnt;
             try { cnt = useSel ? sel.Count : App.Log.Count(wl); } catch (Exception ex) { Ui.Err(this, ex); return; }
-            if (cnt == 0) { MessageBox.Show(this, "Aucun QSO à exporter.", "LoTW"); return; }
-            string tqsl = App.Cfg.Get("lotw.tqsl", "C:\\Program Files (x86)\\TrustedQSL\\tqsl.exe"), loc = App.Cfg.Get("lotw.location", "");
-            if (!File.Exists(tqsl) || loc.Length == 0) { MessageBox.Show(this, "Pour produire le fichier .tq8, réglez TQSL et le nom de la « Station Location » dans Outils > Online services.", "Fichier LoTW"); return; }
-            using (SaveFileDialog sd = new SaveFileDialog { Filter = "Fichier LoTW signé (*.tq8)|*.tq8", FileName = "LoTW-" + DateTime.Now.ToString("yyyy-MM-dd") + ".tq8", Title = "Fichier LoTW : " + cnt + " QSO (" + (useSel ? "la sélection" : "les QSO pas encore envoyés à LoTW") + ")" })
+            if (cnt == 0) { MessageBox.Show(this, Tr.T("Aucun QSO à exporter."), "LoTW"); return; }
+            string tqsl = App.Cfg.Get("lotw.tqsl", Tr.T("C:\\Program Files (x86)\\TrustedQSL\\tqsl.exe")), loc = App.Cfg.Get("lotw.location", "");
+            if (!File.Exists(tqsl) || loc.Length == 0) { MessageBox.Show(this, Tr.T("Pour produire le fichier .tq8, réglez TQSL et le nom de la « Station Location » dans Outils > Online services."), Tr.T("Fichier LoTW")); return; }
+            using (SaveFileDialog sd = new SaveFileDialog { Filter = Tr.T("Fichier LoTW signé (*.tq8)|*.tq8"), FileName = "LoTW-" + DateTime.Now.ToString("yyyy-MM-dd") + ".tq8", Title = Tr.T("Fichier LoTW : ") + cnt + " QSO (" + (useSel ? Tr.T("la sélection") : Tr.T("les QSO pas encore envoyés à LoTW")) + ")" })
             {
                 if (sd.ShowDialog(this) != DialogResult.OK) return;
                 string adi = Path.Combine(Path.GetTempPath(), "hrl-lotw-" + Guid.NewGuid().ToString("N") + ".adi"), tq8 = sd.FileName, tmp8 = Path.ChangeExtension(adi, ".tq8");   // TQSL ne sait pas écrire dans un dossier à accents : il signe dans le dossier temporaire, puis on copie
                 // lecture, signature par TQSL et marquage : tout sur un autre fil (la télécommande et le journal restent utilisables)
-                Bg.Run(this, "Fichier LoTW (signature par TQSL)", (log, db, say, cancelled) =>
+                Bg.Run(this, Tr.T("Fichier LoTW (signature par TQSL)"), (log, db, say, cancelled) =>
                 {
                     try
                     {
                         List<Qso> list = sel;
-                        if (!useSel) { list = new List<Qso>(); say("Lecture des QSO…", -1); long n = Math.Min(cnt, 100000); for (int off = 0; off < n; off += 2000) { List<Qso> p = log.Fetch(wl, "COL_TIME_ON ASC", off, 2000); list.AddRange(p); if (p.Count < 2000) break; } }
-                        say("Signature par TQSL de " + list.Count + " QSO (peut durer plusieurs minutes)…", -1);
+                        if (!useSel) { list = new List<Qso>(); say(Tr.T("Lecture des QSO…"), -1); long n = Math.Min(cnt, 100000); for (int off = 0; off < n; off += 2000) { List<Qso> p = log.Fetch(wl, "COL_TIME_ON ASC", off, 2000); list.AddRange(p); if (p.Count < 2000) break; } }
+                        say(Tr.T("Signature par TQSL de ") + list.Count + " QSO (peut durer plusieurs minutes)…", -1);
                         File.WriteAllText(adi, Adif.Export(list), new UTF8Encoding(false));
-                        int code; string o = Online.RunTqsl(tqsl, "-d -q -a all -l \"" + loc + "\" -o \"" + tmp8 + "\" \"" + adi + "\"", 600000, out code);
+                        int code; string o = Online.RunTqsl(tqsl, Tr.T("-d -q -a all -l \"") + loc + "\" -o \"" + tmp8 + "\" \"" + adi + "\"", 600000, out code);
                         bool signed = code == 0 && File.Exists(tmp8) && new FileInfo(tmp8).Length > 100; if (signed) File.Copy(tmp8, tq8, true);
                         if (signed)
                         {
                             List<int> ids = new List<int>(); foreach (Qso q in list) ids.Add(q.Id); MarkDb(db, log, new List<string> { "lotw" }, ids, true, cancelled, say);
-                            return list.Count + " QSO signés et marqués « envoyés à LoTW ».\r\n\r\nFichier à déposer sur https://lotw.arrl.org (Upload File) :\r\n" + tq8;
+                            return list.Count + Tr.T(" QSO signés et marqués « envoyés à LoTW ».\r\n\r\nFichier à déposer sur https://lotw.arrl.org (Upload File) :\r\n") + tq8;
                         }
-                        if (code == -1) o = "délai dépassé (TQSL attend peut-être le mot de passe de votre certificat)";
+                        if (code == -1) o = Tr.T("délai dépassé (TQSL attend peut-être le mot de passe de votre certificat)");
                         string keep = Path.ChangeExtension(tq8, ".adi"); File.Copy(adi, keep, true);
-                        return "TQSL n'a pas produit le fichier .tq8 (code " + code + (o.Trim().Length > 0 ? " : " + o.Trim() : "") + "). Les QSO ne sont PAS marqués. ADIF gardé : " + keep + " (TQSL > File > Sign an ADIF file).";
+                        return Tr.T("TQSL n'a pas produit le fichier .tq8 (code ") + code + (o.Trim().Length > 0 ? " : " + o.Trim() : "") + Tr.T("). Les QSO ne sont PAS marqués. ADIF gardé : ") + keep + " (TQSL > File > Sign an ADIF file).";
                     }
                     finally { try { File.Delete(adi); } catch { } try { File.Delete(tmp8); } catch { } }
                 }, () => ReloadKeep());
@@ -643,8 +726,8 @@ namespace HamRadioLink.Journal
                 for (int i = 0; i < ids.Count && !cancelled(); i += 500)
                 {
                     List<string> sid = new List<string>(); for (int j = i; j < Math.Min(i + 500, ids.Count); j++) sid.Add(ids[j].ToString()); string inl = string.Join(",", sid.ToArray());
-                    if (sent) db.Exec("UPDATE " + lg.TableRef() + " SET " + fld + "='Y'," + dt + "=NOW() WHERE COL_PRIMARY_KEY IN (" + inl + ")");
-                    else { try { db.Exec("UPDATE " + lg.TableRef() + " SET " + fld + "='N'," + dt + "=NULL WHERE COL_PRIMARY_KEY IN (" + inl + ")"); } catch { db.Exec("UPDATE " + lg.TableRef() + " SET " + fld + "='N' WHERE COL_PRIMARY_KEY IN (" + inl + ")"); } }
+                    if (sent) db.Exec("UPDATE " + lg.TableRef() + " SET " + fld + "='Y'," + dt + Tr.T("=NOW() WHERE COL_PRIMARY_KEY IN (") + inl + ")");
+                    else { try { db.Exec("UPDATE " + lg.TableRef() + " SET " + fld + "='N'," + dt + Tr.T("=NULL WHERE COL_PRIMARY_KEY IN (") + inl + ")"); } catch { db.Exec("UPDATE " + lg.TableRef() + " SET " + fld + Tr.T("='N' WHERE COL_PRIMARY_KEY IN (") + inl + ")"); } }
                     if (say != null) say(Math.Min(i + 500, ids.Count) + " / " + ids.Count + " QSO (" + k + ")", Math.Min(i + 500, ids.Count) * 100 / Math.Max(1, ids.Count));
                     System.Threading.Thread.Sleep(15);
                 }
@@ -679,7 +762,7 @@ namespace HamRadioLink.Journal
                 }
                 if (dbk.Count == 0) { ReloadKeep(); return; }
                 if (ids.Count <= 300) { MarkDb(App.Db, App.Log, dbk, ids, sent, () => false, null); ReloadKeep(); }
-                else Bg.Run(this, "Marquage de " + ids.Count + " QSO", (log, db, say, cancelled) => { MarkDb(db, log, dbk, ids, sent, cancelled, say); return ids.Count + " QSO marqués" + (cancelled() ? " (annulé)" : "") + "."; }, () => ReloadKeep());
+                else Bg.Run(this, Tr.T("Marquage de ") + ids.Count + " QSO", (log, db, say, cancelled) => { MarkDb(db, log, dbk, ids, sent, cancelled, say); return ids.Count + " QSO marqués" + (cancelled() ? " (annulé)" : "") + "."; }, () => ReloadKeep());
             }
             catch (Exception ex) { Ui.Err(this, ex); }
         }
@@ -691,7 +774,7 @@ namespace HamRadioLink.Journal
             {
                 string dir = Path.Combine(App.DataDir ?? ".", "exports"); Directory.CreateDirectory(dir);
                 string file = Path.Combine(dir, "QRZ-" + DateTime.Now.ToString("yyyy-MM-dd_HHmm") + ".adi"); File.WriteAllText(file, Adif.Export(rest), new UTF8Encoding(false)); List<int> qid = new List<int>(); foreach (Qso q in rest) qid.Add(q.Id); QrzState.Mark(qid); ReloadKeep();   // fichier préparé pour l'import = marqués « envoyés à QRZ.com »
-                MessageBox.Show(this, "QRZ.com n'a pas accepté l'envoi automatique :\r\n" + err + "\r\n\r\n(L'envoi automatique demande un abonnement QRZ avec accès à l'API Logbook.)\r\n\r\nUn fichier ADI de " + rest.Count + " QSO a été créé :\r\n" + file + "\r\n\r\nLa page de votre journal QRZ.com va s'ouvrir : utilisez la fonction d'import (Upload / Import ADIF) et choisissez ce fichier.", "QRZ.com : envoi manuel");
+                MessageBox.Show(this, Tr.T("QRZ.com n'a pas accepté l'envoi automatique :\r\n") + err + Tr.T("\r\n\r\n(L'envoi automatique demande un abonnement QRZ avec accès à l'API Logbook.)\r\n\r\nUn fichier ADI de ") + rest.Count + Tr.T(" QSO a été créé :\r\n") + file + "\r\n\r\nLa page de votre journal QRZ.com va s'ouvrir : utilisez la fonction d'import (Upload / Import ADIF) et choisissez ce fichier.", Tr.T("QRZ.com : envoi manuel"));
                 try { Process.Start(new ProcessStartInfo("https://logbook.qrz.com/logbook") { UseShellExecute = true }); } catch { }
                 try { Process.Start("explorer.exe", "/select,\"" + file + "\""); } catch { }
             }
@@ -704,35 +787,35 @@ namespace HamRadioLink.Journal
         {
             if (App.Log == null) return;
             List<SendSvc> sv = new List<SendSvc>(); List<string> skipped = new List<string>();
-            if (only != null && only != "qrz") { } else if (App.Cfg.Get("qrzlog.key", "").Length > 0) sv.Add(new SendSvc { Key = "qrz", Name = "QRZ.com Logbook", Fn = Online.UploadQrz, Batch = 5, Mark = "qrz", OnFail = QrzManual });
-            else if (only == "qrz") sv.Add(new SendSvc { Key = "qrz", Name = "QRZ.com Logbook", Fn = delegate(List<Qso> q) { throw new Exception("clé API QRZ.com Logbook non renseignée (Outils > Online services)"); }, Batch = 5, Mark = "qrz", OnFail = QrzManual });
+            if (only != null && only != "qrz") { } else if (App.Cfg.Get("qrzlog.key", "").Length > 0) sv.Add(new SendSvc { Key = "qrz", Name = Tr.T("QRZ.com Logbook"), Fn = Online.UploadQrz, Batch = 5, Mark = "qrz", OnFail = QrzManual });
+            else if (only == "qrz") sv.Add(new SendSvc { Key = "qrz", Name = Tr.T("QRZ.com Logbook"), Fn = delegate(List<Qso> q) { throw new Exception(Tr.T("clé API QRZ.com Logbook non renseignée (Outils > Online services)")); }, Batch = 5, Mark = "qrz", OnFail = QrzManual });
             else skipped.Add("QRZ.com");
-            if (only != null && only != "clublog") { } else if (App.Cfg.Get("clublog.email", "").Length > 0 && App.Cfg.Get("clublog.api", "").Length > 0) sv.Add(new SendSvc { Key = "clublog", Name = "Club Log", Fn = Online.UploadClubLog, Batch = 5, Mark = "clublog" }); else skipped.Add("Club Log");
+            if (only != null && only != "clublog") { } else if (App.Cfg.Get("clublog.email", "").Length > 0 && App.Cfg.Get("clublog.api", "").Length > 0) sv.Add(new SendSvc { Key = "clublog", Name = Tr.T("Club Log"), Fn = Online.UploadClubLog, Batch = 5, Mark = "clublog" }); else skipped.Add(Tr.T("Club Log"));
             if (only != null && only != "eqsl") { } else if (App.Cfg.Get("eqsl.user", "").Length > 0) sv.Add(new SendSvc { Key = "eqsl", Name = "eQSL.cc", Fn = Online.UploadEqsl, Batch = 1, Mark = "eqsl" }); else skipped.Add("eQSL");
-            if (only != null && only != "lotw") { } else if (File.Exists(App.Cfg.Get("lotw.tqsl", "C:\\Program Files (x86)\\TrustedQSL\\tqsl.exe")) && App.Cfg.Get("lotw.location", "").Length > 0) sv.Add(new SendSvc { Key = "lotw", Name = "LoTW (TQSL)", Fn = Online.UploadLotw, Batch = 500, Mark = "lotw" }); else skipped.Add("LoTW");
-            if (sv.Count == 0) { MessageBox.Show(this, (only != null ? "Ce service n'est pas réglé" : "Aucun service en ligne n'est réglé") + " : Outils > Online services.", "Envoi"); return; }
-            List<Qso> list = Selected(); string what = "les " + list.Count + " QSO sélectionnés";
+            if (only != null && only != "lotw") { } else if (File.Exists(App.Cfg.Get("lotw.tqsl", Tr.T("C:\\Program Files (x86)\\TrustedQSL\\tqsl.exe"))) && App.Cfg.Get("lotw.location", "").Length > 0) sv.Add(new SendSvc { Key = "lotw", Name = Tr.T("LoTW (TQSL)"), Fn = Online.UploadLotw, Batch = 500, Mark = "lotw" }); else skipped.Add("LoTW");
+            if (sv.Count == 0) { MessageBox.Show(this, (only != null ? Tr.T("Ce service n'est pas réglé") : Tr.T("Aucun service en ligne n'est réglé")) + " : Outils > Online services.", "Envoi"); return; }
+            List<Qso> list = Selected(); string what = Tr.T("les ") + list.Count + " QSO sélectionnés";
             try
             {
                 Cursor = Cursors.WaitCursor;
                 if (list.Count == 0)
                 {
-                    List<string> c = new List<string>(); foreach (SendSvc s in sv) if (s.Mark == "eqsl") c.Add("(COL_EQSL_QSL_SENT IS NULL OR COL_EQSL_QSL_SENT<>'Y')"); else if (s.Mark == "lotw") c.Add("(COL_LOTW_QSL_SENT IS NULL OR COL_LOTW_QSL_SENT<>'Y')");
-                    if (c.Count == 0) { list = App.Log.Fetch(where, "COL_TIME_ON DESC", 0, 500); what = "les " + list.Count + " derniers QSO de la liste"; }
+                    List<string> c = new List<string>(); foreach (SendSvc s in sv) if (s.Mark == "eqsl") c.Add(Tr.T("(COL_EQSL_QSL_SENT IS NULL OR COL_EQSL_QSL_SENT<>'Y')")); else if (s.Mark == "lotw") c.Add(Tr.T("(COL_LOTW_QSL_SENT IS NULL OR COL_LOTW_QSL_SENT<>'Y')"));
+                    if (c.Count == 0) { list = App.Log.Fetch(where, "COL_TIME_ON DESC", 0, 500); what = Tr.T("les ") + list.Count + " derniers QSO de la liste"; }
                     else
                     {
-                        string w = (where.Length > 0 ? "(" + where + ") AND " : "") + "(" + string.Join(" OR ", c.ToArray()) + ")";
+                        string w = (where.Length > 0 ? "(" + where + Tr.T(") AND ") : "") + "(" + string.Join(" OR ", c.ToArray()) + ")";
                         long n = App.Log.Count(w); if (n > 50000) n = 50000;
                         for (int off = 0; off < n; off += 2000) { List<Qso> p = App.Log.Fetch(w, "COL_TIME_ON ASC", off, 2000); list.AddRange(p); if (p.Count < 2000) break; }
-                        what = "les " + list.Count + " QSO pas encore envoyés à eQSL / LoTW";
+                        what = Tr.T("les ") + list.Count + Tr.T(" QSO pas encore envoyés à eQSL / LoTW");
                     }
                 }
             }
             catch (Exception ex) { Cursor = Cursors.Default; Ui.Err(this, ex); return; }
             finally { Cursor = Cursors.Default; }
-            if (list.Count == 0) { MessageBox.Show(this, "Aucun QSO à envoyer.", "Envoi"); return; }
+            if (list.Count == 0) { MessageBox.Show(this, Tr.T("Aucun QSO à envoyer."), "Envoi"); return; }
             List<string> names = new List<string>(); foreach (SendSvc s in sv) names.Add(s.Name);
-            if (!Ui.Ask(this, "Envoyer " + what + " à : " + string.Join(", ", names.ToArray()) + " ?" + (skipped.Count > 0 ? "\r\n\r\n(non réglés, ignorés : " + string.Join(", ", skipped.ToArray()) + ")" : ""))) return;
+            if (!Ui.Ask(this, Tr.T("Envoyer ") + what + " à : " + string.Join(", ", names.ToArray()) + " ?" + (skipped.Count > 0 ? "\r\n\r\n(non réglés, ignorés : " + string.Join(", ", skipped.ToArray()) + ")" : ""))) return;
             SendAllForm f = new SendAllForm(sv, list);
             // chaque lot envoyé est marqué tout de suite (eQSL / LoTW dans la base, Club Log dans son fichier) : une interruption laisse un état exact
             f.BatchDone = delegate(SendSvc s, List<Qso> part)
@@ -744,7 +827,7 @@ namespace HamRadioLink.Journal
                     if (s.Mark == "clublog") { ClubLogState.Mark(ids); return; }
                     if (s.Mark == "qrz") { QrzState.Mark(ids); return; }
                     string fld = s.Mark == "eqsl" ? "COL_EQSL_QSL_SENT" : "COL_LOTW_QSL_SENT", dt = s.Mark == "eqsl" ? "COL_EQSL_QSLSDATE" : "COL_LOTW_QSLSDATE"; List<string> sid = new List<string>(); foreach (int i in ids) sid.Add(i.ToString());
-                    App.Db.Exec("UPDATE " + App.Log.TableRef() + " SET " + fld + "='Y'," + dt + "=NOW() WHERE COL_PRIMARY_KEY IN (" + string.Join(",", sid.ToArray()) + ")");
+                    App.Db.Exec("UPDATE " + App.Log.TableRef() + " SET " + fld + "='Y'," + dt + Tr.T("=NOW() WHERE COL_PRIMARY_KEY IN (") + string.Join(",", sid.ToArray()) + ")");
                 }
                 catch (Exception ex) { Ui.Err(this, ex); }
             };
@@ -755,8 +838,8 @@ namespace HamRadioLink.Journal
             try
             {
                 MySqlResult r = App.Db.Query("SELECT COL_CALL, COL_TIME_ON, COL_BAND, COUNT(*) c FROM " + App.Log.TableRef() + " GROUP BY COL_CALL, COL_TIME_ON, COL_BAND HAVING c>1 ORDER BY COL_TIME_ON DESC LIMIT 200");
-                if (r.Rows.Count == 0) { MessageBox.Show(this, "Aucun doublon (même indicatif, même heure, même bande).", "Doublons"); return; }
-                if (Ui.Ask(this, r.Rows.Count + " groupes de doublons. Les afficher dans la liste ?")) SetFilter("(COL_CALL, COL_TIME_ON, COL_BAND) IN (SELECT COL_CALL, COL_TIME_ON, COL_BAND FROM " + App.Log.TableRef() + " GROUP BY COL_CALL, COL_TIME_ON, COL_BAND HAVING COUNT(*)>1)");
+                if (r.Rows.Count == 0) { MessageBox.Show(this, Tr.T("Aucun doublon (même indicatif, même heure, même bande)."), "Doublons"); return; }
+                if (Ui.Ask(this, r.Rows.Count + " groupes de doublons. Les afficher dans la liste ?")) SetFilter(Tr.T("(COL_CALL, COL_TIME_ON, COL_BAND) IN (SELECT COL_CALL, COL_TIME_ON, COL_BAND FROM ") + App.Log.TableRef() + " GROUP BY COL_CALL, COL_TIME_ON, COL_BAND HAVING COUNT(*)>1)");
             }
             catch (Exception ex) { Ui.Err(this, ex); }
         }
@@ -764,9 +847,9 @@ namespace HamRadioLink.Journal
         // Complète pays / continent / DXCC / zones des QSO où ils manquent, d'après la table des pays
         void UpdateFromCountries()
         {
-            if (!Countries.Loaded) { MessageBox.Show(this, "Table des pays absente (fichier Countries.txt dans le dossier data/journal).", "Pays"); return; }
-            if (!Ui.Ask(this, "Compléter les QSO sans pays / DXCC d'après l'indicatif ?")) return;
-            Bg.Run(this, "Compléter les pays", (log, db, say, cancelled) =>
+            if (!Countries.Loaded) { MessageBox.Show(this, Tr.T("Table des pays absente (fichier Countries.txt dans le dossier data/journal)."), "Pays"); return; }
+            if (!Ui.Ask(this, Tr.T("Compléter les QSO sans pays / DXCC d'après l'indicatif ?"))) return;
+            Bg.Run(this, Tr.T("Compléter les pays"), (log, db, say, cancelled) =>
             {
                 int n = 0, k = 0; MySqlResult r = db.Query("SELECT COL_PRIMARY_KEY, COL_CALL FROM " + log.TableRef() + " WHERE (COL_COUNTRY IS NULL OR COL_COUNTRY='') ");
                 foreach (string[] row in r.Rows)
@@ -787,16 +870,16 @@ namespace HamRadioLink.Journal
             try
             {
                 StringBuilder sb = new StringBuilder();
-                sb.AppendLine("QSO : " + App.Log.Count(""));
-                sb.AppendLine("Pays (DXCC) : " + App.Db.Scalar("SELECT COUNT(DISTINCT COL_DXCC) FROM " + App.Log.TableRef() + " WHERE COL_DXCC<>'' AND COL_DXCC<>'0'"));
-                sb.AppendLine("Indicatifs : " + App.Db.Scalar("SELECT COUNT(DISTINCT COL_CALL) FROM " + App.Log.TableRef()));
-                sb.AppendLine().AppendLine("Par bande :");
+                sb.AppendLine(Tr.T("QSO : ") + App.Log.Count(""));
+                sb.AppendLine(Tr.T("Pays (DXCC) : ") + App.Db.Scalar("SELECT COUNT(DISTINCT COL_DXCC) FROM " + App.Log.TableRef() + " WHERE COL_DXCC<>'' AND COL_DXCC<>'0'"));
+                sb.AppendLine(Tr.T("Indicatifs : ") + App.Db.Scalar("SELECT COUNT(DISTINCT COL_CALL) FROM " + App.Log.TableRef()));
+                sb.AppendLine().AppendLine(Tr.T("Par bande :"));
                 foreach (string[] r in App.Db.Query("SELECT COL_BAND, COUNT(*) FROM " + App.Log.TableRef() + " GROUP BY COL_BAND ORDER BY 2 DESC LIMIT 12").Rows) sb.AppendLine("  " + r[0] + " : " + r[1]);
-                sb.AppendLine().AppendLine("Par mode :");
+                sb.AppendLine().AppendLine(Tr.T("Par mode :"));
                 foreach (string[] r in App.Db.Query("SELECT COL_MODE, COUNT(*) FROM " + App.Log.TableRef() + " GROUP BY COL_MODE ORDER BY 2 DESC LIMIT 12").Rows) sb.AppendLine("  " + r[0] + " : " + r[1]);
-                sb.AppendLine().AppendLine("Par année :");
+                sb.AppendLine().AppendLine(Tr.T("Par année :"));
                 foreach (string[] r in App.Db.Query("SELECT YEAR(COL_TIME_ON), COUNT(*) FROM " + App.Log.TableRef() + " GROUP BY 1 ORDER BY 1 DESC LIMIT 15").Rows) sb.AppendLine("  " + r[0] + " : " + r[1]);
-                MessageBox.Show(this, sb.ToString(), "Statistiques");
+                MessageBox.Show(this, sb.ToString(), Tr.T("Statistiques"));
             }
             catch (Exception ex) { Ui.Err(this, ex); }
         }
@@ -810,7 +893,7 @@ namespace HamRadioLink.Journal
         {
             Text = "Awards Tracking"; Size = new Size(1100, 720); StartPosition = FormStartPosition.CenterParent; Font = Ui.Normal; BackColor = Theme.Get("lb.back");
             Controls.Add(tabs);
-            try { Dxcc(); Simple("WAZ (zones CQ)", "COL_CQZ", 40, "CQ zone"); Simple("WAC (continents)", "COL_CONT", 6, "Continent"); Was(); Simple("IOTA", "COL_IOTA", 0, "Référence IOTA"); }
+            try { Dxcc(); Simple(Tr.T("WAZ (zones CQ)"), "COL_CQZ", 40, Tr.T("CQ zone")); Simple(Tr.T("WAC (continents)"), "COL_CONT", 6, "Continent"); Was(); Simple("IOTA", "COL_IOTA", 0, Tr.T("Référence IOTA")); }
             catch (Exception ex) { Ui.Err(this, ex); }
         }
 
@@ -822,7 +905,7 @@ namespace HamRadioLink.Journal
             p.Paint += (s, e) =>
             {
                 Graphics g = e.Graphics; g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias; int x = 8; Color tt = Theme.Get("lb.tool.text");
-                foreach (KeyValuePair<Color, string> k in new[] { new KeyValuePair<Color, string>(Green, "Confirmé"), new KeyValuePair<Color, string>(Amber, "Contacté"), new KeyValuePair<Color, string>(Color.FromArgb(70, 74, 100), "Pas encore") })
+                foreach (KeyValuePair<Color, string> k in new[] { new KeyValuePair<Color, string>(Green, "Confirmé"), new KeyValuePair<Color, string>(Amber, "Contacté"), new KeyValuePair<Color, string>(Color.FromArgb(70, 74, 100), Tr.T("Pas encore")) })
                 {
                     using (SolidBrush b = new SolidBrush(k.Key)) g.FillEllipse(b, x, 6, 14, 14); TextRenderer.DrawText(g, k.Value, p.Font, new Point(x + 20, 4), tt); x += 30 + TextRenderer.MeasureText(k.Value, p.Font).Width + 14;
                 }
@@ -840,7 +923,7 @@ namespace HamRadioLink.Journal
             g.Columns.Add("dxcc", "DXCC"); g.Columns.Add("name", "Pays"); foreach (string b in Bands) g.Columns.Add(b, b); g.Columns.Add("tot", "Total");
             g.Columns[1].Width = 220; g.Columns[0].Width = 50;
             Dictionary<string, Dictionary<string, string>> res = new Dictionary<string, Dictionary<string, string>>();
-            foreach (string[] r in App.Db.Query("SELECT COL_DXCC, COL_BAND, MAX(" + Conf + ") c FROM " + App.Log.TableRef() + " WHERE COL_DXCC<>'' AND COL_DXCC<>'0' GROUP BY COL_DXCC, COL_BAND").Rows)
+            foreach (string[] r in App.Db.Query("SELECT COL_DXCC, COL_BAND, MAX(" + Conf + Tr.T(") c FROM ") + App.Log.TableRef() + " WHERE COL_DXCC<>'' AND COL_DXCC<>'0' GROUP BY COL_DXCC, COL_BAND").Rows)
             { if (r[0] == null) continue; string bnd = r[1] ?? "?"; if (!res.ContainsKey(r[0])) res[r[0]] = new Dictionary<string, string>(); string prev; bool isC = r[2] == "1"; if (!res[r[0]].TryGetValue(bnd, out prev) || isC) res[r[0]][bnd] = isC ? "C" : "W"; }
             int worked = 0, conf = 0;
             List<Country> list = new List<Country>(Countries.All); list.Sort((a, b) => { int wa = res.ContainsKey(a.Dxcc.ToString()) || res.ContainsKey(a.Dxcc.ToString("000")) ? 0 : 1, wb = res.ContainsKey(b.Dxcc.ToString()) || res.ContainsKey(b.Dxcc.ToString("000")) ? 0 : 1; return wa != wb ? wa.CompareTo(wb) : a.Dxcc.CompareTo(b.Dxcc); });   // pays contactés en premier
@@ -854,7 +937,7 @@ namespace HamRadioLink.Journal
                 DataGridViewRow rw = g.Rows[g.Rows.Count - 1]; rw.Cells[1].Style.Font = new Font(g.Font, FontStyle.Bold); rw.Cells[1].Style.ForeColor = anyC ? Green : Amber;
                 for (int i = 0; i < Bands.Length; i++) { DataGridViewCell cell = rw.Cells[i + 2]; string v = cell.Value as string; if (v != "C" && v != "W") continue; Color fill = v == "C" ? Green : Amber; cell.Style.BackColor = fill; cell.Style.ForeColor = fill; cell.Style.SelectionBackColor = fill; cell.Style.SelectionForeColor = fill; cell.ToolTipText = v == "C" ? "Confirmé" : "Contacté"; }
             }
-            top.Text = "  DXCC : " + worked + " contactés, " + conf + " confirmés (QSL / LoTW / eQSL)  —  entités actuelles : " + list.FindAll(x => !x.Deleted).Count;
+            top.Text = Tr.T("  DXCC : ") + worked + " contactés, " + conf + Tr.T(" confirmés (QSL / LoTW / eQSL)  —  entités actuelles : ") + list.FindAll(x => !x.Deleted).Count;
         }
 
         void Simple(string title, string col, int goal, string head)
@@ -862,19 +945,19 @@ namespace HamRadioLink.Journal
             TabPage tp = new TabPage(title) { BackColor = Theme.Get("lb.back") }; tabs.TabPages.Add(tp); DataGridView g = NewGrid(); tp.Controls.Add(g);
             Label top = new Label { Dock = DockStyle.Top, Height = 24, Font = new Font(Ui.Normal, FontStyle.Bold) }; tp.Controls.Add(top);
             g.Columns.Add("v", head); g.Columns.Add("w", "QSO"); g.Columns.Add("c", "Confirmés"); int worked = 0, conf = 0;
-            foreach (string[] r in App.Db.Query("SELECT " + col + ", COUNT(*), SUM(" + Conf + ") FROM " + App.Log.TableRef() + " WHERE " + col + " IS NOT NULL AND " + col + "<>'' AND " + col + "<>'0' GROUP BY " + col + " ORDER BY " + (col == "COL_CQZ" ? "CAST(" + col + " AS UNSIGNED)" : col)).Rows)
+            foreach (string[] r in App.Db.Query("SELECT " + col + Tr.T(", COUNT(*), SUM(") + Conf + Tr.T(") FROM ") + App.Log.TableRef() + " WHERE " + col + " IS NOT NULL AND " + col + "<>'' AND " + col + "<>'0' GROUP BY " + col + " ORDER BY " + (col == "COL_CQZ" ? Tr.T("CAST(") + col + " AS UNSIGNED)" : col)).Rows)
             { g.Rows.Add(r[0], r[1], r[2]); worked++; if (r[2] != "0" && r[2] != null) conf++; }
             top.Text = "  " + title + " : " + worked + (goal > 0 ? " / " + goal : "") + " contactés, " + conf + " confirmés";
         }
 
         void Was()
         {
-            TabPage tp = new TabPage("WAS (états US)") { BackColor = Theme.Get("lb.back") }; tabs.TabPages.Add(tp); DataGridView g = NewGrid(); tp.Controls.Add(g);
+            TabPage tp = new TabPage(Tr.T("WAS (états US)")) { BackColor = Theme.Get("lb.back") }; tabs.TabPages.Add(tp); DataGridView g = NewGrid(); tp.Controls.Add(g);
             Label top = new Label { Dock = DockStyle.Top, Height = 24, Font = new Font(Ui.Normal, FontStyle.Bold) }; tp.Controls.Add(top);
             g.Columns.Add("v", "État"); g.Columns.Add("w", "QSO"); g.Columns.Add("c", "Confirmés"); int worked = 0, conf = 0;
-            foreach (string[] r in App.Db.Query("SELECT COL_STATE, COUNT(*), SUM(" + Conf + ") FROM " + App.Log.TableRef() + " WHERE COL_DXCC IN ('291','6','110') AND COL_STATE<>'' GROUP BY COL_STATE ORDER BY 1").Rows)
+            foreach (string[] r in App.Db.Query("SELECT COL_STATE, COUNT(*), SUM(" + Conf + Tr.T(") FROM ") + App.Log.TableRef() + " WHERE COL_DXCC IN ('291','6','110') AND COL_STATE<>'' GROUP BY COL_STATE ORDER BY 1").Rows)
             { g.Rows.Add(r[0], r[1], r[2]); worked++; if (r[2] != "0") conf++; }
-            top.Text = "  WAS : " + worked + " / 50 contactés, " + conf + " confirmés";
+            top.Text = Tr.T("  WAS : ") + worked + " / 50 contactés, " + conf + " confirmés";
         }
 
         static DataGridView NewGrid()

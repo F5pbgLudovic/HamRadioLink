@@ -1,5 +1,17 @@
 # Historique des versions
 
+## 1.5 — 2026-11-21
+
+- **Journal (LOG) traduit en 23 langues** (les mêmes que SDRLink ; français par défaut) : **Configuration > Langue / Language...**, appliquée à la réouverture du journal. Seul le journal est traduit (pas la télécommande). Traductions non relues par des locuteurs natifs.
+- **Cluster** : liste déroulante **5 à 30 min** (pas de 5) à côté de « Auto » : durée d'affichage des spots près de la réglette.
+- **Thèmes** : 13 nouveaux (n°41 à 53, modernes : Tokyo Night, Catppuccin, Monokai, Gruvbox, One Dark, Rosé Pine…) ; **Thèmes** ouvre une fenêtre qui reste ouverte (changement immédiat à chaque clic, molette, ascenseur, bouton « Personnaliser » toujours visible ; clic ailleurs ou Échap = fermer).
+- **Changer la bande / fréquence** de plusieurs QSO sélectionnés (clic droit) : FT8 = fréquence FT8 de la bande, autres modes = début de bande (160 m à 70 cm).
+- **Annuler / Refaire** : boutons ↶ ↷ après ↔ (Ctrl+Z / Ctrl+Y), 50 opérations (ajout, modification, suppression).
+- **Tableau** : Ctrl+C copier, Ctrl+X couper, Ctrl+V coller des lignes, Ctrl+A tout sélectionner ; **Ctrl+N** ajoute un QSO (avant : Ctrl+A). **Entrée** valide la fenêtre d'ajout.
+- Menu Édition : Couper / Coller en français.
+- **Serveur de commande** : les ordres « set » (fréquence, mode…) sont refusés (ERROR) quand le poste n'est pas connecté ; le logiciel client le sait et le poste garde sa dernière fréquence. Écrit dans le journal des commandes.
+- Test du journal : annulation / refaire, langues (36 vérifications, à lancer à part avec un moteur MariaDB : `HRL_ONLY=journal HRL_ENGINE=<dossier MariaDB>`).
+
 ## 1.4 — 2026-11-21
 
 - **FTdx10** : bouton **MIC EQ** (égaliseur du micro, commande PR1) ; la touche **PROC** retrouve son niveau quand on la rallume (aussi sur les FT-2000 / FTdx5000 et la famille FTdx10) ; bouton **FT8/FT4...** dans la grille des modes, à droite de DATA-FM-N : passe en USB, coupe PROC et MIC EQ s'ils étaient actifs, puis au retour (clic de nouveau, ou choix d'un autre mode) remet le mode d'avant, PROC (avec son niveau) et MIC EQ. Les ordres partent à la suite avec 350 ms entre chacun (le poste en laissait tomber). Le bouton prend la case libre de la grille sur tout poste Yaesu dont le nombre de modes est impair ; pas de bouton s'il n'y a pas de case libre (FT-991A : 14 modes).

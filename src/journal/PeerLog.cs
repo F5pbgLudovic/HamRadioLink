@@ -27,7 +27,7 @@ namespace HamRadioLink.Journal
         public PeerLog(MySqlClient db, string schema)
         {
             Db = db; Schema = schema;
-            MySqlResult r = db.Query("SHOW COLUMNS FROM " + TableRef());
+            MySqlResult r = db.Query(Tr.T("SHOW COLUMNS FROM ") + TableRef());
             foreach (string[] row in r.Rows)
             {
                 string t = row[1].ToLowerInvariant();
@@ -36,7 +36,7 @@ namespace HamRadioLink.Journal
                     DateTime = t.StartsWith("datetime") || t.StartsWith("timestamp") || t == "date" });
                 names.Add(row[0]);
             }
-            if (!names.Contains("COL_PRIMARY_KEY")) throw new Exception("Cette table n'est pas un journal reconnu (COL_PRIMARY_KEY absent).");
+            if (!names.Contains("COL_PRIMARY_KEY")) throw new Exception(Tr.T("Cette table n'est pas un journal reconnu (COL_PRIMARY_KEY absent)."));
         }
 
         public string TableRef() { return MySqlClient.Ident(Schema) + "." + MySqlClient.Ident(Table); }
@@ -114,8 +114,16 @@ namespace HamRadioLink.Journal
                 if (kv.Key == "COL_PRIMARY_KEY" || !Has(kv.Key)) continue;
                 cols.Add(MySqlClient.Ident(kv.Key)); vals.Add(ValueSql(kv.Key, kv.Value));
             }
-            MySqlResult r = Db.Query("INSERT INTO " + TableRef() + " (" + string.Join(",", cols) + ") VALUES (" + string.Join(",", vals) + ")");
+            MySqlResult r = Db.Query("INSERT INTO " + TableRef() + " (" + string.Join(",", cols) + Tr.T(") VALUES (") + string.Join(",", vals) + ")");
             return (int)r.InsertId;
+        }
+
+        // Remet une ligne supprimée avec son numéro d'origine (annuler une suppression)
+        public void Restore(Qso q)
+        {
+            List<string> cols = new List<string>(), vals = new List<string>();
+            foreach (KeyValuePair<string, string> kv in q) { if (!Has(kv.Key)) continue; cols.Add(MySqlClient.Ident(kv.Key)); vals.Add(kv.Key == "COL_PRIMARY_KEY" ? kv.Value : ValueSql(kv.Key, kv.Value)); }
+            Db.Query("INSERT INTO " + TableRef() + " (" + string.Join(",", cols) + Tr.T(") VALUES (") + string.Join(",", vals) + ")");
         }
 
         public void Update(int id, Qso changes)
@@ -143,7 +151,7 @@ namespace HamRadioLink.Journal
             string t = text.Trim().Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_");
             string like = MySqlClient.Quote("%" + t + "%");
             string pre = MySqlClient.Quote(t + "%");
-            return "(COL_CALL LIKE " + pre + " OR COL_NAME LIKE " + like + " OR COL_QTH LIKE " + like + " OR COL_COUNTRY LIKE " + like + " OR COL_COMMENT LIKE " + like + " OR COL_GRIDSQUARE LIKE " + pre + ")";
+            return Tr.T("(COL_CALL LIKE ") + pre + " OR COL_NAME LIKE " + like + " OR COL_QTH LIKE " + like + " OR COL_COUNTRY LIKE " + like + " OR COL_COMMENT LIKE " + like + " OR COL_GRIDSQUARE LIKE " + pre + ")";
         }
 
         public List<string> Distinct(string col)

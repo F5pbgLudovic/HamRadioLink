@@ -23,7 +23,7 @@ namespace HamRadioLink.Journal
         public static string Export(IEnumerable<Qso> qsos)
         {
             StringBuilder sb = new StringBuilder();
-            sb.Append("HamRadioLink ADIF export\r\n").Append(Field("ADIF_VER", "3.1.4")).Append(Field("PROGRAMID", "HamRadioLink")).Append("\r\n<EOH>\r\n\r\n");
+            sb.Append(Tr.T("HamRadioLink ADIF export\r\n")).Append(Field("ADIF_VER", "3.1.4")).Append(Field("PROGRAMID", "HamRadioLink")).Append("\r\n<EOH>\r\n\r\n");
             foreach (Qso q in qsos)
             {
                 DateTime on, off;

@@ -13,14 +13,14 @@ namespace HamRadioLink.Journal
         public BgTaskForm(string title)
         {
             ui = SynchronizationContext.Current; Text = title; ClientSize = new Size(480, 150); StartPosition = FormStartPosition.CenterParent; FormBorderStyle = FormBorderStyle.FixedSingle; MaximizeBox = false; Font = Ui.Normal; Icon = Ui.AppIcon;
-            lbl = Ui.Lbl(this, "Traitement en cours…", 12, 12, 456); lbl.Height = 72; bar = new ProgressBar { Left = 12, Top = 88, Width = 456, Height = 14, Style = ProgressBarStyle.Marquee }; Controls.Add(bar);
-            btn = Ui.Btn(this, "Annuler", 12, 112, 120, 28, (s, e) => { if (running) { cancel = true; btn.Enabled = false; lbl.Text = "Annulation demandée…"; } else Close(); });
-            FormClosing += (s, e) => { if (running) { e.Cancel = true; if (!cancel) { cancel = true; btn.Enabled = false; lbl.Text = "Annulation demandée…"; } } };
+            lbl = Ui.Lbl(this, Tr.T("Traitement en cours…"), 12, 12, 456); lbl.Height = 72; bar = new ProgressBar { Left = 12, Top = 88, Width = 456, Height = 14, Style = ProgressBarStyle.Marquee }; Controls.Add(bar);
+            btn = Ui.Btn(this, Tr.T("Annuler"), 12, 112, 120, 28, (s, e) => { if (running) { cancel = true; btn.Enabled = false; lbl.Text = Tr.T("Annulation demandée…"); } else Close(); });
+            FormClosing += (s, e) => { if (running) { e.Cancel = true; if (!cancel) { cancel = true; btn.Enabled = false; lbl.Text = Tr.T("Annulation demandée…"); } } };
         }
         public bool Cancelled { get { return cancel; } }
         void Post(Action a) { try { if (ui != null) ui.Post(delegate { try { if (!IsDisposed) a(); } catch { } }, null); } catch { } }
         public void Status(string text, int pct) { Post(delegate { lbl.Text = text; if (pct >= 0) { if (bar.Style != ProgressBarStyle.Continuous) bar.Style = ProgressBarStyle.Continuous; bar.Value = Math.Min(100, pct); } }); }
-        public void Finish(string msg) { running = false; Post(delegate { lbl.Text = msg; bar.Style = ProgressBarStyle.Continuous; bar.Value = 100; btn.Enabled = true; btn.Text = "Fermer"; }); }
+        public void Finish(string msg) { running = false; Post(delegate { lbl.Text = msg; bar.Style = ProgressBarStyle.Continuous; bar.Value = 100; btn.Enabled = true; btn.Text = Tr.T("Fermer"); }); }
     }
 
     public static class Bg
@@ -37,7 +37,7 @@ namespace HamRadioLink.Journal
             {
                 string msg; MySqlClient db = null;
                 try { db = new MySqlClient(host, port, user, pass, schema); db.Open(); PeerLog lg = new PeerLog(db, schema); msg = work(lg, db, f.Status, delegate { return f.Cancelled; }); }
-                catch (Exception ex) { msg = "Erreur : " + ex.Message; }
+                catch (Exception ex) { msg = Tr.T("Erreur : ") + ex.Message; }
                 finally { try { if (db != null) db.Dispose(); } catch { } }
                 f.Finish(msg); if (ui != null) ui.Post(delegate { try { if (done != null) done(); } catch { } }, null);
             }) { IsBackground = true, Name = "journal-traitement", Priority = ThreadPriority.BelowNormal };

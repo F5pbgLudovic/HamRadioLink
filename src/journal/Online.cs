@@ -66,16 +66,16 @@ namespace HamRadioLink.Journal
 
         static LookupResult LookupHamQth(string call)
         {
-            string u = App.Cfg.Get("lookup.user", ""), p = App.Cfg.Get("lookup.pass", ""); if (u.Length == 0) throw new Exception("Renseignez votre compte HamQTH (Tools > Online services).");
+            string u = App.Cfg.Get("lookup.user", ""), p = App.Cfg.Get("lookup.pass", ""); if (u.Length == 0) throw new Exception(Tr.T("Renseignez votre compte HamQTH (Tools > Online services)."));
             for (int attempt = 0; attempt < 2; attempt++)
             {
                 if (hamQthSession == null || (DateTime.Now - hamQthTime).TotalMinutes > 50)
                 {
-                    string x = Http("https://www.hamqth.com/xml.php?u=" + Enc(u) + "&p=" + Enc(p));
+                    string x = Http(Tr.T("https://www.hamqth.com/xml.php?u=") + Enc(u) + "&p=" + Enc(p));
                     hamQthSession = Tag(x, "session_id"); hamQthTime = DateTime.Now;
-                    if (hamQthSession.Length == 0) throw new Exception("HamQTH : " + Tag(x, "error"));
+                    if (hamQthSession.Length == 0) throw new Exception(Tr.T("HamQTH : ") + Tag(x, "error"));
                 }
-                string r = Http("https://www.hamqth.com/xml.php?id=" + hamQthSession + "&callsign=" + Enc(call) + "&prg=HamRadioLink");
+                string r = Http(Tr.T("https://www.hamqth.com/xml.php?id=") + hamQthSession + "&callsign=" + Enc(call) + "&prg=HamRadioLink");
                 string err = Tag(r, "error");
                 if (err.Length > 0) { if (err.IndexOf("expired", StringComparison.OrdinalIgnoreCase) >= 0 || err.IndexOf("Session", StringComparison.OrdinalIgnoreCase) >= 0) { hamQthSession = null; continue; } return null; }
                 LookupResult l = new LookupResult { Source = "HamQTH", Call = Tag(r, "callsign").ToUpperInvariant(), Name = Tag(r, "adr_name"), Qth = Tag(r, "qth"), Country = Tag(r, "country"), Grid = Tag(r, "grid"), Email = Tag(r, "email"), Web = Tag(r, "web"),
@@ -89,15 +89,15 @@ namespace HamRadioLink.Journal
 
         static LookupResult LookupQrz(string call)
         {
-            string u = App.Cfg.Get("lookup.user", ""), p = App.Cfg.Get("lookup.pass", ""); if (u.Length == 0) throw new Exception("Renseignez votre compte QRZ.com (Tools > Online services).");
+            string u = App.Cfg.Get("lookup.user", ""), p = App.Cfg.Get("lookup.pass", ""); if (u.Length == 0) throw new Exception(Tr.T("Renseignez votre compte QRZ.com (Tools > Online services)."));
             for (int attempt = 0; attempt < 2; attempt++)
             {
                 if (qrzKey == null || (DateTime.Now - qrzTime).TotalMinutes > 50)
                 {
-                    string x = Http("https://xmldata.qrz.com/xml/current/?username=" + Enc(u) + ";password=" + Enc(p) + ";agent=HamRadioLink" + App.Version);
-                    qrzKey = Tag(x, "Key"); qrzTime = DateTime.Now; if (qrzKey.Length == 0) throw new Exception("QRZ.com : " + Tag(x, "Error"));
+                    string x = Http(Tr.T("https://xmldata.qrz.com/xml/current/?username=") + Enc(u) + Tr.T(";password=") + Enc(p) + Tr.T(";agent=HamRadioLink") + App.Version);
+                    qrzKey = Tag(x, "Key"); qrzTime = DateTime.Now; if (qrzKey.Length == 0) throw new Exception(Tr.T("QRZ.com : ") + Tag(x, "Error"));
                 }
-                string r = Http("https://xmldata.qrz.com/xml/current/?s=" + qrzKey + ";callsign=" + Enc(call));
+                string r = Http(Tr.T("https://xmldata.qrz.com/xml/current/?s=") + qrzKey + Tr.T(";callsign=") + Enc(call));
                 string err = Tag(r, "Error");
                 if (err.Length > 0) { if (err.IndexOf("Session", StringComparison.OrdinalIgnoreCase) >= 0 || err.IndexOf("Invalid", StringComparison.OrdinalIgnoreCase) >= 0) { qrzKey = null; continue; } return null; }
                 string fn = Tag(r, "fname"), nm = Tag(r, "name");
@@ -114,47 +114,47 @@ namespace HamRadioLink.Journal
 
         public static string UploadQrz(List<Qso> qsos)
         {
-            string key = App.Cfg.Get("qrzlog.key", ""); if (key.Length == 0) throw new Exception("QRZ Logbook : clé API à renseigner (Tools > Online services).");
+            string key = App.Cfg.Get("qrzlog.key", ""); if (key.Length == 0) throw new Exception(Tr.T("QRZ Logbook : clé API à renseigner (Tools > Online services)."));
             int ok = 0, dup = 0; string msg = "";
             foreach (Qso q in qsos)
             {
                 string adif = OneAdif(new List<Qso> { q }); adif = adif.Substring(adif.IndexOf("<EOH>") + 5).Trim();
-                string r = Http("https://logbook.qrz.com/api", "KEY=" + Enc(key) + "&ACTION=INSERT&ADIF=" + Enc(adif));
+                string r = Http("https://logbook.qrz.com/api", Tr.T("KEY=") + Enc(key) + "&ACTION=INSERT&ADIF=" + Enc(adif));
                 if (r.Contains("RESULT=OK")) ok++; else if (r.Contains("duplicate")) dup++; else msg = r;
             }
-            if (ok + dup == 0 && msg.Length > 0) throw new Exception("QRZ Logbook : " + msg);
-            return "QRZ Logbook : " + ok + " envoyés, " + dup + " déjà présents.";
+            if (ok + dup == 0 && msg.Length > 0) throw new Exception(Tr.T("QRZ Logbook : ") + msg);
+            return Tr.T("QRZ Logbook : ") + ok + " envoyés, " + dup + Tr.T(" déjà présents.");
         }
 
         public static string UploadClubLog(List<Qso> qsos)
         {
             string mail = App.Cfg.Get("clublog.email", ""), pw = App.Cfg.Get("clublog.pass", ""), call = App.Cfg.Get("clublog.call", App.Cfg.Get("me.call", "")), api = App.Cfg.Get("clublog.api", "");
-            if (mail.Length == 0) throw new Exception("Club Log : e-mail et mot de passe à renseigner (Tools > Online services).");
+            if (mail.Length == 0) throw new Exception(Tr.T("Club Log : e-mail et mot de passe à renseigner (Tools > Online services)."));
             // Club Log répond « 403 Forbidden » à toute requête sans clé API de logiciel (et peut bloquer l'adresse IP si on insiste) : on n'envoie donc rien sans clé.
-            if (api.Length == 0) throw new Exception("Club Log refuse les envois sans clé API de logiciel (erreur 403). Demandez une clé au support de Club Log (helpdesk) pour HamRadioLink et saisissez-la dans Outils > Online services ; en attendant, exportez un fichier ADIF (clic droit > Exporter la sélection) et déposez-le sur le site de Club Log.");
+            if (api.Length == 0) throw new Exception(Tr.T("Club Log refuse les envois sans clé API de logiciel (erreur 403). Demandez une clé au support de Club Log (helpdesk) pour HamRadioLink et saisissez-la dans Outils > Online services ; en attendant, exportez un fichier ADIF (clic droit > Exporter la sélection) et déposez-le sur le site de Club Log."));
             int ok = 0;
             foreach (Qso q in qsos)
             {
                 string adif = OneAdif(new List<Qso> { q }); adif = adif.Substring(adif.IndexOf("<EOH>") + 5).Trim();
-                string r = Http("https://clublog.org/realtime.php", "email=" + Enc(mail) + "&password=" + Enc(pw) + "&callsign=" + Enc(call) + (api.Length > 0 ? "&api=" + Enc(api) : "") + "&adif=" + Enc(adif));
-                if (r.Trim().StartsWith("OK") || r.IndexOf("Dupe", StringComparison.OrdinalIgnoreCase) >= 0) ok++; else throw new Exception("Club Log : " + (r.Contains("403") ? "403 Forbidden : clé API refusée ou adresse bloquée (arrêt immédiat pour ne pas aggraver le blocage)." : r.Trim()));
+                string r = Http("https://clublog.org/realtime.php", Tr.T("email=") + Enc(mail) + "&password=" + Enc(pw) + "&callsign=" + Enc(call) + (api.Length > 0 ? "&api=" + Enc(api) : "") + "&adif=" + Enc(adif));
+                if (r.Trim().StartsWith("OK") || r.IndexOf("Dupe", StringComparison.OrdinalIgnoreCase) >= 0) ok++; else throw new Exception(Tr.T("Club Log : ") + (r.Contains("403") ? Tr.T("403 Forbidden : clé API refusée ou adresse bloquée (arrêt immédiat pour ne pas aggraver le blocage).") : r.Trim()));
             }
-            return "Club Log : " + ok + " / " + qsos.Count + " QSO envoyés.";
+            return Tr.T("Club Log : ") + ok + " / " + qsos.Count + " QSO envoyés.";
         }
 
         public static string UploadEqsl(List<Qso> qsos)
         {
-            string u = App.Cfg.Get("eqsl.user", ""), p = App.Cfg.Get("eqsl.pass", ""); if (u.Length == 0) throw new Exception("eQSL : identifiant et mot de passe à renseigner.");
+            string u = App.Cfg.Get("eqsl.user", ""), p = App.Cfg.Get("eqsl.pass", ""); if (u.Length == 0) throw new Exception(Tr.T("eQSL : identifiant et mot de passe à renseigner."));
             int sent = 0; string last = "";
             foreach (Qso q in qsos)   // une fiche par requête, au fur et à mesure
             {
                 string adif = OneAdif(new List<Qso> { q }); int eoh = adif.IndexOf("<EOH>");
                 string body = "<EQSL_USER:" + u.Length + ">" + u + "<EQSL_PSWD:" + p.Length + ">" + p + "<PROGRAMID:12>HamRadioLink<EOH>" + adif.Substring(eoh + 5);
-                string r = Http("https://www.eqsl.cc/qslcard/ImportADIF.cfm", "ADIFData=" + Enc(body), 60000);
-                if (r.IndexOf("Result: ", StringComparison.OrdinalIgnoreCase) < 0 && r.IndexOf("Error", StringComparison.OrdinalIgnoreCase) >= 0) throw new Exception("eQSL (" + q.S("COL_CALL") + ") : " + Regex.Replace(r, "<[^>]+>", " ").Trim());
-                Match m = Regex.Match(r, "Result:[^<]*", RegexOptions.IgnoreCase); last = m.Success ? m.Value : ""; sent++;
+                string r = Http("https://www.eqsl.cc/qslcard/ImportADIF.cfm", Tr.T("ADIFData=") + Enc(body), 60000);
+                if (r.IndexOf("Result: ", StringComparison.OrdinalIgnoreCase) < 0 && r.IndexOf("Error", StringComparison.OrdinalIgnoreCase) >= 0) throw new Exception(Tr.T("eQSL (") + q.S("COL_CALL") + ") : " + Regex.Replace(r, "<[^>]+>", " ").Trim());
+                Match m = Regex.Match(r, Tr.T("Result:[^<]*"), RegexOptions.IgnoreCase); last = m.Success ? m.Value : ""; sent++;
             }
-            return "eQSL : " + sent + " envoyé(s)" + (last.Length > 0 ? " (" + last + ")" : "") + ".";
+            return Tr.T("eQSL : ") + sent + " envoyé(s)" + (last.Length > 0 ? " (" + last + ")" : "") + ".";
         }
 
         // Lance TQSL en lisant sa sortie AU FIL DE L'EAU (sinon, sur un gros fichier, le tuyau se remplit et TQSL reste bloqué) ; code = -1 si délai dépassé
@@ -174,19 +174,19 @@ namespace HamRadioLink.Journal
         // LoTW : TQSL signe et envoie (tqsl.exe doit être installé et la « Station Location » créée)
         public static string UploadLotw(List<Qso> qsos)
         {
-            string tqsl = App.Cfg.Get("lotw.tqsl", "C:\\Program Files (x86)\\TrustedQSL\\tqsl.exe"), loc = App.Cfg.Get("lotw.location", "");
-            if (!File.Exists(tqsl)) throw new Exception("TQSL introuvable : " + tqsl + " (Tools > Online services).");
-            if (loc.Length == 0) throw new Exception("LoTW : nom de la « Station Location » de TQSL à renseigner.");
+            string tqsl = App.Cfg.Get("lotw.tqsl", Tr.T("C:\\Program Files (x86)\\TrustedQSL\\tqsl.exe")), loc = App.Cfg.Get("lotw.location", "");
+            if (!File.Exists(tqsl)) throw new Exception(Tr.T("TQSL introuvable : ") + tqsl + " (Tools > Online services).");
+            if (loc.Length == 0) throw new Exception(Tr.T("LoTW : nom de la « Station Location » de TQSL à renseigner."));
             string f = Path.Combine(Path.GetTempPath(), "hrl-lotw-" + Guid.NewGuid().ToString("N") + ".adi");
             File.WriteAllText(f, Adif.Export(qsos), new UTF8Encoding(false));
             try
             {
-                int code; string o = RunTqsl(tqsl, "-d -q -a all -u -l \"" + loc + "\" \"" + f + "\"", 600000, out code);
-                if (code == -1) throw new Exception("TQSL : délai dépassé (il attend peut-être le mot de passe de votre certificat).");
-                if (code != 0 && code != 9) throw new Exception("TQSL code " + code + " : " + o.Trim());
+                int code; string o = RunTqsl(tqsl, Tr.T("-d -q -a all -u -l \"") + loc + "\" \"" + f + "\"", 600000, out code);
+                if (code == -1) throw new Exception(Tr.T("TQSL : délai dépassé (il attend peut-être le mot de passe de votre certificat)."));
+                if (code != 0 && code != 9) throw new Exception(Tr.T("TQSL code ") + code + " : " + o.Trim());
             }
             finally { try { File.Delete(f); } catch { } }
-            return "LoTW : " + qsos.Count + " QSO signés et envoyés par TQSL.";
+            return Tr.T("LoTW : ") + qsos.Count + " QSO signés et envoyés par TQSL.";
         }
     }
 
@@ -197,20 +197,20 @@ namespace HamRadioLink.Journal
         ComboBox cLook;
         public OnlineForm()
         {
-            Text = "Online services"; Size = new Size(560, 560); StartPosition = FormStartPosition.CenterParent; FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; MinimizeBox = false; Font = Ui.Normal;
+            Text = Tr.T("Online services"); Size = new Size(560, 560); StartPosition = FormStartPosition.CenterParent; FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; MinimizeBox = false; Font = Ui.Normal;
             int y = 12;
-            Ui.Lbl(this, "Recherche d'indicatif :", 12, y); cLook = Ui.Combo(this, 160, y - 2, 120, new[] { "HamQTH", "QRZ.com", "(aucune)" }); cLook.Text = App.Cfg.Get("lookup.service", "HamQTH"); y += 30;
-            Row("Identifiant :", "lookup.user", ref y, false); Row("Mot de passe :", "lookup.pass", ref y, true); y += 6;
-            Ui.Lbl(this, "QRZ.com Logbook", 12, y); y += 22; Row("Clé API :", "qrzlog.key", ref y, true); y += 6;
-            Ui.Lbl(this, "Club Log", 12, y); y += 22; Row("E-mail :", "clublog.email", ref y, false); Row("Mot de passe :", "clublog.pass", ref y, true); Row("Clé API logiciel :", "clublog.api", ref y, true); y += 6;
-            Ui.Lbl(this, "eQSL.cc", 12, y); y += 22; Row("Identifiant :", "eqsl.user", ref y, false); Row("Mot de passe :", "eqsl.pass", ref y, true); y += 6;
-            Ui.Lbl(this, "LoTW (TQSL)", 12, y); y += 22; Row("tqsl.exe :", "lotw.tqsl", ref y, false); Row("Station Location :", "lotw.location", ref y, false);
-            Button ok = Ui.Btn(this, "OK", 360, y + 8, 80, 28, (s, e) => Save()); Ui.Btn(this, "Annuler", 450, y + 8, 80, 28, (s, e) => { DialogResult = DialogResult.Cancel; Close(); });
+            Ui.Lbl(this, Tr.T("Recherche d'indicatif :"), 12, y); cLook = Ui.Combo(this, 160, y - 2, 120, new[] { "HamQTH", "QRZ.com", Tr.T("(aucune)") }); cLook.Text = App.Cfg.Get("lookup.service", "HamQTH"); y += 30;
+            Row(Tr.T("Identifiant :"), "lookup.user", ref y, false); Row(Tr.T("Mot de passe :"), "lookup.pass", ref y, true); y += 6;
+            Ui.Lbl(this, Tr.T("QRZ.com Logbook"), 12, y); y += 22; Row(Tr.T("Clé API :"), "qrzlog.key", ref y, true); y += 6;
+            Ui.Lbl(this, Tr.T("Club Log"), 12, y); y += 22; Row(Tr.T("E-mail :"), "clublog.email", ref y, false); Row(Tr.T("Mot de passe :"), "clublog.pass", ref y, true); Row(Tr.T("Clé API logiciel :"), "clublog.api", ref y, true); y += 6;
+            Ui.Lbl(this, "eQSL.cc", 12, y); y += 22; Row(Tr.T("Identifiant :"), "eqsl.user", ref y, false); Row(Tr.T("Mot de passe :"), "eqsl.pass", ref y, true); y += 6;
+            Ui.Lbl(this, Tr.T("LoTW (TQSL)"), 12, y); y += 22; Row(Tr.T("tqsl.exe :"), "lotw.tqsl", ref y, false); Row(Tr.T("Station Location :"), "lotw.location", ref y, false);
+            Button ok = Ui.Btn(this, "OK", 360, y + 8, 80, 28, (s, e) => Save()); Ui.Btn(this, Tr.T("Annuler"), 450, y + 8, 80, 28, (s, e) => { DialogResult = DialogResult.Cancel; Close(); });
             ClientSize = new Size(560, y + 50); AcceptButton = ok;
         }
         void Row(string label, string key, ref int y, bool pw)
         {
-            Ui.Lbl(this, label, 24, y); TextBox b = Ui.Txt(this, 160, y - 2, 360); b.Text = App.Cfg.Get(key, key == "lotw.tqsl" ? "C:\\Program Files (x86)\\TrustedQSL\\tqsl.exe" : ""); b.UseSystemPasswordChar = pw; t[key] = b; y += 28;
+            Ui.Lbl(this, label, 24, y); TextBox b = Ui.Txt(this, 160, y - 2, 360); b.Text = App.Cfg.Get(key, key == "lotw.tqsl" ? Tr.T("C:\\Program Files (x86)\\TrustedQSL\\tqsl.exe") : ""); b.UseSystemPasswordChar = pw; t[key] = b; y += 28;
         }
         void Save() { App.Cfg.Set("lookup.service", cLook.Text); foreach (KeyValuePair<string, TextBox> kv in t) App.Cfg.Set(kv.Key, kv.Value.Text.Trim()); App.Cfg.Save(); DialogResult = DialogResult.OK; Close(); }
     }

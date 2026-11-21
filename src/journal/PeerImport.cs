@@ -12,7 +12,7 @@ namespace HamRadioLink.Journal
         public string Title, Dsn, Host = "127.0.0.1", Database = "", User = "", Password = ""; public int Port = 3306;
         public bool IsMySql;
         public long Count = -1; public string Error = "";
-        public override string ToString() { return Title + (IsMySql ? "  (MariaDB " + Host + ":" + Port + ", base " + Database + (Count >= 0 ? ", " + Count + " QSO" : "") + ")" : "");  }
+        public override string ToString() { return Title + (IsMySql ? Tr.T("  (MariaDB ") + Host + ":" + Port + Tr.T(", base ") + Database + (Count >= 0 ? ", " + Count + " QSO" : "") + ")" : "");  }
     }
 
     // Tout ce que l'autre logiciel de journal a rangé sur cet ordinateur : station, comptes en ligne, cluster, radio, journaux.
@@ -27,13 +27,13 @@ namespace HamRadioLink.Journal
         // Table des pays de l'autre logiciel (copiée une fois dans data\journal), ou null.
         public static string CountriesFile()
         {
-            string pf86 = Environment.GetEnvironmentVariable("ProgramFiles(x86)") ?? "";
-            foreach (string s in new[] { Path.Combine(RigDir, "HRD Countries.txt"), Path.Combine(pf86, "HRD Software LLC\\Ham Radio Deluxe\\Defaults\\HRD Countries.txt") }) if (File.Exists(s)) return s;
+            string pf86 = Environment.GetEnvironmentVariable(Tr.T("ProgramFiles(x86)")) ?? "";
+            foreach (string s in new[] { Path.Combine(RigDir, Tr.T("HRD Countries.txt")), Path.Combine(pf86, Tr.T("HRD Software LLC\\Ham Radio Deluxe\\Defaults\\HRD Countries.txt")) }) if (File.Exists(s)) return s;
             return null;
         }
         static string Roaming { get { return Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData); } }
-        public static string LogbookDir { get { return Path.Combine(Roaming, "HRDLLC\\HRD Logbook"); } }
-        public static string RigDir { get { return Path.Combine(Roaming, "HRDLLC\\Ham Radio Deluxe"); } }
+        public static string LogbookDir { get { return Path.Combine(Roaming, Tr.T("HRDLLC\\HRD Logbook")); } }
+        public static string RigDir { get { return Path.Combine(Roaming, Tr.T("HRDLLC\\Ham Radio Deluxe")); } }
 
         static XmlDocument Load(string f) { if (!File.Exists(f)) return null; try { XmlDocument d = new XmlDocument(); d.XmlResolver = null; d.Load(f); return d; } catch { return null; } }
         static string El(XmlDocument d, string name) { if (d == null) return ""; XmlNodeList l = d.GetElementsByTagName(name); return l.Count > 0 ? l[0].InnerText.Trim() : ""; }
@@ -41,8 +41,8 @@ namespace HamRadioLink.Journal
         public static PeerProfile Read()
         {
             PeerProfile p = new PeerProfile();
-            string pf86 = Environment.GetEnvironmentVariable("ProgramFiles(x86)") ?? "";
-            p.Found = Directory.Exists(LogbookDir) || Directory.Exists(RigDir) || Directory.Exists(Path.Combine(pf86, "HRD Software LLC"));
+            string pf86 = Environment.GetEnvironmentVariable(Tr.T("ProgramFiles(x86)")) ?? "";
+            p.Found = Directory.Exists(LogbookDir) || Directory.Exists(RigDir) || Directory.Exists(Path.Combine(pf86, Tr.T("HRD Software LLC")));
             if (!p.Found) return p;
             Dictionary<string, string> s = p.Settings;
 
@@ -161,9 +161,9 @@ namespace HamRadioLink.Journal
         {
             db.Exec("CREATE DATABASE IF NOT EXISTS " + MySqlClient.Ident(schema) + " CHARACTER SET utf8mb4");
             string exists = db.Scalar("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema=" + MySqlClient.Quote(schema) + " AND table_name=" + MySqlClient.Quote(PeerLog.Table));
-            if (exists == "1") { log("Table du journal déjà présente : conservée telle quelle."); return; }
+            if (exists == "1") { log(Tr.T("Table du journal déjà présente : conservée telle quelle.")); return; }
             db.Exec(PeerSchema.CreateSql.Replace("{TABLE}", MySqlClient.Ident(schema) + "." + MySqlClient.Ident(PeerLog.Table)));
-            log("Table du journal créée (structure compatible, 122 colonnes).");
+            log(Tr.T("Table du journal créée (structure compatible, 122 colonnes)."));
         }
 
         // Copie tous les QSO du journal source vers le nouveau journal (la source n'est que lue).
@@ -180,7 +180,7 @@ namespace HamRadioLink.Journal
                 List<int> idx = new List<int>(); List<string> names = new List<string>();
                 for (int i = 0; i < r.Columns.Length; i++) if (dcols.Contains(r.Columns[i])) { idx.Add(i); names.Add(MySqlClient.Ident(r.Columns[i])); }
                 int pk = Array.IndexOf(r.Columns, "COL_PRIMARY_KEY");
-                StringBuilder sb = new StringBuilder("INSERT INTO " + dt + " (" + string.Join(",", names.ToArray()) + ") VALUES ");
+                StringBuilder sb = new StringBuilder("INSERT INTO " + dt + " (" + string.Join(",", names.ToArray()) + Tr.T(") VALUES "));
                 bool first = true;
                 foreach (string[] row in r.Rows)
                 {
