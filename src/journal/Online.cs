@@ -128,18 +128,174 @@ namespace HamRadioLink.Journal
 
         public static string UploadClubLog(List<Qso> qsos)
         {
-            string mail = App.Cfg.Get("clublog.email", ""), pw = App.Cfg.Get("clublog.pass", ""), call = App.Cfg.Get("clublog.call", App.Cfg.Get("me.call", "")), api = App.Cfg.Get("clublog.api", "");
-            if (mail.Length == 0) throw new Exception(Tr.T("Club Log : e-mail et mot de passe à renseigner (Tools > Online services)."));
-            // Club Log répond « 403 Forbidden » à toute requête sans clé API de logiciel (et peut bloquer l'adresse IP si on insiste) : on n'envoie donc rien sans clé.
-            if (api.Length == 0) throw new Exception(Tr.T("Club Log refuse les envois sans clé API de logiciel (erreur 403). Demandez une clé au support de Club Log (helpdesk) pour HamRadioLink et saisissez-la dans Outils > Online services ; en attendant, exportez un fichier ADIF (clic droit > Exporter la sélection) et déposez-le sur le site de Club Log."));
-            int ok = 0;
+            // Club Log (API REST) : un jeton personnel « cl_… » créé dans Club Log (Settings > API) ; plus d'e-mail, de mot de passe ni de clé de logiciel.
+            string call = App.Cfg.Get("clublog.call", App.Cfg.Get("me.call", "")), tok = App.Cfg.Get("clublog.token", "").Trim();
+            if (tok.Length == 0) throw new Exception(Tr.T("Club Log : jeton à renseigner (Outils > Online services ; à créer sur clublog.org > Settings > API)."));
+            if (call.Length == 0) throw new Exception(Tr.T("Club Log : indicatif à renseigner (Outils > Online services)."));
+            int ok = 0, dup = 0;
+            for (int i = 0; i < qsos.Count; i += 100)   // une requête par lot de 100 (maximum de l API)
+            {
+                StringBuilder sb = new StringBuilder("{\"qsos\":[");
+                for (int j = i; j < Math.Min(i + 100, qsos.Count); j++)
+                {
+                    string adif = OneAdif(new List<Qso> { qsos[j] }); adif = adif.Substring(adif.IndexOf("<EOH>") + 5).Trim();
+                    if (j > i) sb.Append(',');
+                    sb.Append("{\"call\":\"" + JEsc(call) + "\",\"adif\":\"" + JEsc(adif) + "\"}");
+                }
+                sb.Append("]}");
+                int code; string r = HttpBearer("https://clublog.org/api/v1/qso/batch", sb.ToString(), tok, out code);
+                if (code == 401) throw new Exception(Tr.T("Club Log : jeton refusé ou révoqué (arrêt). Créez un nouveau jeton sur clublog.org > Settings > API."));
+                if (code == 403) throw new Exception(Tr.T("Club Log : cet indicatif n'appartient pas au compte du jeton (arrêt)."));
+                if (code == 429) throw new Exception(Tr.T("Club Log : trop de requêtes, réessayez dans 5 minutes."));
+                if (code != 200) throw new Exception(Tr.T("Club Log : ") + code + " " + r.Trim());
+                foreach (Match m in Regex.Matches(r, "\"status\"\\s*:\\s*\"(\\w+)\""))
+                {
+                    string s = m.Groups[1].Value; if (s == "created" || s == "updated") ok++; else if (s == "duplicate") dup++;
+                }
+            }
+            if (ok + dup == 0 && qsos.Count > 0) throw new Exception(Tr.T("Club Log : aucun QSO accepté (") + (qsos.Count) + Tr.T(" refusés par Club Log)."));   // doublons ou refus isolés : on continue
+            return Tr.T("Club Log : ") + ok + " envoyés, " + dup + Tr.T(" déjà présents.");
+        }
+
+        static string JEsc(string s) { return s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "\\r").Replace("\n", "\\n").Replace("\t", "\\t"); }
+
+        static string HttpBearer(string url, string json, string token, out int code)
+        {
+            HttpWebRequest r = (HttpWebRequest)WebRequest.Create(url);
+            r.UserAgent = "HamRadioLink/" + App.Version + " (F5PBG)"; r.Timeout = 60000; r.Method = "POST"; r.ContentType = "application/json"; if (token != null) r.Headers["Authorization"] = "Bearer " + token;
+            byte[] b = Encoding.UTF8.GetBytes(json); r.ContentLength = b.Length;
+            using (Stream s = r.GetRequestStream()) s.Write(b, 0, b.Length);
+            try
+            {
+                using (HttpWebResponse resp = (HttpWebResponse)r.GetResponse()) using (StreamReader sr = new StreamReader(resp.GetResponseStream(), Encoding.UTF8)) { code = (int)resp.StatusCode; return sr.ReadToEnd(); }
+            }
+            catch (WebException ex)
+            {
+                HttpWebResponse er = ex.Response as HttpWebResponse; if (er == null) throw;
+                code = (int)er.StatusCode; using (StreamReader sr = new StreamReader(er.GetResponseStream(), Encoding.UTF8)) return sr.ReadToEnd();
+            }
+        }
+
+        static string AdifBody(Qso q) { string adif = OneAdif(new List<Qso> { q }); return adif.Substring(adif.IndexOf("<EOH>") + 5).Trim(); }
+
+        // HRDLog.net : « code d'envoi » reçu par e-mail (pas le mot de passe). Format du service non publié : à confirmer par un essai réel.
+        public static string UploadHrdlog(List<Qso> qsos)
+        {
+            string call = App.Cfg.Get("hrdlog.call", App.Cfg.Get("me.call", "")), code = App.Cfg.Get("hrdlog.code", "").Trim();
+            if (code.Length == 0 || call.Length == 0) throw new Exception(Tr.T("HRDLog.net : indicatif et code d'envoi à renseigner (Outils > Online services)."));
+            int ok = 0, dup = 0;
             foreach (Qso q in qsos)
             {
-                string adif = OneAdif(new List<Qso> { q }); adif = adif.Substring(adif.IndexOf("<EOH>") + 5).Trim();
-                string r = Http("https://clublog.org/realtime.php", Tr.T("email=") + Enc(mail) + "&password=" + Enc(pw) + "&callsign=" + Enc(call) + (api.Length > 0 ? "&api=" + Enc(api) : "") + "&adif=" + Enc(adif));
-                if (r.Trim().StartsWith("OK") || r.IndexOf("Dupe", StringComparison.OrdinalIgnoreCase) >= 0) ok++; else throw new Exception(Tr.T("Club Log : ") + (r.Contains("403") ? Tr.T("403 Forbidden : clé API refusée ou adresse bloquée (arrêt immédiat pour ne pas aggraver le blocage).") : r.Trim()));
+                string r = Http("https://robot.hrdlog.net/NewEntry.aspx", "Callsign=" + Enc(call) + "&Code=" + Enc(code) + "&App=" + Enc("HamRadioLink") + "&ADIFData=" + Enc(AdifBody(q)), 30000);
+                if (r.IndexOf("dup", StringComparison.OrdinalIgnoreCase) >= 0) { dup++; continue; }   // doublon : on continue
+                if (r.IndexOf("<error", StringComparison.OrdinalIgnoreCase) >= 0 || r.IndexOf("Error", StringComparison.OrdinalIgnoreCase) >= 0 && r.IndexOf("<insert", StringComparison.OrdinalIgnoreCase) < 0) throw new Exception(Tr.T("HRDLog.net : ") + Regex.Replace(r, "<[^>]+>", " ").Trim());
+                ok++;
             }
-            return Tr.T("Club Log : ") + ok + " / " + qsos.Count + " QSO envoyés.";
+            return Tr.T("HRDLog.net : ") + ok + " envoyés, " + dup + Tr.T(" déjà présents.");
+        }
+
+        static DateTime lastQrzcq = DateTime.MinValue;
+        // QRZCQ.com : API JSON (indicatif + clé API), « pas plus d'un envoi par minute » : on attend avant chaque requête si besoin.
+        public static string UploadQrzcq(List<Qso> qsos)
+        {
+            string call = App.Cfg.Get("qrzcq.call", App.Cfg.Get("me.call", "")), key = App.Cfg.Get("qrzcq.key", "").Trim();
+            if (key.Length == 0 || call.Length == 0) throw new Exception(Tr.T("QRZCQ.com : indicatif et clé API à renseigner (Outils > Online services)."));
+            double wait = 61 - (DateTime.UtcNow - lastQrzcq).TotalSeconds; if (wait > 0) System.Threading.Thread.Sleep((int)(wait * 1000));
+            string adif = Adif.Export(qsos); adif = adif.Substring(adif.IndexOf("<EOH>") + 5).Trim();
+            int code; string r = HttpBearer("https://ssl.qrzcq.com/api/logupload", "{\"auth\":{\"call\":\"" + JEsc(call) + "\",\"key\":\"" + JEsc(key) + "\"},\"data\":{\"adif\":\"" + JEsc(adif) + "\"}}", null, out code);
+            lastQrzcq = DateTime.UtcNow;
+            if (code != 200 || !Regex.IsMatch(r, "\"status\"\\s*:\\s*\"OK\"", RegexOptions.IgnoreCase)) throw new Exception(Tr.T("QRZCQ.com : ") + code + " " + r.Trim());
+            return Tr.T("QRZCQ.com : ") + qsos.Count + " QSO transmis (en file d'attente chez QRZCQ).";
+        }
+
+        // HamQTH : envoi en temps réel, un QSO par requête (le service déconseille l'envoi de milliers de QSO ainsi) ; identifiant et mot de passe de HamQTH.
+        public static string UploadHamqth(List<Qso> qsos)
+        {
+            string u = App.Cfg.Get("hamqth.user", App.Cfg.Get("lookup.user", "")), p = App.Cfg.Get("hamqth.pass", App.Cfg.Get("lookup.pass", ""));
+            if (u.Length == 0 || p.Length == 0) throw new Exception(Tr.T("HamQTH : identifiant et mot de passe à renseigner (Outils > Online services)."));
+            int ok = 0, rej = 0;
+            foreach (Qso q in qsos)
+            {
+                string r = Http("https://www.hamqth.com/qso_realtime.php", "u=" + Enc(u) + "&p=" + Enc(p) + "&prg=HamRadioLink&cmd=insert&adif=" + Enc(AdifBody(q)), 30000);
+                if (r.IndexOf("QSO OK", StringComparison.OrdinalIgnoreCase) >= 0 || r.IndexOf("inserted", StringComparison.OrdinalIgnoreCase) >= 0 || r.IndexOf("updated", StringComparison.OrdinalIgnoreCase) >= 0) ok++;   // HamQTH répond « QSO inserted » (la doc annonçait « QSO OK »)
+                else if (r.IndexOf("Forbidden", StringComparison.OrdinalIgnoreCase) < 0 && r.IndexOf("Access denied", StringComparison.OrdinalIgnoreCase) < 0 && r.IndexOf("Internal error", StringComparison.OrdinalIgnoreCase) < 0 && r.IndexOf("password", StringComparison.OrdinalIgnoreCase) < 0 && r.IndexOf("user", StringComparison.OrdinalIgnoreCase) < 0 && r.Trim().Length > 0) rej++;   // tout refus de ce QSO (déjà présent, bande inconnue…) : on continue ; seules les erreurs d'accès arrêtent   // doublon, bande inconnue ou champ manquant : on continue
+                else throw new Exception(Tr.T("HamQTH : ") + Regex.Replace(r, "<[^>]+>", " ").Trim());
+            }
+            return Tr.T("HamQTH : ") + ok + " envoyés" + (rej > 0 ? ", " + rej + Tr.T(" refusés par HamQTH (doublons ou fiches incomplètes).") : ".");
+        }
+
+        static string HttpReq(string method, string url, string body, string contentType, string bearer, out int code)
+        {
+            HttpWebRequest r = (HttpWebRequest)WebRequest.Create(url);
+            r.UserAgent = "HamRadioLink/" + App.Version + " (F5PBG)"; r.Timeout = 60000; r.Method = method;
+            if (bearer != null) r.Headers["Authorization"] = "Bearer " + bearer;
+            if (body != null) { r.ContentType = contentType; byte[] b = Encoding.UTF8.GetBytes(body); r.ContentLength = b.Length; using (Stream s = r.GetRequestStream()) s.Write(b, 0, b.Length); }
+            try
+            {
+                using (HttpWebResponse resp = (HttpWebResponse)r.GetResponse()) using (StreamReader sr = new StreamReader(resp.GetResponseStream(), Encoding.UTF8)) { code = (int)resp.StatusCode; return sr.ReadToEnd(); }
+            }
+            catch (WebException ex)
+            {
+                HttpWebResponse er = ex.Response as HttpWebResponse; if (er == null) throw;
+                code = (int)er.StatusCode; using (StreamReader sr = new StreamReader(er.GetResponseStream(), Encoding.UTF8)) return sr.ReadToEnd();
+            }
+        }
+
+        // World Radio League : liste des journaux du compte (id, nom) et identifiant du journal par défaut (null si aucun choisi).
+        public static List<string[]> WrlLogbooks(string key, out string defId)
+        {
+            defId = null; List<string[]> l = new List<string[]>(); int code;
+            string me = HttpReq("GET", "https://api.worldradioleague.com/v1/me", null, null, key, out code);
+            if (code == 401 || code == 403) throw new Exception(Tr.T("World Radio League : clé API refusée ou révoquée."));
+            Match md = Regex.Match(me, "\"defaultLogbook\"\\s*:\\s*\\{[^{}]*?\"logbookId\"\\s*:\\s*\"([^\"]+)\""); if (md.Success) defId = md.Groups[1].Value;
+            string r = HttpReq("GET", "https://api.worldradioleague.com/v1/logbooks?limit=100", null, null, key, out code);
+            if (code != 200) throw new Exception(Tr.T("World Radio League : ") + code + " " + Regex.Replace(r, "\\s+", " ").Trim());
+            foreach (Match m in Regex.Matches(r, "\"id\"\\s*:\\s*\"([0-9a-fA-F\\-]{36})\"[^{}]*?\"name\"\\s*:\\s*\"([^\"]*)\"")) l.Add(new string[] { m.Groups[1].Value, m.Groups[2].Value });
+            return l;
+        }
+
+        // Journal de destination : celui réglé (wrl.logbook), sinon le journal par défaut du compte, sinon l'unique journal ; plusieurs sans défaut = erreur explicite.
+        static string WrlLogbook(string key)
+        {
+            string lb = App.Cfg.Get("wrl.logbook", "").Trim(); if (lb.Length > 0) return lb;
+            string def; List<string[]> l = WrlLogbooks(key, out def);
+            if (def != null) return def;
+            if (l.Count == 1) return l[0][0];
+            if (l.Count == 0) throw new Exception(Tr.T("World Radio League : aucun journal (logbook) trouvé sur votre compte."));
+            throw new Exception(Tr.T("World Radio League : plusieurs journaux et aucun par défaut. Choisissez-en un dans Online services (bouton « Mes journaux »)."));
+        }
+        // World Radio League : clé API (Integrations > Developer API), envoi d'un fichier ADIF en 3 étapes (démarrer l'import, déposer le fichier, suivre le traitement).
+        public static string UploadWrl(List<Qso> qsos)
+        {
+            string key = App.Cfg.Get("wrl.key", "").Trim();
+            if (key.Length == 0) throw new Exception(Tr.T("World Radio League : clé API à renseigner (Outils > Online services)."));
+            string adif = Adif.Export(qsos); int code; string r = ""; string lb = WrlLogbook(key);
+            for (int t = 0; t < 12; t++)   // un seul import à la fois par compte : on attend si un autre est en cours
+            {
+                r = HttpReq("POST", "https://api.worldradioleague.com/v1/imports", "{\"programId\":\"HamRadioLink\"" + (lb.Length > 0 ? ",\"logbookId\":\"" + lb + "\"" : "") + "}", "application/json", key, out code);
+                if (code == 200 || code == 201) break;
+                if (code == 409 && t < 11) { System.Threading.Thread.Sleep(10000); continue; }
+                if (code == 401 || code == 403) throw new Exception(Tr.T("World Radio League : clé API refusée ou révoquée (arrêt)."));
+                if (code == 429) throw new Exception(Tr.T("World Radio League : trop de requêtes ou quota d'import du jour atteint, réessayez plus tard."));
+                throw new Exception(Tr.T("World Radio League : ") + code + " " + Regex.Replace(r, "\\s+", " ").Trim());
+            }
+            Match mid = Regex.Match(r, "\"id\"\\s*:\\s*\"([^\"]+)\""), mu = Regex.Match(r, "\"url\"\\s*:\\s*\"([^\"]+)\"");
+            if (!mid.Success || !mu.Success) throw new Exception(Tr.T("World Radio League : réponse inattendue ") + Regex.Replace(r, "\\s+", " ").Trim());
+            string up = mu.Groups[1].Value.Replace("\\u0026", "&").Replace("\\/", "/");
+            HttpReq("PUT", up, adif, "text/plain", null, out code);   // dépôt du fichier : sans clé API
+            if (code < 200 || code >= 300) throw new Exception(Tr.T("World Radio League : dépôt du fichier refusé (") + code + ").");
+            for (int i = 0; i < 60; i++)   // suivi : toutes les 3 s, 3 minutes au plus
+            {
+                System.Threading.Thread.Sleep(3000);
+                r = HttpReq("GET", "https://api.worldradioleague.com/v1/imports/" + mid.Groups[1].Value, null, null, key, out code);
+                Match ms = Regex.Match(r, "\"status\"\\s*:\\s*\"(\\w+)\""); string st = ms.Success ? ms.Groups[1].Value : "";
+                if (st == "complete" || st == "complete_with_errors") return Tr.T("World Radio League : ") + qsos.Count + Tr.T(" QSO transmis (les doublons sont ignorés par le service).");
+                if (st == "failed" || st == "rejected" || st == "expired" || st == "cancelled")
+                {
+                    Match me = Regex.Match(r, "\"errorCode\"\\s*:\\s*\"(\\w+)\""); throw new Exception(Tr.T("World Radio League : import ") + st + (me.Success ? " (" + me.Groups[1].Value + ")" : ""));
+                }
+            }
+            throw new Exception(Tr.T("World Radio League : le traitement de l'import dépasse 3 minutes ; vérifiez sur le site."));
         }
 
         public static string UploadEqsl(List<Qso> qsos)
@@ -197,16 +353,53 @@ namespace HamRadioLink.Journal
         ComboBox cLook;
         public OnlineForm()
         {
-            Text = Tr.T("Online services"); Size = new Size(560, 560); StartPosition = FormStartPosition.CenterParent; FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; MinimizeBox = false; Font = Ui.Normal;
+            AutoScaleMode = AutoScaleMode.None; Text = Tr.T("Online services"); Size = new Size(560, 560); StartPosition = FormStartPosition.CenterParent; FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; MinimizeBox = false; Font = Ui.Normal;
             int y = 12;
             Ui.Lbl(this, Tr.T("Recherche d'indicatif :"), 12, y); cLook = Ui.Combo(this, 160, y - 2, 120, new[] { "HamQTH", "QRZ.com", Tr.T("(aucune)") }); cLook.Text = App.Cfg.Get("lookup.service", "HamQTH"); y += 30;
             Row(Tr.T("Identifiant :"), "lookup.user", ref y, false); Row(Tr.T("Mot de passe :"), "lookup.pass", ref y, true); y += 6;
             Ui.Lbl(this, Tr.T("QRZ.com Logbook"), 12, y); y += 22; Row(Tr.T("Clé API :"), "qrzlog.key", ref y, true); y += 6;
-            Ui.Lbl(this, Tr.T("Club Log"), 12, y); y += 22; Row(Tr.T("E-mail :"), "clublog.email", ref y, false); Row(Tr.T("Mot de passe :"), "clublog.pass", ref y, true); Row(Tr.T("Clé API logiciel :"), "clublog.api", ref y, true); y += 6;
+            Ui.Lbl(this, Tr.T("Club Log"), 12, y); y += 22; Row(Tr.T("Indicatif :"), "clublog.call", ref y, false); Row(Tr.T("Jeton (cl_…) :"), "clublog.token", ref y, true);
+            Ui.Btn(this, Tr.T("Demander un jeton"), 160, y - 2, 200, 26, (s, e) => { try { System.Diagnostics.Process.Start("https://clublog.org/edituser.php?tab=api"); } catch (Exception ex) { MessageBox.Show(ex.Message); } });
+            Ui.Btn(this, Tr.T("Aide"), 370, y - 2, 80, 26, (s, e) => ShowHelp(Tr.T("Pour envoyer vos QSO vers Club Log, il faut un jeton personnel :\n\n1. Cliquez sur « Demander un jeton » : la page de Club Log s'ouvre dans votre navigateur (connectez-vous à votre compte si besoin).\n2. Dans « Label », tapez un nom pour reconnaître ce jeton, par exemple HamRadioLink (le nom est libre).\n3. Cliquez sur « Create token ».\n4. Le jeton (il commence par cl_) s'affiche UNE SEULE FOIS : copiez-le tout de suite avec le bouton de copie, sans espace en trop.\n5. Collez-le ici dans le champ « Jeton », vérifiez votre indicatif, puis cliquez sur OK.\n\nLe jeton se traite comme un mot de passe : ne le montrez à personne. Un jeton inutilisé pendant 6 mois est supprimé par Club Log ; il suffit alors d'en créer un nouveau."))); y += 32;
+            Ui.Lbl(this, Tr.T("HRDLog.net (code d'envoi reçu par e-mail)"), 12, y); y += 22; Row(Tr.T("Indicatif :"), "hrdlog.call", ref y, false); Row(Tr.T("Code d'envoi :"), "hrdlog.code", ref y, true); y += 6;
+            Ui.Lbl(this, "QRZCQ.com", 12, y); y += 22; Row(Tr.T("Indicatif :"), "qrzcq.call", ref y, false); Row(Tr.T("Clé API :"), "qrzcq.key", ref y, true);
+            Ui.Btn(this, Tr.T("Aide"), 160, y - 2, 80, 26, (s, e) => ShowHelp(Tr.T("Pour envoyer vos QSO vers QRZCQ.com, il faut votre clé API :\n\n1. Connectez-vous à votre compte sur qrzcq.com dans votre navigateur.\n2. Cliquez sur l'onglet \"Manage\" en haut à droite de la page.\n3. Repérez la clé API (API Key) et copiez-la, sans espace en trop.\n4. Collez-la ici dans le champ \"Clé API\", vérifiez votre indicatif, puis cliquez sur OK.\n\nLa clé se traite comme un mot de passe : ne la montrez à personne. QRZCQ n'accepte pas plus d'un envoi par minute : le programme attend tout seul entre deux envois."))); y += 32;
+            Ui.Lbl(this, "HamQTH", 12, y); y += 22; Row(Tr.T("Identifiant :"), "hamqth.user", ref y, false); Row(Tr.T("Mot de passe :"), "hamqth.pass", ref y, true); y += 6;
+            Ui.Lbl(this, "World Radio League", 12, y); y += 22; Row(Tr.T("Clé API :"), "wrl.key", ref y, true);
+            Row(Tr.T("Journal (facultatif) :"), "wrl.logbook", ref y, false);
+            Ui.Btn(this, Tr.T("Mes journaux"), 160, y - 2, 160, 26, (s, e) => PickWrl());
+            Ui.Btn(this, Tr.T("Demander une clé"), 326, y - 2, 164, 26, (s, e) => { try { System.Diagnostics.Process.Start("https://app.worldradioleague.com/integration/"); } catch (Exception ex) { MessageBox.Show(ex.Message); } });
+            Ui.Btn(this, Tr.T("Aide"), 496, y - 2, 56, 26, (s, e) => ShowHelp(Tr.T("Pour envoyer vos QSO vers World Radio League, il faut une clé API :\n\n1. Cliquez sur « Demander une clé » : la page de WRL s'ouvre dans votre navigateur (connectez-vous à votre compte).\n2. Ouvrez « Integrations », rubrique « Developer API », puis cliquez sur « Generate API key ».\n3. La clé (elle commence par wrl_live_) n'est affichée QU'UNE SEULE FOIS : copiez-la tout de suite, sans espace en trop.\n4. Collez-la ici dans le champ « Clé API », puis cliquez sur OK.\n\nLa clé se traite comme un mot de passe : ne la montrez à personne. Les QSO sont envoyés sous forme de fichier ADIF ; les doublons sont ignorés par le service."))); y += 32;
             Ui.Lbl(this, "eQSL.cc", 12, y); y += 22; Row(Tr.T("Identifiant :"), "eqsl.user", ref y, false); Row(Tr.T("Mot de passe :"), "eqsl.pass", ref y, true); y += 6;
             Ui.Lbl(this, Tr.T("LoTW (TQSL)"), 12, y); y += 22; Row(Tr.T("tqsl.exe :"), "lotw.tqsl", ref y, false); Row(Tr.T("Station Location :"), "lotw.location", ref y, false);
             Button ok = Ui.Btn(this, "OK", 360, y + 8, 80, 28, (s, e) => Save()); Ui.Btn(this, Tr.T("Annuler"), 450, y + 8, 80, 28, (s, e) => { DialogResult = DialogResult.Cancel; Close(); });
-            ClientSize = new Size(560, y + 50); AcceptButton = ok;
+            ClientSize = new Size(560, Math.Min(y + 50, Screen.PrimaryScreen.WorkingArea.Height - 80)); AutoScroll = true; AutoScrollMinSize = new Size(0, y + 50); AcceptButton = ok;
+        }
+        // Liste les journaux (logbooks) du compte World Radio League et remplit le champ « Journal » avec celui choisi.
+        void PickWrl()
+        {
+            string key = t["wrl.key"].Text.Trim(); if (key.Length == 0) { MessageBox.Show(this, Tr.T("Saisissez d'abord la clé API."), "World Radio League"); return; }
+            try
+            {
+                Cursor = Cursors.WaitCursor; string def; List<string[]> l = Online.WrlLogbooks(key, out def); Cursor = Cursors.Default;
+                if (l.Count == 0) { MessageBox.Show(this, Tr.T("Aucun journal trouvé sur ce compte."), "World Radio League"); return; }
+                Form f = new Form(); f.Text = Tr.T("Mes journaux World Radio League"); f.StartPosition = FormStartPosition.CenterParent; f.FormBorderStyle = FormBorderStyle.FixedDialog; f.MaximizeBox = false; f.MinimizeBox = false; f.Font = Ui.Normal; f.ClientSize = new Size(460, 250);
+                ListBox lb = new ListBox { Left = 12, Top = 12, Width = 436, Height = 190 }; foreach (string[] x in l) lb.Items.Add(x[1] + (x[0] == def ? Tr.T("  (par défaut)") : "")); lb.SelectedIndex = 0; f.Controls.Add(lb);
+                Button ok = new Button { Text = "OK", Left = 270, Top = 212, Width = 85 }; ok.DialogResult = DialogResult.OK; Button no = new Button { Text = Tr.T("Annuler"), Left = 363, Top = 212, Width = 85 }; no.DialogResult = DialogResult.Cancel; f.Controls.Add(ok); f.Controls.Add(no); f.AcceptButton = ok; f.CancelButton = no;
+                if (f.ShowDialog(this) == DialogResult.OK && lb.SelectedIndex >= 0) t["wrl.logbook"].Text = l[lb.SelectedIndex][0];
+            }
+            catch (Exception ex) { Cursor = Cursors.Default; MessageBox.Show(this, ex.Message, "World Radio League"); }
+        }
+
+        Form helpFrm;
+        // Aide non bloquante : fenêtre à part (Show, pas ShowDialog), les autres fenêtres restent utilisables.
+        void ShowHelp(string txt)
+        {
+            if (helpFrm != null && !helpFrm.IsDisposed) { helpFrm.Activate(); return; }
+            Form h = new Form(); helpFrm = h; h.Text = Tr.T("Club Log"); h.FormBorderStyle = FormBorderStyle.FixedToolWindow; h.StartPosition = FormStartPosition.CenterParent; h.Font = Ui.Normal; h.ShowInTaskbar = false;
+            Label l = new Label(); l.Text = txt; l.AutoSize = false; l.SetBounds(12, 12, 480, 270); h.Controls.Add(l);
+            Button b = new Button(); b.Text = "OK"; b.SetBounds(412, 290, 80, 28); b.Click += (s, e) => h.Close(); h.Controls.Add(b);
+            h.ClientSize = new Size(504, 330); h.Show(this);
         }
         void Row(string label, string key, ref int y, bool pw)
         {

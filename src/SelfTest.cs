@@ -41,7 +41,7 @@ namespace HamRadioLink
                 foreach (RadioDef d in Radios.All()) { foreach (string nt in d.Notes) sb.AppendLine("NOTE " + d.Key + " : " + nt); Definitions(d); Roundtrip(d); if (d.Civ >= 0) CivChecks(d, ++nCiv); else if (d.Bin) Y5Checks(d); else if (d.Leg != null) LegChecks(d); else if (d.Tci) TciChecks(d); else { StateMapping(d); EndToEnd(d); } Persistence(d); LockChecks(d); }
                 CustomTest(); Strictness();
                 Editors();
-                DeadReads(); MenuBackup(); UpdateChecks(); RosRestoreChecks(); ScaleChecks(); foreach (RadioDef d in Radios.All()) { PickChecks(d); RosChecks(d); }
+                DeadReads(); MenuBackup(); UpdateChecks(); AlertChecks(); RosRestoreChecks(); ScaleChecks(); foreach (RadioDef d in Radios.All()) { PickChecks(d); RosChecks(d); }
                 ShareTest(); ShareCfgTest(); ServerTest(); Com0ComTest(); CatLogTest(); PttTimeoutTest();
             }
             catch (OperationCanceledException) { }
@@ -684,6 +684,17 @@ namespace HamRadioLink
             }
             Info("Échelles d'émission : " + rigs + " postes, " + meters + " vumètres vérifiés (monotonie, bornes, graduations, puissance max, étalonnage)");
         }
+        // ---- messages d alerte : ajout horodaté, non lu / lu, purge à 7 jours, effacement, pas de doublon dans la minute
+        static void AlertChecks()
+        {
+            AlertLog.Clear(); Check(!AlertLog.Unread, "alertes : aucun message non lu après effacement");
+            AlertLog.Add("FT-2000", "Perte de liaison : essai"); Check(AlertLog.Unread && AlertLog.UnreadCount == 1 && AlertLog.All().Count == 1, "alertes : un message ajoute allume le bouton");
+            AlertLog.Add("FT-2000", "Perte de liaison : essai"); Check(AlertLog.All().Count == 1, "alertes : le meme message n est pas repete dans la minute");
+            System.Threading.Thread.Sleep(1100); AlertLog.MarkSeen(); Check(!AlertLog.Unread, "alertes : consulter les messages eteint le bouton");
+            AlertLog.Add("FTdx10", "ALERTE ROS declenchee : ROS 3.5"); Check(AlertLog.Unread && AlertLog.All().Count == 2, "alertes : un nouveau message rallume le bouton");
+            AlertLog.Clear(); Check(AlertLog.All().Count == 0 && !AlertLog.Unread, "alertes : effacer vide la liste et eteint le bouton");
+        }
+
         // ---- alerte ROS : fin d'alerte automatique ; la puissance est rétablie sauf si « laisser la puissance réduite » est cochée
         static void RosRestoreChecks()
         {

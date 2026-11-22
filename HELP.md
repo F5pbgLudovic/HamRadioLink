@@ -83,7 +83,7 @@ Pick **Poste commandé en TCI** in the *Poste* list: one entry for every SDR pro
 - **Themes**: 53 themes (from Windows 3.11 to the most modern, sea, nature, retro) applied to every log window; **Themes > Personnaliser les couleurs**: 64-colour palette + RGB, saved for each theme.
 - **Closing the remote window**: if the log is open it stays open (radios disconnected, no link with the radio); clicking HamRadioLink again brings the remote back (only one copy of the program at a time).
 - **QSOs from WSJT-X arrive automatically**: every logged contact is added to the current log (duplicates ignored). HamRadioLink listens on UDP **2333** (WSJT-X "N1MM Logger+" broadcast: Settings > Reporting, tick the box and set port 2333), **2237** (WSJT-X UDP Server, same page), **7825** (raw ADIF), plus 2 free ports. Only one program can listen on a given port. Settings: **Settings ⚙ > Réglages des ports** (or the log's "Ports…" button), 0 = unused.
-- **Online uploads** (Tools): QRZ.com (the log's API key, QRZ subscription), Club Log (e-mail, password and a **software API key** to request from Club Log support), eQSL, LoTW (TQSL installed and the "Station Location" name) are set in **Tools > Online services**. **Send to all online logs** uploads the selection (or whatever is not yet marked "sent") in a progress window that does not block the log. Columns "eQSL sent", "LOTW sent", "Club Log sent", "QRZ.com sent". Right-click on contacts: Export the selection (ADIF) or **for LoTW** (.tq8 file signed by TQSL, to upload by hand on the LoTW site), Send the selection to…, Mark sent / not sent. If QRZ.com refuses the upload, an ADI file is created and the QRZ.com import page opens.
+- **Online uploads** (Tools): QRZ.com (the log's API key, QRZ subscription), Club Log (your callsign and a personal **token** "cl_…" created on clublog.org > Settings > API; no password or software key any more), eQSL, LoTW (TQSL installed and the "Station Location" name) are set in **Tools > Online services**. **Send to all online logs** uploads the selection (or whatever is not yet marked "sent") in a progress window that does not block the log. Columns "eQSL sent", "LOTW sent", "Club Log sent", "QRZ.com sent". Right-click on contacts: Export the selection (ADIF) or **for LoTW** (.tq8 file signed by TQSL, to upload by hand on the LoTW site), Send the selection to…, Mark sent / not sent. If QRZ.com refuses the upload, an ADI file is created and the QRZ.com import page opens.
 - Data: folder `data\journal`; settings `jn.*` in `settings.ini`.
 
 ## 5. Your settings
@@ -136,3 +136,23 @@ This software sends commands to your radio, **including transmit**. Try the virt
 ## 4 undecies. What's new in 1.6 (built-in layouts)
 - **Default layouts inside the exe**: FT-991A DF5DP, FTdx10, FTdx5000 and FT-2000 no longer need files in `data`; the layout is the one built into the exe.
 - **FT-991A / DF5DP swapped**: at first start, old `data\ft991a*.layout.ini` and `.cat.ini` files are moved once to `data\ancien-ft991a` (recoverable). Your later key moves are still saved (**Validate**).
+
+## 4 duodecies. What's new in 1.7
+
+Club Log no longer requires a software key: **Tools > Online services > Club Log** = your callsign + a personal **token** "cl_…" (clublog.org > Settings > API > Create token; copy it at once, it is shown only once). Treat it like a password. Club Log deletes a token unused for 6 months.
+
+Online uploads are sent in **sessions of 100 QSOs** (3 s pause between sessions) for every service. In Online services, "Demander un jeton" opens the Club Log page and "Aide" explains the steps; these windows do not block the rest of the program.
+
+**HRDLog.net, QRZCQ.com, HamQTH** (1.7): set up in Online services (HRDLog: callsign + upload code received by e-mail; QRZCQ: callsign + API key; HamQTH: HamQTH username + password), available in Send selection to / Mark, with their "sent" columns.
+
+**World Radio League**: set up in Online services (API key created on WRL: Integrations > Developer API > Generate API key; "Demander une clé" and "Aide" buttons), "WRL sent" column, Send / Mark menus.
+
+**Send to all online logs**: window with the services (checkboxes; unset ones greyed) and a start date (up to today). **Tools > Envoi automatique** (automatic sending): new contacts (typed or received from WSJT-X), selected services, delay: instant / 30 min / 1 h / 2 h / when the log is closed. The last processed contact and the time of the last send are remembered (settings.ini): after an interruption, sending resumes without restarting from the beginning of the log. When enabled, only later contacts are sent.
+
+**Alerts button** (danger sign, after the "?"): lit when there are new messages (link lost, SWR alarm with the SWR value, sound card unavailable...), off otherwise. A click opens the time-stamped list; OK closes, Effacer (clear) empties it. Messages are kept for 7 days, then deleted automatically. Works for every radio.
+
+**Magnifier** (toolbar, after "Refaire"): opens a search window that does not block the log. Pick the field (QSO date, call sign, free text: name, QTH, comment...), type the value, then "Suivant" (next) / "Précédent" (previous) to move down and up the table (Enter = next, Shift+Enter = previous). Date: 22/11/2026, 2026-11-22, 2026-11 or 2026.
+
+**Receiving the radio on the PC** (1.7): right-click the AF volume knob of a radio: "Listen to the radio on the PC" (on/off), "sound card of the radio" (per radio), and "mute the radio speaker (sound stays on the PC)", which sets the radio AF volume to 0 over CAT while listening is on (restored afterwards and when the program exits). Ctrl + right-click: lock the knob. Log magnifier: "Début" button (top of the table); a date that does not exist jumps to the nearest date.
+
+When "mute the radio speaker" is on, the **AF volume knob sets the volume of the sound played on the PC** (the radio stays at 0; its original volume is restored when turned off and when the program exits).

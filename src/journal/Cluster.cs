@@ -339,7 +339,7 @@ namespace HamRadioLink.Journal
         {
             Dock = DockStyle.Bottom; Height = 120;
             tb = new TextBox { Dock = DockStyle.Fill, Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Vertical, Font = Ui.Mono, WordWrap = false };
-            bAl = new TabButton("Alerte", 80) { Anchor = AnchorStyles.Top | AnchorStyles.Right }; bAl.Clicked = delegate { using (AlertForm f = new AlertForm()) f.ShowDialog(FindForm()); };
+            bAl = new TabButton("Alerte", 80) { Anchor = AnchorStyles.Top | AnchorStyles.Right }; bAl.Clicked = delegate { Ui.ShowFree(new AlertForm(), FindForm()); };
             bCl = new TabButton(Tr.T("Aucun cluster"), 150) { Anchor = AnchorStyles.Top | AnchorStyles.Right }; bCl.Clicked = ClusterMenu;
             zp = new ZoomPair { Width = 56 }; zp.Step += delegate(int d) { LogZoom.Step("bot", d); ApplyZoom(); };
             Controls.Add(tb); Controls.Add(bAl); Controls.Add(bCl); Controls.Add(zp); bAl.BringToFront(); bCl.BringToFront(); zp.BringToFront(); ApplyZoom();
@@ -359,7 +359,7 @@ namespace HamRadioLink.Journal
             if (m.Items.Count == 0) m.Items.Add(new ToolStripMenuItem(Tr.T("Aucun cluster enregistré")) { Enabled = false });
             m.Items.Add(new ToolStripSeparator());
             if (DxCluster.Connected) m.Items.Add("Déconnecter", null, delegate { DxCluster.Disconnect(); });
-            m.Items.Add(Tr.T("Configurer les clusters..."), null, delegate { using (ClusterForm f = new ClusterForm()) f.ShowDialog(FindForm()); });
+            m.Items.Add(Tr.T("Configurer les clusters..."), null, delegate { Ui.ShowFree(new ClusterForm(), FindForm()); });
             m.Show(bCl, new Point(0, bCl.Height));
         }
         void Fill()

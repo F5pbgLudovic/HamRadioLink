@@ -78,6 +78,14 @@ namespace HamRadioLink
             lk.Click += delegate { Locked = !locked; Cfg.SetBool(LockKey, locked); Cfg.Save(); }; mn.Items.Add(lk);
             mn.Show(this, p);
         }
+        void AfMenu(Point p)
+        {
+            ContextMenuStrip mn = new ContextMenuStrip(); mn.BackColor = T.Panel2; mn.ForeColor = T.Text;
+            RxAudio.AddItems(mn, Rig);
+            mn.Items.Add(new ToolStripSeparator()); ToolStripMenuItem lk = new ToolStripMenuItem(locked ? "Déverrouiller le bouton" : "Verrouiller le bouton");
+            lk.Click += delegate { Locked = !locked; Cfg.SetBool(LockKey, locked); Cfg.Save(); }; mn.Items.Add(lk);
+            mn.Show(this, p);
+        }
         float UseScale() { float o = T.Scale; T.Scale = Scale; return o; }
         int mode; Point p0; Rectangle r0; const int Grid = 4;
         protected HW() { SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint | ControlStyles.ResizeRedraw, true); }
@@ -148,6 +156,7 @@ namespace HamRadioLink
                 else if (e.Button == MouseButtons.Right && RequestEdit != null) RequestEdit(this);
                 return;
             }
+            if (Def.Id == "af" && e.Button == MouseButtons.Right && Rig != null && Rig.Def != null && !NoSave && !CtrlHeld) { AfMenu(e.Location); return; }     
             if (Def.Id == "ptt" && Def.K == Kind.Toggle && e.Button == MouseButtons.Right && Rig != null && Rig.Def != null && !NoSave && !CtrlHeld) { PttMenu(e.Location); return; }      // clic droit sur PTT : délai de sécurité (Ctrl + clic droit : verrou)
             HRow hr = this as HRow; if (hr != null && e.Button == MouseButtons.Right && Rig != null) { hr.ToggleCell(e.Location); return; }      // rangée : le clic droit ne verrouille que la case touchée
             if (Lockable && e.Button == MouseButtons.Right && !(Def.K == Kind.Choice && !(this is HRow) && (DropOnRight ? !CtrlHeld : CtrlHeld)) && Rig != null) { Locked = !locked; Cfg.SetBool(LockKey, locked); if (!NoSave) Cfg.Save(); return; }

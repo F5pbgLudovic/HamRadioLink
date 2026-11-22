@@ -28,7 +28,17 @@ namespace HamRadioLink
             if (Fill != Color.Empty) { top = ControlPaint.Light(Fill, 0.12f); bot = ControlPaint.Dark(Fill, 0.12f); }
             if (hot) { top = ControlPaint.Light(top, 0.15f); bot = ControlPaint.Light(bot, 0.1f); } if (down) { Color t = top; top = bot; bot = t; }
             using (GraphicsPath p = T.Round(r, 5 * T.Scale)) { using (LinearGradientBrush b = new LinearGradientBrush(r, top, bot, 90f)) g.FillPath(b, p); using (Pen pen = new Pen(lk ? ControlPaint.Light(T.LockBtn, 0.6f) : (Checked ? Accent : T.Edge), Checked ? 1.4f : 1f)) g.DrawPath(pen, p); }
-            if (Icon != 0)
+            if (Icon == 3)   // panneau danger : triangle + point d'exclamation ; plein (allumé) quand il y a des alertes non lues, simple contour sinon
+            {
+                float k = T.Scale, cx = r.X + r.Width / 2, cy = r.Y + r.Height / 2, hw = 9.5f * k, hh = 8.5f * k;
+                PointF[] tri = { new PointF(cx, cy - hh), new PointF(cx + hw, cy + hh), new PointF(cx - hw, cy + hh) };
+                if (Checked) using (Brush fb = new SolidBrush(Accent)) g.FillPolygon(fb, tri);
+                using (Pen ip = new Pen(Checked ? Accent : T.Dim, Math.Max(1.5f, 1.6f * k))) { ip.LineJoin = LineJoin.Round; g.DrawPolygon(ip, tri); }
+                Color ec = Checked ? Color.White : T.Dim;
+                using (Pen ep = new Pen(ec, Math.Max(1.6f, 1.8f * k))) g.DrawLine(ep, cx, cy - 3.5f * k, cx, cy + 1.5f * k);
+                using (Brush eb = new SolidBrush(ec)) g.FillEllipse(eb, cx - 1.1f * k, cy + 3.2f * k, 2.2f * k, 2.2f * k);
+            }
+            else if (Icon != 0)
             {
                 float k = T.Scale; RectangleF ir = new RectangleF(r.X + r.Width / 2 - 10 * k, r.Y + r.Height / 2 - 8 * k, 20 * k, 16 * k);
                 using (Pen ip = new Pen(Checked ? Accent : T.Dim, Math.Max(1.5f, 1.6f * k))) { g.DrawRectangle(ip, ir.X, ir.Y, ir.Width, ir.Height); if (Icon == 1) g.DrawLine(ip, ir.X + ir.Width / 2, ir.Y, ir.X + ir.Width / 2, ir.Bottom); else g.DrawLine(ip, ir.X, ir.Y + ir.Height / 2, ir.Right, ir.Y + ir.Height / 2); }
@@ -40,14 +50,14 @@ namespace HamRadioLink
 
     public class MainForm : Form
     {
-        public const string Version = "1.6";
+        public const string Version = "1.7";
         const int DesignW = 1860, DesignH = 944; const double Ratio = DesignW / (double)DesignH;
         readonly List<RadioDef> radios = Radios.All(); RadioDef cur; Rig rig = new Rig();      // cur / rig / widgets = poste ACTIF (plusieurs postes peuvent être connectés en même temps)
         readonly Panel stage = new Panel(); readonly ToolTip tip = new ToolTip();
         List<HW> widgets = new List<HW>(); readonly Dictionary<Control, Rectangle> hdr = new Dictionary<Control, Rectangle>(); readonly Dictionary<Control, float> hdrPt = new Dictionary<Control, float>();
         readonly System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer();
         DarkCombo cbRadio, cbView, cbIface, cbPort, cbBaud, cbStop; TextBox tbHost, tbPort, tbCiv; Label lbCiv; CheckBox chkRts, chkDtr;
-        Btn btnOpt, btnExp, btnConnect, btnMon, btnHelp, btnDefLayout, btnOk, btnUndo, btnReset, btnAdd, btnAlign; List<string> undo = new List<string>(); string lastSnap = "", baseSnap = ""; Label lbRos, lbStatus, lbClock, lbHint, lbLink, lbRadio, lbView;
+        Btn btnAlert, btnOpt, btnExp, btnConnect, btnMon, btnHelp, btnDefLayout, btnOk, btnUndo, btnReset, btnAdd, btnAlign; List<string> undo = new List<string>(); string lastSnap = "", baseSnap = ""; Label lbRos, lbStatus, lbClock, lbHint, lbLink, lbRadio, lbView;
         MonitorForm monitor; int lastVer = -1, lastFull; bool loading = true;
         IC7760.MainForm ic; Panel icBar; DarkCombo icRadio;
         // un poste ouvert = une session : son moteur (Rig), sa face avant (panneau) et ses éléments
@@ -79,7 +89,7 @@ namespace HamRadioLink
             tip.InitialDelay = 500; tip.ReshowDelay = 200; tip.AutoPopDelay = 12000;
             Resize += delegate { Relayout(); };
             timer.Interval = 30; timer.Tick += OnTick; timer.Start();
-            Load += delegate { Restore(); try { MicRoute.Update(); } catch { } try { Journal.WsjtListener.Start(); } catch { } Journal.Skin.FrameFix(this); RosGuard.Start(delegate { List<Rig> rl = new List<Rig>(); foreach (Sess z in sess) rl.Add(z.Rig); return rl; }); BeginInvoke((Action)delegate { try { InitLog(); Journal.Hub.Prepare(); } catch { } try { Updater.CheckAtStart(this); } catch { } }); }; FormClosed += delegate { RosGuard.Stop(false); TuneMic.Stop(null); MicRoute.Stop(); if (cmdSrv != null) { try { cmdSrv.Dispose(); } catch { } } if (cmdSrv2 != null) { try { cmdSrv2.Dispose(); } catch { } } }; FormClosing += OnClosing; loading = false;
+            Load += delegate { Restore(); try { MicRoute.Update(); } catch { } try { RxAudio.StartAll(); } catch { } try { Journal.WsjtListener.Start(); } catch { } Journal.Skin.FrameFix(this); RosGuard.Start(delegate { List<Rig> rl = new List<Rig>(); foreach (Sess z in sess) rl.Add(z.Rig); return rl; }); BeginInvoke((Action)delegate { try { InitLog(); Journal.Hub.Prepare(); } catch { } try { Updater.CheckAtStart(this); } catch { } }); }; FormClosed += delegate { RosGuard.Stop(false); TuneMic.Stop(null); MicRoute.Stop(); if (cmdSrv != null) { try { cmdSrv.Dispose(); } catch { } } if (cmdSrv2 != null) { try { cmdSrv2.Dispose(); } catch { } } }; FormClosing += OnClosing; loading = false;
         }
 
         // ============================================================ en-tête
@@ -110,8 +120,8 @@ namespace HamRadioLink
             btnSplitV = Bt("", 508, 44, 36, 26, delegate { SetSplit(split == 1 ? 0 : 1); }); btnSplitH = Bt("", 550, 44, 36, 26, delegate { SetSplit(split == 2 ? 0 : 2); }); btnSplitV.Icon = 1; btnSplitH.Icon = 2; btnSplitV.Visible = btnSplitH.Visible = false;
             btnAdd = Bt("Ajouter", 250, 44, 90, 26, AddElement); btnAdd.Visible = false; btnOk = Bt("Valider", 346, 44, 90, 26, ValidateView); btnOk.Accent = T.Green; btnUndo = Bt("Retour arrière", 442, 44, 130, 26, UndoMove); btnReset = Bt("Réinit", 578, 44, 80, 26, ResetAll); btnReset.Accent = T.Red; btnDefLayout = btnReset; btnAlign = Bt("Aligner", 664, 44, 80, 26, AlignAll); btnOk.Visible = btnUndo.Visible = btnReset.Visible = btnAlign.Visible = false;
             lbHint = Lab("Glisser = déplacer · coin = taille · clic droit = commande CAT", 750, 44, 440, 26, 9f, T.Amber, false); lbHint.Visible = false;
-            btnMon = Bt("Moniteur CAT", 384, 8, 130, 26, ShowMonitor); btnHelp = Bt("?", 522, 8, 34, 26, ShowHelp); btnOpt = Bt("\u2699", 562, 8, 34, 26, ShowOptions); btnExp = Bt("\u21C5", 602, 8, 34, 26, ShowExport);
-            lbClock = Lab("", 646, 8, 130, 26, 10f, T.Cyan, true);
+            btnMon = Bt("Moniteur CAT", 384, 8, 130, 26, ShowMonitor); btnHelp = Bt("?", 522, 8, 34, 26, ShowHelp); btnAlert = Bt("", 562, 8, 26, 26, ShowAlerts); btnAlert.Icon = 3; btnAlert.Accent = T.Red; btnOpt = Bt("\u2699", 592, 8, 34, 26, ShowOptions); btnExp = Bt("\u21C5", 632, 8, 34, 26, ShowExport);
+            lbClock = Lab("", 672, 8, 104, 26, 10f, T.Cyan, true);
             lbLink = Lab("LIAISON", 1110, 0, 120, 16, 8.5f, T.Amber, true);
             cbIface = Cmb(1110, 16, 250, "Port COM (CAT direct)", "CAT sur TCP (brut)", "Poste virtuel (simulateur)", "TCI (ExpertSDR3, Thetis…)");
             cbIface.SelectedIndexChanged += delegate { UpdateIface(); };
@@ -481,6 +491,8 @@ namespace HamRadioLink
             }
         }
         void ShowMonitor() { if (monitor == null || monitor.IsDisposed) { monitor = new MonitorForm(rig); monitor.Location = new Point(Left + 60, Top + 140); } monitor.Show(); monitor.BringToFront(); }
+        AlertsForm alertsFrm;
+        void ShowAlerts() { if (alertsFrm != null && !alertsFrm.IsDisposed) { alertsFrm.Activate(); return; } alertsFrm = new AlertsForm(); alertsFrm.FormClosed += delegate { btnAlert.Checked = false; btnAlert.Invalidate(); }; alertsFrm.Show(this); }
         void ShowHelp()
         {
             MessageBox.Show(this,
@@ -514,7 +526,7 @@ namespace HamRadioLink
             { bool ra = RosGuard.Alarming; if (ra) { lbRos.Text = RosGuard.AlarmText; lbRos.ForeColor = (Environment.TickCount / 350) % 2 == 0 ? T.Red : Color.FromArgb(80, 0, 0); lbRos.BringToFront(); } if (lbRos.Visible != ra) lbRos.Visible = ra; }
             if (RosGuard.Notice != null) { notice = RosGuard.Notice; noticeUntil = Environment.TickCount + 20000; RosGuard.Notice = null; lastVer = -1; }
             int ver = rig.Version; if (ver == lastVer && !full) return; lastVer = ver;
-            lbClock.Text = DateTime.UtcNow.ToString("HH:mm:ss") + " UTC";
+            lbClock.Text = DateTime.UtcNow.ToString("HH:mm:ss") + " UTC"; RxAudio.Tick(rig); { bool unr = AlertLog.Unread; if (btnAlert.Checked != unr) { btnAlert.Checked = unr; btnAlert.Invalidate(); tip.SetToolTip(btnAlert, unr ? "Alertes : " + AlertLog.UnreadCount + " nouveau(x) message(s) - clic pour les lire" : "Alertes : aucun nouveau message (clic : voir l'historique)"); } }
             string st = rig.Status; Color col = rig.Connected ? T.Green : (rig.Link != null ? T.Amber : T.Dim);
             string idn = rig.SeenId.Length > 0 ? Rig.IdName(rig.SeenId) : null;
             canIgnId = false; canIgnErr = false;
@@ -695,6 +707,7 @@ namespace HamRadioLink
         public void BringBack() { Journal.RigState.Enabled = true; Show(); wasConnected.Clear();   /* postes laissés déconnectés */ if (WindowState == FormWindowState.Minimized) WindowState = FormWindowState.Normal; Activate(); }
         void OnClosing(object s, FormClosingEventArgs e)
         {
+            if (!(!quitting && e.CloseReason == CloseReason.UserClosing && Journal.Hub.IsOpen)) { try { List<Rig> rl0 = new List<Rig>(); foreach (Sess x in sess) rl0.Add(x.Rig); RxAudio.Shutdown(rl0); } catch { } }   // arrêt réel : volume du poste rétabli, écoutes arrêtées
             // Journal ouvert : fermer la télécommande la masque seulement ; le programme s'arrête à la fermeture du journal.
             if (!quitting && e.CloseReason == CloseReason.UserClosing && Journal.Hub.IsOpen)
             {

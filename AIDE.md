@@ -98,7 +98,7 @@ Bouton **Ajouter** : choisir le type (bouton, touche allumée / éteinte, potent
 - **Thèmes** : 53 thèmes (de Windows 3.11 au plus moderne, mer, nature, rétro) appliqués à toutes les fenêtres du journal ; **Thèmes > Personnaliser les couleurs** : tablette de 64 couleurs + RVB, mémorisé pour chaque thème.
 - **Fermer la télécommande** : si le journal est ouvert, il reste ouvert (postes déconnectés, aucun lien avec le poste) ; un nouveau clic sur HamRadioLink ramène la télécommande (une seule copie du programme à la fois).
 - **QSO de WSJT-X reçus automatiquement** : chaque contact validé arrive dans le journal courant (doublons ignorés). HamRadioLink écoute en UDP : **2333** (diffusion « N1MM Logger+ » de WSJT-X : Réglages > Rapports, cochez la case et mettez le port 2333), **2237** (Serveur UDP de WSJT-X, au même endroit), **7825** (ADIF brut), + 2 ports libres. Un port ne peut être écouté que par un seul programme à la fois. Réglages : **Paramètres ⚙ > Réglages des ports** (ou bouton « Ports… » du journal), 0 = inutilisé.
-- **Envois en ligne** (Outils) : QRZ.com (clé API du journal, abonnement QRZ), Club Log (e-mail, mot de passe et **clé API de logiciel** à demander au support de Club Log), eQSL, LoTW (TQSL installé et nom de la « Station Location ») se règlent dans **Outils > Online services**. **Envoyer à tous les logs en ligne** envoie la sélection (ou ce qui n'est pas encore marqué « envoyé ») dans une fenêtre de progression qui ne bloque pas le journal. Colonnes « eQSL sent », « LOTW sent », « Club Log sent », « QRZ.com sent ». Clic droit sur des contacts : Exporter la sélection (ADIF) ou **pour LoTW** (fichier .tq8 signé par TQSL, à déposer à la main sur le site de LoTW), Envoyer la sélection à…, Marquer envoyé / non envoyé. Si QRZ.com refuse l'envoi, un fichier ADI est créé et la page d'import de QRZ.com s'ouvre.
+- **Envois en ligne** (Outils) : QRZ.com (clé API du journal, abonnement QRZ), Club Log (votre indicatif et un **jeton** personnel « cl_… » créé sur clublog.org > Settings > API ; plus de mot de passe ni de clé de logiciel), eQSL, LoTW (TQSL installé et nom de la « Station Location ») se règlent dans **Outils > Online services**. **Envoyer à tous les logs en ligne** envoie la sélection (ou ce qui n'est pas encore marqué « envoyé ») dans une fenêtre de progression qui ne bloque pas le journal. Colonnes « eQSL sent », « LOTW sent », « Club Log sent », « QRZ.com sent ». Clic droit sur des contacts : Exporter la sélection (ADIF) ou **pour LoTW** (fichier .tq8 signé par TQSL, à déposer à la main sur le site de LoTW), Envoyer la sélection à…, Marquer envoyé / non envoyé. Si QRZ.com refuse l'envoi, un fichier ADI est créé et la page d'import de QRZ.com s'ouvre.
 - Données : dossier `data\journal` ; réglages `jn.*` dans `settings.ini`.
 
 ## 5. Mes réglages
@@ -151,3 +151,23 @@ Ce logiciel envoie des commandes à votre poste, y compris pour **émettre**. Es
 ## 4 undecies. Nouveautés de la 1.6 (dispositions intégrées)
 - **Dispositions par défaut dans l'exe** : FT-991A DF5DP, FTdx10, FTdx5000 et FT-2000 n'ont plus besoin de fichiers dans data ; la disposition est celle de l'exe.
 - **FT-991A / DF5DP inversés** : au premier démarrage, les anciens fichiers data\ft991a*.layout.ini et .cat.ini sont rangés dans data\ancien-ft991a (récupérables). Vos déplacements de touches suivants sont toujours enregistrés (**Valider**).
+
+## 4 duodecies. Nouveautés de la 1.7
+
+Club Log n'exige plus de clé de logiciel : **Outils > Online services > Club Log** = votre indicatif + un **jeton** « cl_… » (clublog.org > Settings > API > Create token ; copiez-le tout de suite, il n'est montré qu'une fois). Le jeton se traite comme un mot de passe. Un jeton inutilisé 6 mois est supprimé par Club Log.
+
+Les envois en ligne se font par **sessions de 100 QSO** (pause de 3 s entre deux sessions) pour tous les services. Dans Online services, « Demander un jeton » ouvre la page de Club Log et « Aide » explique la marche à suivre ; ces fenêtres ne bloquent pas le reste du programme.
+
+**HRDLog.net, QRZCQ.com, HamQTH** (1.7) : réglés dans Online services (HRDLog : indicatif + code d'envoi reçu par e-mail ; QRZCQ : indicatif + clé API ; HamQTH : identifiant + mot de passe HamQTH), disponibles dans Envoyer la sélection à / Marquer, avec leurs colonnes « envoyé ».
+
+**World Radio League** : réglé dans Online services (clé API créée sur WRL : Integrations > Developer API > Generate API key ; boutons « Demander une clé » et « Aide »), colonne « WRL sent », menus Envoyer / Marquer.
+
+**Envoyer à tous les logs en ligne** : fenêtre avec les services (coches ; non réglés grisés) et la date de départ (jusqu'à aujourd'hui). **Outils > Envoi automatique** : envoi des nouveaux contacts (saisis ou reçus de WSJT-X), services cochés, délai : instantané / 30 min / 1 h / 2 h / à la fermeture du log. Le dernier contact traité et l'heure du dernier envoi sont mémorisés (settings.ini) : après une coupure, l'envoi reprend sans repartir du début du journal. À l'activation, seuls les contacts suivants sont envoyés.
+
+**Bouton Alertes** (panneau danger, après le « ? ») : allumé quand il y a de nouveaux messages (perte de liaison, alerte ROS avec la valeur du ROS, carte son indisponible…), éteint sinon. Un clic ouvre la liste horodatée ; OK ferme, Effacer vide la liste. Messages conservés 7 jours, puis effacés automatiquement. Valable pour tous les postes.
+
+**Loupe** (barre d'outils, après « Refaire ») : ouvre une fenêtre de recherche qui ne bloque pas le journal. Choisissez le champ (Date du QSO, Indicatif, Texte : nom, QTH, commentaire…), tapez la valeur, puis « Suivant » / « Précédent » pour monter et descendre dans le tableau (Entrée = suivant, Maj+Entrée = précédent). Date : 22/11/2026, 2026-11-22, 2026-11 ou 2026.
+
+**Réception du poste sur le PC** (1.7) : clic droit sur le bouton de volume AF d'un poste : « Écouter la réception du poste sur le PC » (activer / désactiver), « Carte son du poste » (réglage propre à chaque poste), et « Couper le haut-parleur du poste (le son reste sur le PC) » qui met le volume AF du transceiver à 0 par CAT tant que l'écoute est active (volume rétabli ensuite et à l'arrêt du programme). Ctrl + clic droit : verrouiller le bouton. La loupe du journal : bouton « Début » (haut du tableau) et, pour une date absente, aller à la date la plus proche.
+
+Quand « Couper le haut-parleur du poste » est actif, le **bouton de volume AF règle le volume du son joué sur le PC** (le poste reste à 0 ; son volume d'origine est rétabli à la désactivation et à l'arrêt du programme).

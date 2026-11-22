@@ -115,6 +115,7 @@ namespace HamRadioLink
                 if (pc != null && o != null && int.TryParse(o, out ov)) { try { r.Set(pc, Reduced(pc, ov).ToString()); dropRig = r; dropCtl = pc; dropOrig = o; } catch { } }
             }
             CatLog.Event("ros", "ALERTE ROS " + ro.ToString("0.0") + " (seuil " + Threshold.ToString("0.0") + ")" + (dropCtl != null ? " : puissance " + dropOrig + " -> " + Reduced(dropCtl, int.Parse(dropOrig)) : ""));
+            AlertLog.Add(r != null && r.Def != null ? r.Def.Name : "", "ALERTE ROS déclenchée : ROS " + ro.ToString("0.0") + " détecté (seuil " + Threshold.ToString("0.0") + ")" + (dropCtl != null ? ", puissance réduite de " + dropOrig + " à " + Reduced(dropCtl, int.Parse(dropOrig)) : ""));
             if (Silent) return;
             th = new Thread(delegate() { BeepLoop(0); }); th.IsBackground = true; th.Start();
             ShowForm(r, ro);

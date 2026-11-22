@@ -41,6 +41,7 @@
 - **FTdx10 / FT-991A DF5DP / TUNE (1.4)** : MIC EQ, FT8/FT4... (retour au mode d'avant), PROC retrouve son niveau, poste FT-991A DF5DP, fréquences sur 9 chiffres, puissance de consigne pendant le TUNE.
 - **Journal (1.5)** : 23 langues (Configuration > Langue), durée des spots 5-30 min, 13 thèmes de plus, annuler / refaire, copier / couper / coller, changement de bande par lot, poste non connecté = ordres refusés.
 - **Dispositions intégrées (1.6)** : FT-991A DF5DP, FTdx10, FTdx5000, FT-2000 sans fichier dans data ; anciens fichiers FT-991A inversés rangés automatiquement.
+- **Journaux en ligne et son de réception (1.7)** : envoi vers QRZ.com, Club Log (jeton), HRDLog.net, QRZCQ.com, HamQTH, World Radio League, eQSL et LoTW ; fenêtre « envoyer à tous » avec date de départ ; **envoi automatique** des nouveaux contacts (instantané, 30 min, 1 h, 2 h ou à la fermeture du log ; reprise après coupure) ; bouton Alertes (perte de liaison, alarme ROS, horodatées, gardées 7 jours) ; recherche dans le journal (loupe), colonnes déplaçables ; **réception du poste sur le PC** (clic droit sur le bouton de volume AF) avec option pour couper le haut-parleur du poste.
 - **Moniteur CAT** et **journal des commandes** (un fichier par jour, purgé, envoyable pour diagnostiquer).
 - **IC-7760** : fenêtre complète reprise d'[IC7760Link](https://github.com/F5pbgLudovic/IC7760Link).
 
@@ -107,6 +108,7 @@ Utilise le compilateur .NET Framework 4 fourni avec Windows (C# 5) : rien à ins
 - **Locks** by right-click on any control (a single key of a mode / band row) and a **Lock key** that blocks the whole program.
 - **PTT key** green at rest, red when transmitting; **right-click = TX safety timeout** (up to 30 min, countdown, automatic cut); **PC microphone to the rig**: the same menu sends the chosen microphone to the sound card connected to the radio (also in Settings ⚙). **TUNE button** (1500 Hz tone on the radio sound card, PTT or VOX, colours and duration in Settings ⚙).
 - **Traffic log (LOG button, 1.0)**: MariaDB database of your choice or embedded, ADIF import / sharing of an existing database, **QSOs from WSJT-X received automatically** (ports set in Settings ⚙), distance computed for every contact, **DX Cluster** (band scale with VFO A / B cursors, click a callsign to tune the radio, sound alerts), **28 themes** with customisable colours. Keep an ADIF backup.
+- **Online logs and receive audio (1.7)**: upload to QRZ.com, Club Log (token), HRDLog.net, QRZCQ.com, HamQTH, World Radio League, eQSL and LoTW; "send to all" window with a start date; **automatic sending** of new contacts (instant, 30 min, 1 h, 2 h or at log close; resumes after a crash); alerts button (link lost, SWR alarm, time-stamped, kept 7 days); log search (magnifier), draggable columns; **radio receive audio on the PC** (right-click the AF knob) with an option to mute the radio speaker.
 - **CAT monitor** and a **command log** (one file per day, purged, can be sent to diagnose a problem).
 - **IC-7760**: full window taken from [IC7760Link](https://github.com/F5pbgLudovic/IC7760Link).
 

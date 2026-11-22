@@ -8,6 +8,16 @@ namespace HamRadioLink.Journal
     // Petits outils pour construire les fenêtres rapidement.
     public static class Ui
     {
+        // Fenêtre secondaire NON bloquante : le journal reste utilisable ; une seule fenêtre de chaque sorte à la fois (une deuxième demande ramène la première devant).
+        static readonly Dictionary<Type, Form> freeWins = new Dictionary<Type, Form>();
+        public static void ShowFree(Form f, IWin32Window owner)
+        {
+            Type ty = f.GetType(); Form ex;
+            if (freeWins.TryGetValue(ty, out ex) && ex != null && !ex.IsDisposed) { try { ex.Activate(); } catch { } f.Dispose(); return; }
+            freeWins[ty] = f; f.ShowInTaskbar = false; f.FormClosed += (s, e) => { Form cur; if (freeWins.TryGetValue(ty, out cur) && cur == f) freeWins.Remove(ty); };
+            f.Show(owner);
+        }
+
         public static Font Mono = new Font("Consolas", 9.5f);
         public static Font Normal = new Font("Segoe UI", 9f);
         public static Icon AppIcon { get { try { return Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { return null; } } }

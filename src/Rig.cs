@@ -79,6 +79,13 @@ namespace HamRadioLink
         // v : valeur à placer dans {v} (pour une action : null). La mise à jour locale est immédiate.
         public void Set(Ctl c, string v)
         {
+            if (v != null && Def != null && RxAudio.Local(this, c, v)) { V[c.Id] = v; Version++; return; }   // volume AF = volume de l'écoute sur le PC quand le haut-parleur du poste est coupé
+            SetRadio(c, v);
+        }
+        public void ShowLocal(string id, string v) { V[id] = v; Version++; }
+        // écriture réelle vers le poste (sans détour par le volume de l'écoute sur le PC)
+        public void SetRadio(Ctl c, string v)
+        {
             if (v != null) V[c.Id] = v; Version++;
             Hooks(c, v);
             if (c.Local) { if (c.K == Kind.Choice && v != null) Cfg.Set("local." + c.Id, v); return; }
@@ -185,8 +192,8 @@ namespace HamRadioLink
                     if (cmd != null) SendText(cmd);
                     Thread.Sleep(Gap);
                     // pas de réponse du tout
-                    if (!Connected && clock.ElapsedMilliseconds - startT > 3500 && Status.StartsWith("Connexion")) { Status = "Aucune réponse du poste : vérifiez le port COM, la vitesse (menu CAT RATE), RTS et le câble."; Version++; CatLog.Event(Def != null ? Def.Key : "?", "aucune réponse du poste depuis la connexion"); }
-                    if (Connected && clock.ElapsedMilliseconds - lastRxT > 6000) { Connected = false; Status = "Plus de réponse du poste"; Version++; CatLog.Event(Def != null ? Def.Key : "?", "plus de réponse du poste depuis 6 s"); }
+                    if (!Connected && clock.ElapsedMilliseconds - startT > 3500 && Status.StartsWith("Connexion")) { Status = "Aucune réponse du poste : vérifiez le port COM, la vitesse (menu CAT RATE), RTS et le câble."; Version++; CatLog.Event(Def != null ? Def.Key : "?", "aucune réponse du poste depuis la connexion"); AlertLog.Add(Def != null ? Def.Name : "?", "Liaison impossible : aucune réponse du poste depuis la connexion (port COM, vitesse, câble, RTS)"); }
+                    if (Connected && clock.ElapsedMilliseconds - lastRxT > 6000) { Connected = false; Status = "Plus de réponse du poste"; Version++; CatLog.Event(Def != null ? Def.Key : "?", "plus de réponse du poste depuis 6 s"); AlertLog.Add(Def != null ? Def.Name : "?", "Perte de liaison : plus de réponse du poste depuis 6 s (câble, port COM ou poste éteint ?)"); }
                 }
                 catch (ThreadAbortException) { return; }
                 catch (Exception ex) { Fire("ERREUR " + ex.Message, false); CatLog.Event(Def != null ? Def.Key : "?", "ERREUR " + ex.Message); }
@@ -262,6 +269,7 @@ namespace HamRadioLink
                 {
                     if (char.IsDigit(gn[0])) continue; string key = gn == "v" ? c.Id : gn; Group g = mt.Groups[gn]; if (!g.Success) continue;
                     long h; if (hold.TryGetValue(key, out h) && now < h) continue;
+                    if (key == "af" && RxAudio.Active(this)) continue;   // volume AF affiché = volume de l'écoute sur le PC (le poste, lui, est à 0)
                     string val = g.Value; Ctl tgt = key == c.Id ? c : Def.Find(key);
                     if (tgt != null && tgt.K == Kind.Choice) { foreach (Item it in tgt.ItemList) if (it.Match(val)) { val = it.Code; break; } }
                     string old; if (!V.TryGetValue(key, out old) || old != val) { V[key] = val; any = true; }

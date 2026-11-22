@@ -68,7 +68,7 @@ namespace HamRadioLink
             if (want && mon == null)
             {
                 RigMonitor r = new RigMonitor(MicId, CardId, false, true, "Micro vers le poste");
-                r.Problem += delegate(string msg) { if (msg != null) CatLog.Event("micro", "carte son indisponible : " + msg); };
+                r.Problem += delegate(string msg) { if (msg != null) { CatLog.Event("micro", "carte son indisponible : " + msg); AlertLog.Add("", "Carte son indisponible (micro vers le poste) : " + msg); } };
                 mon = r;
             }
         }
