@@ -14,7 +14,7 @@ namespace HamRadioLink
 
     public static class FxCfg
     {
-        public static readonly int[] Freq = { 31, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000 };
+        public static readonly int[] Freq = { 50, 100, 200, 400, 800, 1600, 3150, 5000, 7000, 10000 };
         public const double Q = 1.41;
         static readonly FxSet[] cur = new FxSet[2]; static int ver;
         public static volatile float GrTx;   // réduction de gain actuelle du compresseur (dB, positive)
@@ -28,7 +28,7 @@ namespace HamRadioLink
         {
             FxSet s = new FxSet(); s.EqOn = Cfg.GetBool(K(tx, "eq"), false); s.CompOn = tx && Cfg.GetBool(K(tx, "comp"), false); s.GateOn = tx && Cfg.GetBool(K(tx, "gate"), false);
             s.GThr = D(tx, "gthr", -50); s.GRange = D(tx, "grange", -40); s.GAtt = D(tx, "gatt", 2); s.GHold = D(tx, "ghold", 100); s.GRel = D(tx, "grel", 150);
-            for (int i = 0; i < 10; i++) s.G[i] = D(tx, "g" + i, 0);
+            for (int i = 0; i < 10; i++) s.G[i] = D(tx, "h" + i, 0);
             s.Thr = D(tx, "thr", -18); s.Ratio = D(tx, "ratio", 3); s.Makeup = D(tx, "makeup", 3); s.Ceil = D(tx, "ceil", -1); s.Att = D(tx, "att", 5); s.Rel = D(tx, "rel", 150);
             s.Ver = ++ver; cur[tx ? 0 : 1] = s; return s;
         }
@@ -36,7 +36,7 @@ namespace HamRadioLink
         public static void Store(bool tx, FxSet s)
         {
             Cfg.SetBool(K(tx, "eq"), s.EqOn); if (tx) { Cfg.SetBool(K(tx, "comp"), s.CompOn); Cfg.SetBool(K(tx, "gate"), s.GateOn); SD(tx, "gthr", s.GThr); SD(tx, "grange", s.GRange); SD(tx, "gatt", s.GAtt); SD(tx, "ghold", s.GHold); SD(tx, "grel", s.GRel); }
-            for (int i = 0; i < 10; i++) SD(tx, "g" + i, s.G[i]);
+            for (int i = 0; i < 10; i++) SD(tx, "h" + i, s.G[i]);
             if (tx) { SD(tx, "thr", s.Thr); SD(tx, "ratio", s.Ratio); SD(tx, "makeup", s.Makeup); SD(tx, "ceil", s.Ceil); SD(tx, "att", s.Att); SD(tx, "rel", s.Rel); }
             s.Ver = ++ver; cur[tx ? 0 : 1] = s;
         }

@@ -173,7 +173,7 @@ When "mute the radio speaker" is on, the **AF volume knob sets the volume of the
 
 ## 4 quaterdecies. What's new in 1.9
 
-**10-band audio equalizer on the PC**: one window (right-click PTT > "10-band equalizer + compressor / limiter (transmit)", or right-click the AF volume knob > "10-band equalizer (receive)") with 10 sliders from 31 Hz to 16 kHz (±12 dB), a live response curve, presets and "À plat" (flat); right-click a slider to reset it.
+**10-band audio equalizer on the PC**: one window (right-click PTT > "10-band equalizer + compressor / limiter (transmit)", or right-click the AF volume knob > "10-band equalizer (receive)") with 10 sliders from 50 Hz to 10 kHz (±12 dB, up = gain), a live response curve, presets and "À plat" (flat); right-click a slider to reset it.
 
 - **Transmit**: equalizer then **compressor / limiter** (threshold, ratio, output gain, ceiling, attack, release; gain reduction is shown). It acts on the microphone sent to the radio, so "PC microphone to the radio" must be ticked.
 - **Receive**: acts on the radio's sound played on the PC ("Listen to the radio on the PC" ticked).
@@ -182,3 +182,7 @@ When "mute the radio speaker" is on, the **AF volume knob sets the volume of the
 ## 4 quindecies. What's new in 1.10
 
 **Transmit noise gate**: in the audio equalizer window (Transmit tab), a "Noise gate" panel below the compressor cuts the noise between words (threshold, attenuation, attack, hold, release). Chain order: noise gate, 10-band equalizer, compressor / limiter. As for the rest, it acts on the microphone sent to the radio ("PC microphone to the radio" ticked).
+
+## 4 sexdecies. What's new in 1.11
+
+**Audio equalizer**: the 10 sliders now cover **50 Hz to 10 kHz** (50, 100, 200, 400, 800 Hz, 1.6, 3.15, 5, 7, 10 kHz) and the direction is fixed: **slider up = gain, down = attenuation**. Presets redone; old band settings are not kept (the equalizer starts flat).

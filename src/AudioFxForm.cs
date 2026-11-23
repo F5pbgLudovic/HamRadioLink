@@ -20,11 +20,11 @@ namespace HamRadioLink
         static readonly string[] PresetNames = { "À plat", "Voix claire (présence)", "Graves coupés", "Chaleureux", "Aigus adoucis", "DX (médium renforcé)" };
         static readonly double[][] Presets = {
             new double[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 },
-            new double[] { -6, -5, -3, -1, 0, 1, 3, 4, 2, 0 },
-            new double[] { -12, -10, -6, -2, 0, 0, 0, 0, 0, 0 },
-            new double[] { 0, 2, 4, 3, 1, 0, -1, -2, -3, -4 },
+            new double[] { -6, -4, -2, 0, 1, 3, 4, 2, 0, -2 },
+            new double[] { -12, -9, -4, -1, 0, 0, 0, 0, 0, 0 },
+            new double[] { 2, 4, 3, 1, 0, -1, -2, -3, -4, -6 },
             new double[] { 0, 0, 0, 0, 0, 0, -1, -3, -6, -9 },
-            new double[] { -12, -9, -5, -1, 2, 4, 4, 2, -2, -8 } };
+            new double[] { -12, -8, -3, 1, 4, 4, 2, -2, -6, -10 } };
 
         bool tx = true, loading;
         FxSet cur;
@@ -51,9 +51,9 @@ namespace HamRadioLink
                 int x = 14 + i * 72, k = i;
                 lv[i] = new Label { Left = x, Top = 6, Width = 64, Height = 16, TextAlign = ContentAlignment.MiddleCenter, ForeColor = Color.FromArgb(140, 215, 255), Text = "0,0 dB" }; pb.Controls.Add(lv[i]);
                 TrackBar t = new TrackBar { Orientation = Orientation.Vertical, Minimum = -120, Maximum = 120, TickFrequency = 60, SmallChange = 5, LargeChange = 20, Left = x + 10, Top = 24, Width = 45, Height = 140, TickStyle = TickStyle.Both };
-                t.ValueChanged += delegate { if (!loading) { Changed(k, -t.Value / 10.0); } }; t.MouseDown += delegate(object s, MouseEventArgs e) { if (e.Button == MouseButtons.Right) { t.Value = 0; } };
+                t.ValueChanged += delegate { if (!loading) { Changed(k, t.Value / 10.0); } }; t.MouseDown += delegate(object s, MouseEventArgs e) { if (e.Button == MouseButtons.Right) { t.Value = 0; } };
                 pb.Controls.Add(t); tb[i] = t;
-                int f = FxCfg.Freq[i]; pb.Controls.Add(new Label { Left = x, Top = 168, Width = 64, Height = 16, TextAlign = ContentAlignment.MiddleCenter, Text = f >= 1000 ? (f / 1000) + " kHz" : f + " Hz" });
+                int f = FxCfg.Freq[i]; pb.Controls.Add(new Label { Left = x, Top = 168, Width = 64, Height = 16, TextAlign = ContentAlignment.MiddleCenter, Text = f >= 1000 ? (f / 1000.0).ToString("0.##") + " kHz" : f + " Hz" });
             }
 
             comp = new Panel { Left = 10, Top = 470, Width = 740, Height = 110, BackColor = Pan }; Controls.Add(comp);
@@ -79,7 +79,7 @@ namespace HamRadioLink
         {
             tx = t; loading = true; (t ? rTx : rRx).Checked = true;
             cur = FxCfg.Clone(FxCfg.Get(tx)); cEq.Checked = cur.EqOn; cComp.Checked = cur.CompOn; cGate.Checked = cur.GateOn;
-            for (int i = 0; i < 10; i++) { tb[i].Value = (int)Math.Round(-cur.G[i] * 10); lv[i].Text = Db(cur.G[i]); }
+            for (int i = 0; i < 10; i++) { tb[i].Value = (int)Math.Round(cur.G[i] * 10); lv[i].Text = Db(cur.G[i]); }
             SetN(nThr, cur.Thr); SetN(nRatio, cur.Ratio); SetN(nMake, cur.Makeup); SetN(nCeil, cur.Ceil); SetN(nAtt, cur.Att); SetN(nRel, cur.Rel); SetN(nGThr, cur.GThr); SetN(nGRange, cur.GRange); SetN(nGAtt, cur.GAtt); SetN(nGHold, cur.GHold); SetN(nGRel, cur.GRel);
             comp.Visible = tx; gate.Visible = tx; gr.Visible = tx; status.Top = tx ? 692 : 478; close.Top = tx ? 700 : 488; ClientSize = new Size(760, tx ? 736 : 530); loading = false; plot.Invalidate();
             status.Text = tx ? "Appliqué au micro envoyé au poste : actif quand « Micro du PC vers le poste » est coché (clic droit sur PTT). Clic droit sur un curseur = remise à 0."
@@ -89,7 +89,7 @@ namespace HamRadioLink
         static void SetN(NumericUpDown n, double v) { n.Value = (decimal)Math.Max((double)n.Minimum, Math.Min((double)n.Maximum, v)); }
         void Changed(int i, double g) { cur.G[i] = g; lv[i].Text = Db(g); Push(); }
         void Pc() { if (loading) return; cur.Thr = (double)nThr.Value; cur.Ratio = (double)nRatio.Value; cur.Makeup = (double)nMake.Value; cur.Ceil = (double)nCeil.Value; cur.Att = (double)nAtt.Value; cur.Rel = (double)nRel.Value; cur.GThr = (double)nGThr.Value; cur.GRange = (double)nGRange.Value; cur.GAtt = (double)nGAtt.Value; cur.GHold = (double)nGHold.Value; cur.GRel = (double)nGRel.Value; Push(); }
-        void Apply(double[] g) { loading = true; for (int i = 0; i < 10; i++) { cur.G[i] = g[i]; tb[i].Value = (int)Math.Round(-g[i] * 10); lv[i].Text = Db(g[i]); } loading = false; Push(); }
+        void Apply(double[] g) { loading = true; for (int i = 0; i < 10; i++) { cur.G[i] = g[i]; tb[i].Value = (int)Math.Round(g[i] * 10); lv[i].Text = Db(g[i]); } loading = false; Push(); }
         // l'instantané modifié devient celui du fil audio ; un enregistrement sur disque suit 0,8 s après le dernier geste
         void Push() { FxSet s = FxCfg.Clone(cur); FxCfg.Store(tx, s); plot.Invalidate(); saveT.Stop(); saveT.Start(); }
 
@@ -103,7 +103,7 @@ namespace HamRadioLink
         // courbe de réponse de l'égaliseur : 20 Hz à 20 kHz (échelle logarithmique), ±12 dB
         class Plot : Control
         {
-            readonly AudioFxForm f;
+            readonly AudioFxForm f; const double Span = 2.8;   // 20 Hz à environ 12,6 kHz
             public Plot(AudioFxForm f) { this.f = f; SetStyle(ControlStyles.UserPaint |ControlStyles.OptimizedDoubleBuffer, true); }
             protected override void OnPaint(PaintEventArgs e)
             {
@@ -112,12 +112,12 @@ namespace HamRadioLink
                 using (Pen grid = new Pen(Color.FromArgb(50, 50, 50))) using (Brush tx = new SolidBrush(Color.FromArgb(150, 150, 150)))
                 {
                     for (int d = -12; d <= 12; d += 6) { float y = T + H * (12 - d) / 24f; g.DrawLine(grid, L, y, R, y); g.DrawString((d > 0 ? "+" : "") + d, Font, tx, 6, y - 7); }
-                    foreach (int fr in new[] { 31, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000 }) { float x = L + W * (float)(Math.Log10(fr / 20.0) / 3.0); g.DrawLine(grid, x, T, x, B); string t = fr >= 1000 ? (fr / 1000) + "k" : fr.ToString(); g.DrawString(t, Font, tx, x - 8, B + 4); }
+                    foreach (int fr in FxCfg.Freq) { float x = L + W * (float)(Math.Log10(fr / 20.0) / Span); g.DrawLine(grid, x, T, x, B); string t = fr >= 1000 ? (fr / 1000.0).ToString("0.##") + "k" : fr.ToString(); g.DrawString(t, Font, tx, x - 8, B + 4); }
                 }
                 PointF[] pts = new PointF[300];
-                for (int i = 0; i < pts.Length; i++) { double fr = 20 * Math.Pow(1000, i / (double)(pts.Length - 1)); double db = Math.Max(-12, Math.Min(12, s.EqOn ? FxCfg.Response(s, fr, 48000) : 0)); pts[i] = new PointF(L + W * i / (pts.Length - 1), T + H * (float)((12 - db) / 24.0)); }
+                for (int i = 0; i < pts.Length; i++) { double fr = 20 * Math.Pow(Math.Pow(10, Span), i / (double)(pts.Length - 1)); double db = Math.Max(-12, Math.Min(12, s.EqOn ? FxCfg.Response(s, fr, 48000) : 0)); pts[i] = new PointF(L + W * i / (pts.Length - 1), T + H * (float)((12 - db) / 24.0)); }
                 using (Pen p = new Pen(f.tx ? Color.FromArgb(70, 140, 255) : Color.FromArgb(160, 215, 50), 2.2f)) g.DrawLines(p, pts);
-                for (int i = 0; i < 10; i++) { float x = L + W * (float)(Math.Log10(FxCfg.Freq[i] / 20.0) / 3.0), y = T + H * (float)((12 - Math.Max(-12, Math.Min(12, s.G[i]))) / 24.0); g.FillEllipse(Brushes.White, x - 3, y - 3, 6, 6); }
+                for (int i = 0; i < 10; i++) { float x = L + W * (float)(Math.Log10(FxCfg.Freq[i] / 20.0) / Span), y = T + H * (float)((12 - Math.Max(-12, Math.Min(12, s.G[i]))) / 24.0); g.FillEllipse(Brushes.White, x - 3, y - 3, 6, 6); }
             }
         }
     }

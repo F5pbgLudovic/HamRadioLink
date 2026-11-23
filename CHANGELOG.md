@@ -1,5 +1,11 @@
 # Historique des versions
 
+## 1.11 — 2026-11-23
+
+**Égaliseur audio (émission et réception)**
+- Toujours 10 curseurs, mais le spectre s'arrête à **10 kHz** : 50, 100, 200, 400, 800 Hz, 1,6, 3,15, 5, 7, 10 kHz (courbe de 20 Hz à 12 kHz). Préréglages réécrits. Les anciens réglages de bandes ne sont pas repris (clés `fx.*.h0..h9`), l'égaliseur repart à plat.
+- **Échelle corrigée** : monter un curseur = gain (+), le descendre = atténuation (l'ancien sens était inversé).
+
 ## 1.10 — 2026-11-23
 
 **Noise gate à l'émission** (fenêtre de l'égaliseur audio, onglet Émission, sous le compresseur) : coupe le bruit entre les mots. Réglages : seuil, atténuation, attaque, maintien, relâche. Ordre de la chaîne d'émission : noise gate, égaliseur 10 bandes, compresseur / limiteur. Essai `--fxtest` complété (signal sous / sur le seuil).

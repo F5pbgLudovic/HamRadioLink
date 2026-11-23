@@ -188,7 +188,7 @@ Quand « Couper le haut-parleur du poste » est actif, le **bouton de volume AF 
 
 ## 4 quaterdecies. Nouveautés de la 1.9
 
-**Égaliseur audio 10 bandes sur le PC** : une fenêtre (clic droit sur PTT > « Égaliseur 10 bandes + compresseur / limiteur (émission) », ou clic droit sur le volume AF > « Égaliseur 10 bandes (réception) ») avec 10 curseurs de 31 Hz à 16 kHz (±12 dB), la courbe de réponse en direct, des préréglages et « À plat » (clic droit sur un curseur = remise à 0).
+**Égaliseur audio 10 bandes sur le PC** : une fenêtre (clic droit sur PTT > « Égaliseur 10 bandes + compresseur / limiteur (émission) », ou clic droit sur le volume AF > « Égaliseur 10 bandes (réception) ») avec 10 curseurs de 50 Hz à 10 kHz (±12 dB, haut = gain), la courbe de réponse en direct, des préréglages et « À plat » (clic droit sur un curseur = remise à 0).
 
 - **Émission** : égaliseur puis **compresseur / limiteur** (seuil, rapport, gain de sortie, plafond, attaque, relâche ; la réduction de gain s'affiche). Actif sur le micro envoyé au poste, donc la case « Micro du PC vers le poste » doit être cochée.
 - **Réception** : actif sur le son du poste rejoué sur le PC (case « Écouter la réception du poste sur le PC »).
@@ -197,3 +197,7 @@ Quand « Couper le haut-parleur du poste » est actif, le **bouton de volume AF 
 ## 4 quindecies. Nouveautés de la 1.10
 
 **Noise gate à l'émission** : dans la fenêtre de l'égaliseur audio (onglet Émission), un panneau « Noise gate » sous le compresseur coupe le bruit entre les mots (seuil, atténuation, attaque, maintien, relâche). Ordre de la chaîne : noise gate, égaliseur 10 bandes, compresseur / limiteur. Comme le reste, il agit sur le micro envoyé au poste (« Micro du PC vers le poste » coché).
+
+## 4 sexdecies. Nouveautés de la 1.11
+
+**Égaliseur audio** : les 10 curseurs couvrent maintenant **50 Hz à 10 kHz** (50, 100, 200, 400, 800 Hz, 1,6, 3,15, 5, 7, 10 kHz) et le sens est corrigé : **monter un curseur = gain, le descendre = atténuation**. Préréglages refaits ; les anciens réglages de bandes ne sont pas repris (l'égaliseur repart à plat).
