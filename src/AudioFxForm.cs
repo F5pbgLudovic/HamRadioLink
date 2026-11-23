@@ -29,7 +29,7 @@ namespace HamRadioLink
         bool tx = true, loading;
         FxSet cur;
         readonly RadioButton rTx, rRx; readonly CheckBox cEq, cComp; readonly TrackBar[] tb = new TrackBar[10]; readonly Label[] lv = new Label[10];
-        readonly NumericUpDown nThr, nRatio, nMake, nCeil, nAtt, nRel; readonly Panel comp; readonly Plot plot; readonly Label status, gr; readonly ComboBox presets;
+        readonly NumericUpDown nThr, nRatio, nMake, nCeil, nAtt, nRel; readonly Panel comp, gate; readonly CheckBox cGate; readonly NumericUpDown nGThr, nGRange, nGAtt, nGHold, nGRel; readonly Plot plot; readonly Label status, gr; readonly Button close; readonly ComboBox presets;
         readonly Timer saveT = new Timer { Interval = 800 }, meterT = new Timer { Interval = 100 };
 
         public AudioFxForm()
@@ -61,10 +61,15 @@ namespace HamRadioLink
             gr = new Label { Left = 400, Top = 8, Width = 320, Height = 18, TextAlign = ContentAlignment.MiddleRight, ForeColor = Color.FromArgb(160, 215, 50), Text = "Réduction : 0,0 dB" }; comp.Controls.Add(gr);
             nThr = Num(comp, "Seuil (dB)", 14, -40, 0, 0); nRatio = Num(comp, "Rapport (:1)", 134, 1, 20, 1); nMake = Num(comp, "Gain de sortie (dB)", 254, 0, 24, 1);
             nCeil = Num(comp, "Plafond limiteur (dB)", 374, -12, 0, 1); nAtt = Num(comp, "Attaque (ms)", 494, 1, 100, 0); nRel = Num(comp, "Relâche (ms)", 614, 20, 1500, 0);
+            gate = new Panel { Left = 10, Top = 586, Width = 740, Height = 100, BackColor = Pan }; Controls.Add(gate);
+            cGate = new CheckBox { Text = "Noise gate (silence entre les mots) actif", Left = 14, Top = 6, Width = 340, ForeColor = Color.White, Font = new Font(Font, FontStyle.Bold) }; gate.Controls.Add(cGate);
+            nGThr = Num(gate, "Seuil (dB)", 14, -80, -10, 0); nGRange = Num(gate, "Atténuation (dB)", 134, -80, -6, 0); nGAtt = Num(gate, "Attaque (ms)", 254, 1, 50, 0); nGHold = Num(gate, "Maintien (ms)", 374, 0, 1000, 0); nGRel = Num(gate, "Relâche (ms)", 494, 20, 2000, 0);
+            foreach (Control c in gate.Controls) if (c is NumericUpDown || c is Label) c.Top -= 8;
 
-            status = new Label { Left = 14, Top = 590, Width = 560, Height = 40, ForeColor = Color.FromArgb(180, 180, 180) }; Controls.Add(status);
-            Button close = Flat("Fermer", 650, 600, 100, 26); close.Click += delegate { Close(); }; Controls.Add(close);
-            cEq.CheckedChanged += delegate { if (!loading) { cur.EqOn = cEq.Checked; Push(); } }; cComp.CheckedChanged += delegate { if (!loading) { cur.CompOn = cComp.Checked; Push(); } };
+            status = new Label { Left = 14, Top = 692, Width = 560, Height = 40, ForeColor = Color.FromArgb(180, 180, 180) }; Controls.Add(status);
+            close = Flat("Fermer", 650, 700, 100, 26); close.Click += delegate { Close(); }; Controls.Add(close);
+            cEq.CheckedChanged += delegate { if (!loading) { cur.EqOn = cEq.Checked; Push(); } }; cComp.CheckedChanged += delegate { if (!loading) { cur.CompOn = cComp.Checked; Push(); } }; cGate.CheckedChanged += delegate { if (!loading) { cur.GateOn = cGate.Checked; Push(); } };
+            nGThr.ValueChanged += delegate { Pc(); }; nGRange.ValueChanged += delegate { Pc(); }; nGAtt.ValueChanged += delegate { Pc(); }; nGHold.ValueChanged += delegate { Pc(); }; nGRel.ValueChanged += delegate { Pc(); };
             nThr.ValueChanged += delegate { Pc(); }; nRatio.ValueChanged += delegate { Pc(); }; nMake.ValueChanged += delegate { Pc(); }; nCeil.ValueChanged += delegate { Pc(); }; nAtt.ValueChanged += delegate { Pc(); }; nRel.ValueChanged += delegate { Pc(); };
             saveT.Tick += delegate { saveT.Stop(); Cfg.Save(); }; meterT.Tick += delegate { gr.Text = "Réduction : " + FxCfg.GrTx.ToString("0.0") + " dB"; }; meterT.Start();
             FormClosed += delegate { meterT.Stop(); if (saveT.Enabled) { saveT.Stop(); Cfg.Save(); } inst = null; };
@@ -73,17 +78,17 @@ namespace HamRadioLink
         void Pick(bool t)
         {
             tx = t; loading = true; (t ? rTx : rRx).Checked = true;
-            cur = FxCfg.Clone(FxCfg.Get(tx)); cEq.Checked = cur.EqOn; cComp.Checked = cur.CompOn;
+            cur = FxCfg.Clone(FxCfg.Get(tx)); cEq.Checked = cur.EqOn; cComp.Checked = cur.CompOn; cGate.Checked = cur.GateOn;
             for (int i = 0; i < 10; i++) { tb[i].Value = (int)Math.Round(-cur.G[i] * 10); lv[i].Text = Db(cur.G[i]); }
-            SetN(nThr, cur.Thr); SetN(nRatio, cur.Ratio); SetN(nMake, cur.Makeup); SetN(nCeil, cur.Ceil); SetN(nAtt, cur.Att); SetN(nRel, cur.Rel);
-            comp.Visible = tx; gr.Visible = tx; loading = false; plot.Invalidate();
+            SetN(nThr, cur.Thr); SetN(nRatio, cur.Ratio); SetN(nMake, cur.Makeup); SetN(nCeil, cur.Ceil); SetN(nAtt, cur.Att); SetN(nRel, cur.Rel); SetN(nGThr, cur.GThr); SetN(nGRange, cur.GRange); SetN(nGAtt, cur.GAtt); SetN(nGHold, cur.GHold); SetN(nGRel, cur.GRel);
+            comp.Visible = tx; gate.Visible = tx; gr.Visible = tx; status.Top = tx ? 692 : 478; close.Top = tx ? 700 : 488; ClientSize = new Size(760, tx ? 736 : 530); loading = false; plot.Invalidate();
             status.Text = tx ? "Appliqué au micro envoyé au poste : actif quand « Micro du PC vers le poste » est coché (clic droit sur PTT). Clic droit sur un curseur = remise à 0."
                 : "Appliqué au son du poste rejoué sur le PC : actif quand « Écouter la réception du poste sur le PC » est coché (clic droit sur le volume AF). Clic droit sur un curseur = remise à 0.";
         }
         static string Db(double g) { return (g > 0 ? "+" : "") + g.ToString("0.0") + " dB"; }
         static void SetN(NumericUpDown n, double v) { n.Value = (decimal)Math.Max((double)n.Minimum, Math.Min((double)n.Maximum, v)); }
         void Changed(int i, double g) { cur.G[i] = g; lv[i].Text = Db(g); Push(); }
-        void Pc() { if (loading) return; cur.Thr = (double)nThr.Value; cur.Ratio = (double)nRatio.Value; cur.Makeup = (double)nMake.Value; cur.Ceil = (double)nCeil.Value; cur.Att = (double)nAtt.Value; cur.Rel = (double)nRel.Value; Push(); }
+        void Pc() { if (loading) return; cur.Thr = (double)nThr.Value; cur.Ratio = (double)nRatio.Value; cur.Makeup = (double)nMake.Value; cur.Ceil = (double)nCeil.Value; cur.Att = (double)nAtt.Value; cur.Rel = (double)nRel.Value; cur.GThr = (double)nGThr.Value; cur.GRange = (double)nGRange.Value; cur.GAtt = (double)nGAtt.Value; cur.GHold = (double)nGHold.Value; cur.GRel = (double)nGRel.Value; Push(); }
         void Apply(double[] g) { loading = true; for (int i = 0; i < 10; i++) { cur.G[i] = g[i]; tb[i].Value = (int)Math.Round(-g[i] * 10); lv[i].Text = Db(g[i]); } loading = false; Push(); }
         // l'instantané modifié devient celui du fil audio ; un enregistrement sur disque suit 0,8 s après le dernier geste
         void Push() { FxSet s = FxCfg.Clone(cur); FxCfg.Store(tx, s); plot.Invalidate(); saveT.Stop(); saveT.Start(); }

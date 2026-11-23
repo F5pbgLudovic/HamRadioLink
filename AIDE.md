@@ -193,3 +193,7 @@ Quand « Couper le haut-parleur du poste » est actif, le **bouton de volume AF 
 - **Émission** : égaliseur puis **compresseur / limiteur** (seuil, rapport, gain de sortie, plafond, attaque, relâche ; la réduction de gain s'affiche). Actif sur le micro envoyé au poste, donc la case « Micro du PC vers le poste » doit être cochée.
 - **Réception** : actif sur le son du poste rejoué sur le PC (case « Écouter la réception du poste sur le PC »).
 - Rien ne change pour un micro branché directement sur le poste ni pour le haut-parleur du poste. Les réglages sont mémorisés et communs à tous les postes.
+
+## 4 quindecies. Nouveautés de la 1.10
+
+**Noise gate à l'émission** : dans la fenêtre de l'égaliseur audio (onglet Émission), un panneau « Noise gate » sous le compresseur coupe le bruit entre les mots (seuil, atténuation, attaque, maintien, relâche). Ordre de la chaîne : noise gate, égaliseur 10 bandes, compresseur / limiteur. Comme le reste, il agit sur le micro envoyé au poste (« Micro du PC vers le poste » coché).

@@ -178,3 +178,7 @@ When "mute the radio speaker" is on, the **AF volume knob sets the volume of the
 - **Transmit**: equalizer then **compressor / limiter** (threshold, ratio, output gain, ceiling, attack, release; gain reduction is shown). It acts on the microphone sent to the radio, so "PC microphone to the radio" must be ticked.
 - **Receive**: acts on the radio's sound played on the PC ("Listen to the radio on the PC" ticked).
 - Nothing changes for a microphone plugged straight into the radio or for the radio's own speaker. Settings are saved and shared by all radios.
+
+## 4 quindecies. What's new in 1.10
+
+**Transmit noise gate**: in the audio equalizer window (Transmit tab), a "Noise gate" panel below the compressor cuts the noise between words (threshold, attenuation, attack, hold, release). Chain order: noise gate, 10-band equalizer, compressor / limiter. As for the rest, it acts on the microphone sent to the radio ("PC microphone to the radio" ticked).

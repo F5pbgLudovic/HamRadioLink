@@ -1,5 +1,9 @@
 # Historique des versions
 
+## 1.10 — 2026-11-23
+
+**Noise gate à l'émission** (fenêtre de l'égaliseur audio, onglet Émission, sous le compresseur) : coupe le bruit entre les mots. Réglages : seuil, atténuation, attaque, maintien, relâche. Ordre de la chaîne d'émission : noise gate, égaliseur 10 bandes, compresseur / limiteur. Essai `--fxtest` complété (signal sous / sur le seuil).
+
 ## 1.9 — 2026-11-23
 
 **Égaliseur audio 10 bandes sur le PC (émission et réception)**
