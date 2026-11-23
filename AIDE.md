@@ -185,3 +185,11 @@ Quand « Couper le haut-parleur du poste » est actif, le **bouton de volume AF 
 **Roue crantée > Alerte ROS** (en bas) : étalonnage du ROS pour tous les postes (plusieurs mesures ou « Passer », extrapolation) ; WIDTH s'étalonne tous les 100 Hz.
 
 **Journal** : fenêtre Add (RST proposés selon le mode, thème propre à la fenêtre) ; menu Fichier réorganisé avec « Sauvegarder la base maintenant… » (fichier .sql daté, dossier et nombre de copies au choix, sauvegarde automatique à la fermeture / chaque jour / semaine / mois) et « Restaurer la base maintenant… » (dossier des sauvegardes ou autre chemin, avec sauvegarde préalable) ; journal de destination des QSO reçus (Réglages des ports) ; Online services : case « Ne pas transmettre les commentaires ».
+
+## 4 quaterdecies. Nouveautés de la 1.9
+
+**Égaliseur audio 10 bandes sur le PC** : une fenêtre (clic droit sur PTT > « Égaliseur 10 bandes + compresseur / limiteur (émission) », ou clic droit sur le volume AF > « Égaliseur 10 bandes (réception) ») avec 10 curseurs de 31 Hz à 16 kHz (±12 dB), la courbe de réponse en direct, des préréglages et « À plat » (clic droit sur un curseur = remise à 0).
+
+- **Émission** : égaliseur puis **compresseur / limiteur** (seuil, rapport, gain de sortie, plafond, attaque, relâche ; la réduction de gain s'affiche). Actif sur le micro envoyé au poste, donc la case « Micro du PC vers le poste » doit être cochée.
+- **Réception** : actif sur le son du poste rejoué sur le PC (case « Écouter la réception du poste sur le PC »).
+- Rien ne change pour un micro branché directement sur le poste ni pour le haut-parleur du poste. Les réglages sont mémorisés et communs à tous les postes.

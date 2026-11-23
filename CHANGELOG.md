@@ -1,5 +1,14 @@
 # Historique des versions
 
+## 1.9 — 2026-11-23
+
+**Égaliseur audio 10 bandes sur le PC (émission et réception)**
+- **Émission** : clic droit sur PTT > « Égaliseur 10 bandes + compresseur / limiteur (émission)… ». S'applique au micro envoyé au poste (case « Micro du PC vers le poste »). Égaliseur 31 Hz à 16 kHz (±12 dB) puis compresseur / limiteur (seuil, rapport, gain de sortie, plafond, attaque, relâche) avec affichage de la réduction de gain.
+- **Réception** : clic droit sur le volume AF (ou sur PTT) > « Égaliseur 10 bandes (réception)… ». S'applique au son du poste rejoué sur le PC (case « Écouter la réception du poste sur le PC »).
+- Une seule fenêtre non bloquante (choix Émission / Réception), courbe de réponse en direct, préréglages (voix claire, graves coupés, chaleureux, aigus adoucis, DX), clic droit sur un curseur = remise à 0. Réglages mémorisés (fx.tx.* / fx.rx.*), communs à tous les postes.
+- Ne change rien au micro branché directement sur le poste ni au haut-parleur du poste.
+- Essai automatique `--fxtest=dossier` (gains mesurés sur sinus, compresseur, limiteur, fenêtre).
+
 
 ## 1.8 — 2026-11-23
 

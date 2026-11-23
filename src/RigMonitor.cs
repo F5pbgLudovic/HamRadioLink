@@ -51,6 +51,7 @@ namespace HamRadioLink
         readonly NoiseReducer nr = new NoiseReducer();
         readonly RigNotch nf = new RigNotch();   // notch du poste (1.50), avant le DNR comme sur la page
         float[] mono = new float[0];
+        FxChain fx;
 
         struct Fmt { public int Rate, Channels, Bits; public bool Float; public int Align { get { return Bits / 8 * Channels; } } }
 
@@ -271,7 +272,8 @@ namespace HamRadioLink
                 nf.Process(inFmt.Rate, mono, frames);
                 nr.Process(inFmt.Rate, mono, frames);
             }
-            int cap = ring.Length / 2;
+            int cap = ring.Length / 2; bool fxOn = FxCfg.Active(raw);   // égaliseur 10 bandes (+ compresseur à l'émission) : micro = émission, écoute du poste = réception
+            if (fx == null) fx = new FxChain(raw);
             for (int i = 0; i < frames; i++)
             {
                 double l = 0, r = 0;
@@ -281,6 +283,7 @@ namespace HamRadioLink
                     r = inFmt.Channels > 1 ? Sample(i * align + bytes, bytes) : l;
                 }
                 if (dnr) { l = mono[i]; r = l; }
+                if (fxOn) fx.Process(inFmt.Rate, ref l, ref r);
                 if (!haveLast) { lastL = l; lastR = r; haveLast = true; }
                 while (t < 1.0)
                 {

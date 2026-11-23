@@ -170,3 +170,11 @@ When "mute the radio speaker" is on, the **AF volume knob sets the volume of the
 **Gear > SWR alert** (at the bottom): SWR calibration for every radio (several measurements or "Passer", extrapolation); WIDTH is calibrated every 100 Hz.
 
 **Log**: Add window (RST proposed by mode, its own theme); reorganized File menu with "Sauvegarder la base maintenant…" (dated .sql file, folder and number of copies of your choice, automatic backup at close / daily / weekly / monthly) and "Restaurer la base maintenant…" (backup folder or another path, with a safety backup first); destination log for received QSOs (Ports settings); Online services: "Ne pas transmettre les commentaires" check box.
+
+## 4 quaterdecies. What's new in 1.9
+
+**10-band audio equalizer on the PC**: one window (right-click PTT > "10-band equalizer + compressor / limiter (transmit)", or right-click the AF volume knob > "10-band equalizer (receive)") with 10 sliders from 31 Hz to 16 kHz (±12 dB), a live response curve, presets and "À plat" (flat); right-click a slider to reset it.
+
+- **Transmit**: equalizer then **compressor / limiter** (threshold, ratio, output gain, ceiling, attack, release; gain reduction is shown). It acts on the microphone sent to the radio, so "PC microphone to the radio" must be ticked.
+- **Receive**: acts on the radio's sound played on the PC ("Listen to the radio on the PC" ticked).
+- Nothing changes for a microphone plugged straight into the radio or for the radio's own speaker. Settings are saved and shared by all radios.

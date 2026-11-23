@@ -56,6 +56,9 @@ namespace HamRadioLink
             ToolStripMenuItem mu = new ToolStripMenuItem("Couper le haut-parleur du poste (le son reste sur le PC)"); mu.Checked = Mute(key); mu.Enabled = rig.Def.Find("af") != null;
             mu.ToolTipText = "Met le volume AF du transceiver à 0 tant que l'écoute sur le PC est active ; le volume d'origine est rétabli à la désactivation.";
             mu.Click += delegate { Cfg.SetBool(K(key, "coupe"), !Mute(key)); Cfg.Save(); CatLog.Event(key, Mute(key) ? "réception : haut-parleur du poste coupé" : "réception : haut-parleur du poste rétabli"); Tick(rig); }; m.Items.Add(mu);
+            m.Items.Add(new ToolStripSeparator());
+            ToolStripMenuItem eqr = new ToolStripMenuItem("Égaliseur 10 bandes (réception)…"); eqr.Checked = FxCfg.Active(false);
+            eqr.Click += delegate { AudioFxForm.Open(Application.OpenForms.Count > 0 ? Application.OpenForms[0] : null, false); }; m.Items.Add(eqr);
         }
 
         public static void Set(string key, bool on)

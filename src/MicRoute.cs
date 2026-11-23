@@ -52,6 +52,11 @@ namespace HamRadioLink
             if (mics.DropDownItems.Count == 0) mics.DropDownItems.Add(new ToolStripMenuItem("Aucune entrée son trouvée dans Windows") { Enabled = false });
             if (cards.DropDownItems.Count == 0) cards.DropDownItems.Add(new ToolStripMenuItem("Aucune sortie son trouvée dans Windows") { Enabled = false });
             m.Items.Add(mics); m.Items.Add(cards);
+            m.Items.Add(new ToolStripSeparator());
+            ToolStripMenuItem eq = new ToolStripMenuItem("Égaliseur 10 bandes + compresseur / limiteur (émission)…"); eq.Checked = FxCfg.Active(true);
+            eq.Click += delegate { AudioFxForm.Open(Application.OpenForms.Count > 0 ? Application.OpenForms[0] : null, true); }; m.Items.Add(eq);
+            ToolStripMenuItem eqr = new ToolStripMenuItem("Égaliseur 10 bandes (réception)…"); eqr.Checked = FxCfg.Active(false);
+            eqr.Click += delegate { AudioFxForm.Open(Application.OpenForms.Count > 0 ? Application.OpenForms[0] : null, false); }; m.Items.Add(eqr);
         }
 
         public static void Set(bool on)
