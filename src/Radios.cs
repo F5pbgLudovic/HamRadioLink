@@ -76,12 +76,12 @@ namespace HamRadioLink
         // d'autant, sans changer de forme, pour occuper l'espace libre en bas du cadre ; l'espace restant en bas égale la marge de gauche (disposition symétrique).
         // Idempotent : une seconde application ne change plus rien.
         // Disposition d'origine du FT-2000 / FT-2000D : celle validée sur le poste de l'utilisateur (id, x, y, largeur, hauteur) ; appliquée aussi comme positions « par défaut »
-        const string Ft2000Layout = "poff,152,148,56,42;onoff,24,148,118,42;tuner,24,192,182,54;tunego,24,248,182,54;vox,24,304,86,40;mox,120,304,86,40;dual,894,490,120,58;nar,1027,490,120,58;narb,1125,490,120,58;clarrx,1684,716,108,40;clartx,1684,772,108,40;clr,1568,772,108,40;nbl,324,887,94,96;dnrl,424,887,94,96;procl,524,887,94,96;monil,624,887,94,96;voxg,724,887,94,96;notch,1449,718,108,40;cont,1566,716,108,40;dnf,1217,718,108,40;clar,1680,594,110,112;tunemic,1616,900,190,62";
+        const string Ft2000Layout = "poff,152,148,56,42;onoff,24,148,118,42;tuner,24,192,182,54;tunego,24,248,182,54;vox,24,304,86,40;mox,120,304,86,40;att,234,490,120,58;ipo,360,490,120,58;rfil,486,490,120,58;agc,612,490,120,58;agcb,738,490,120,58;dual,864,490,120,58;nar,990,490,120,58;narb,1116,490,120,58;clarrx,1684,716,108,40;clartx,1684,772,108,40;clr,1568,772,108,40;nbl,324,894,94,76;dnrl,424,894,94,76;procl,524,894,94,76;monil,624,894,94,76;voxg,724,894,94,76;notch,1449,718,108,40;cont,1566,716,108,40;dnf,1217,718,108,40;clar,1680,594,110,112;tunemic,1616,900,190,62";
         // FT-991A DF5DP : disposition intÃ©grÃ©e (anciennement data\ft991a-df5dp.layout.ini / .cat.ini)
         const string Df5dpLayout = "f_pwr,0,120,232,244;onoff,4,124,120,44;poff,132,124,96,48;tuner,4,188,116,44;tunego,132,188,96,44;vox,488,680,116,44;mox,4,308,112,44;ptt,0,744,600,236;moni,1216,780,112,60;proc,372,680,112,44;lock,1080,776,124,192;f_scr,232,120,1280,244;fa,676,120,520,160;fb,1200,120,228,120;sm,232,124,440,88;po,716,316,480,48;swr,232,212,440,68;vdd,716,288,244,28;alc,236,316,480,48;comp,236,284,480,32;idd,960,284,236,32;l_busy,804,124,60,48;l_tx,736,124,60,48;l_mem,1088,124,64,52;att,1208,564,120,56;ipo,1080,564,120,56;agc,1336,564,120,56;narrow,1480,564,120,56;f_vfo,1512,120,348,436;vm,1432,204,80,36;swap,1432,124,80,36;a2b,1432,164,80,36;b2a,1432,240,80,36;clarrx,1324,240,104,40;clartx,1324,280,104,40;clr,1324,320,104,40;txw,1516,164,176,40;qmb,1632,120,116,40;qmbs,1516,120,112,40;qs,1752,120,108,40;mchu,1432,280,80,40;mchd,1432,320,80,40;bu,1436,372,68,88;bd,1436,464,68,84;cs,1696,164,160,40;dnf,1736,564,120,56;ky1,1596,272,52,44;ky2,1652,272,48,44;ky3,1704,272,48,44;ky4,1756,272,48,44;ky5,1808,272,48,44;pb1,1524,232,64,32;pb2,1524,272,64,32;pb3,1524,312,64,32;pb4,1524,352,64,32;pb5,1524,396,64,32;pb0,1524,440,64,112;kr,1596,232,132,32;bi,1736,232,120,32;ks,1596,320,128,112;kp,1728,320,128,112;f_mode,8,368,1504,192;band,12,372,1416,68;md0,8,444,1220,104;f_dial,604,556,472,424;dial,608,560,468,416;step,996,908,76,60;f_rx,8,556,596,172;af,1080,628,120,120;rf,1208,628,120,120;sql,1336,628,120,120;mic,256,560,116,120;pwr,12,560,128,120;procl,372,560,116,120;monil,1216,848,112,120;voxg,488,560,116,120;nb,1336,780,120,60;dnr,1472,780,120,60;nbl,1336,848,120,120;dnrl,1472,848,120,120;f_dsp,1076,560,784,420;shift,1736,628,120,120;width,1480,628,120,120;notchf,1608,628,120,120;contf,1736,848,120,120;apff,1600,848,128,120;notch,1608,564,120,56;cont,1736,780,120,60;apf,1604,780,124,60;vd,1596,432,128,120;sd,1728,432,128,120;meter,136,308,92,44;clar,1200,240,124,120;dtg,140,560,116,120;meq,256,680,116,44;ctcss,1232,444,196,32;ctone,1232,480,196,32;dcsc,1232,516,196,32;tunemic,4,248,224,40;menu,12,680,244,48";
         static void UserDefaults(RadioDef r)
         {
-            string emb; if (r.Key == "ft991a-df5dp") emb = Df5dpLayout; else if (r.Key == "ftdx10") emb = "shift,1328,592,110,112;width,1444,592,110,112;notchf,1212,592,110,112"; else if (r.Key == "ftdx5000") emb = "fa,376,144,560,128;md1,1004,824,396,58"; else emb = null;
+            string emb; if (r.Key == "ft991a-df5dp") emb = Df5dpLayout; else if (r.Key == "ftdx10") emb = "shift,1328,592,110,112;width,1212,592,110,112;notchf,1444,592,110,112;meter,1216,896,190,66;tunemic,1648,898,190,66;tunego,24,249,182,42;vox,24,300,86,40;mox,120,300,86,40;agc,703,470,140,76;narrow,849,470,124,76;md1,979,470,256,76;dnf,23,902,94,52;f_rx,12,764,830,206;nb,124,904,94,52;dnr,228,904,94,52;meq,724,904,94,52;nbl,336,900,64,60;dnrl,436,900,64,60;notch,1444,712,110,44;cont,1564,712,110,44;apf,1680,712,110,44;clar,1212,710,110,112;clartxk,1328,710,110,112;clrclar,1680,764,110,44;menu,1432,897,190,66;clarrx,1444,764,110,44;clartx,1564,764,110,44"; else if (r.Key == "ftdx5000") emb = "fa,376,144,560,128;md1,1004,824,396,58"; else emb = null;
             if (emb != null) { foreach (string it in emb.Split(";".ToCharArray())) { string[] q = it.Split(",".ToCharArray()); Ctl k = r.Find(q[0]); if (k == null) continue; k.X = k.DX = int.Parse(q[1]); k.Y = k.DY = int.Parse(q[2]); k.W = k.DW = int.Parse(q[3]); k.H = k.DH = int.Parse(q[4]); } if (r.Key == "ft991a-df5dp") { Ctl sg = r.Find("sm"); if (sg != null) sg.Label = sg.DLabel = "Signal"; } return; }
             if (r.Key != "ft2000") return;
             foreach (string it in Ft2000Layout.Split(';'))
@@ -155,7 +155,7 @@ namespace HamRadioLink
         const string BANDS = "1.8=00,3.5=01,5=02,7=03,10=04,14=05,18=06,21=07,24.5=08,28=09,50=10,GEN=11";
         public static readonly long[] BandLo = { 1800000, 3500000, 5250000, 7000000, 10100000, 14000000, 18068000, 21000000, 24890000, 28000000, 50000000 };
         public static readonly long[] BandHi = { 2000000, 3999999, 5499999, 7299999, 10149999, 14349999, 18168000, 21449999, 24989999, 29699999, 54000000 };
-        public static string BandCode(long f) { for (int i = 0; i < BandLo.Length; i++) if (f >= BandLo[i] && f <= BandHi[i]) return i.ToString("00"); if (f >= 144000000 && f <= 148000000) return "15"; if (f >= 430000000 && f <= 450000000) return "16"; return "11"; }
+        public static string BandCode(long f) { for (int i = 0; i < BandLo.Length; i++) if (f >= BandLo[i] && f <= BandHi[i]) return i.ToString("00"); if (f >= 144000000 && f <= 148000000) return "15"; if (f >= 430000000 && f <= 450000000) return "16"; if (f >= 69500000 && f <= 71000000) return "13"; return "11"; }
 
         // =====================================================================================  FTdx10
         // Source : « FTDX10 CAT Operation Reference Manual » 2308-F (E:\...\Yeasu\FTdx10\FTDX10_CAT_OM_ENG_2308-F.pdf)
@@ -188,6 +188,7 @@ namespace HamRadioLink
             b.Meter("po", "Po", 244, 348, 480, 34, 255, "RM5;", @"^RM5(?<v>\d{3})000;$", "pct", true);
             b.Meter("swr", "SWR", 244, 386, 480, 34, 255, "RM6;", @"^RM6(?<v>\d{3})000;$", "pct", true);
             b.Meter("vdd", "Vdd", 244, 424, 480, 34, 255, "RM8;", @"^RM8(?<v>\d{3})000;$", "pct", true);
+            b.Gauge("bigmeter", "S-MÈTRE", 244, 310, 480, 148).Hint = "Grand S-mètre à aiguille (clic droit sur un vumètre de gauche pour l'afficher ; clic droit dessus pour revenir aux barres).";
             b.Meter("alc", "ALC", 736, 310, 494, 34, 255, "RM4;", @"^RM4(?<v>\d{3})000;$", "pct", true);
             b.Meter("comp", "COMP", 736, 348, 494, 34, 255, "RM3;", @"^RM3(?<v>\d{3})000;$", "pct", true);
             b.Meter("idd", "Id", 736, 386, 494, 34, 255, "RM7;", @"^RM7(?<v>\d{3})000;$", "pct", true);
@@ -195,9 +196,9 @@ namespace HamRadioLink
             b.Led("l_tx", "TX", 862, 430, 110, 26, "ptt", "1|2", "red");
             b.Led("l_mem", "MEM", 980, 430, 110, 26, "vm", "1|2|3", "amber");
             b.Led("l_split", "SPLIT", 1098, 430, 110, 26, "split", "1|2", "cyan");
-            b.Cho("att", "ATT", 244, 470, 150, 76, "OFF=0,6 dB=1,12 dB=2,18 dB=3", "RA0{v};", "RA0;", @"^RA0(?<v>[0-3]);$");
-            b.Cho("ipo", "IPO", 400, 470, 150, 76, "IPO=0,AMP 1=1,AMP 2=2", "PA0{v};", "PA0;", @"^PA0(?<v>[0-2]);$");
-            c = b.Cho("rfil", "R.FIL", 556, 470, 150, 76, "12 kHz=1|6,3 kHz=2|7,500 Hz=4|9,300 Hz=5|A", "RF0{v};", "RF0;", @"^RF0(?<v>[1-9A]);$");
+            b.Cho("att", "ATT", 235, 470, 150, 76, "OFF=0,6 dB=1,12 dB=2,18 dB=3", "RA0{v};", "RA0;", @"^RA0(?<v>[0-3]);$");
+            b.Cho("ipo", "IPO", 391, 470, 150, 76, "IPO=0,AMP 1=1,AMP 2=2", "PA0{v};", "PA0;", @"^PA0(?<v>[0-2]);$");
+            c = b.Cho("rfil", "R.FIL", 547, 470, 150, 76, "12 kHz=1|6,3 kHz=2|7,500 Hz=4|9,300 Hz=5|A", "RF0{v};", "RF0;", @"^RF0(?<v>[1-9A]);$");
             c.Hint = "Manuel : RF P2 = 1:12 kHz, 2:3 kHz, 4:500 Hz, 5:300 Hz (option) ; la réponse peut utiliser 6 à A. À vérifier sur le poste.";
             b.Cho("agc", "AGC", 712, 470, 150, 76, "AUTO=4|5|6,FAST=1,MID=2,SLOW=3,OFF=0", "GT0{v};", "GT0;", @"^GT0(?<v>[0-6]);$");
             b.Tog("narrow", "NAR", 868, 470, 100, 76, "NA0{v};", "NA0;", @"^NA0(?<v>[01]);$");
@@ -211,8 +212,8 @@ namespace HamRadioLink
             b.Act("a2b", "A=B", rx + 232, 152, bw, 40, "AB;");
             b.Act("b2a", "B=A", rx + 348, 152, bw, 40, "BA;");
             b.Row("vs", "VFO ACTIF", rx + 464, 152, 108, 40, 1, "A=0,B=1", "VS{v};", "VS;", @"^VS(?<v>[01]);$");
-            b.Tog("clarrx", "CLAR RX", rx, 200, bw, 40, "RT{v};", "RT;", @"^RT(?<v>[01]);$").Period = 6000;
-            b.Tog("clartx", "CLAR TX", rx + 116, 200, bw, 40, "XT{v};", "XT;", @"^XT(?<v>[01]);$").Period = 6000;
+            b.Tog("clarrx", "CLAR RX", 1214, 764, 110, 44, "RT{v};", "RT;", @"^RT(?<v>[01]);$").Period = 6000;
+            b.Tog("clartx", "CLAR TX", 1330, 764, 110, 44, "XT{v};", "XT;", @"^XT(?<v>[01]);$").Period = 6000;
             b.Act("clr", "CLAR CLEAR", rx + 232, 200, bw, 40, "RC;");
             b.Tog("split", "SPLIT", rx + 348, 200, bw, 40, "ST{v};", "ST;", @"^ST(?<v>[0-2]);$", "1|2", "0").Accent = "cyan";
             b.Tog("txw", "TXW", rx + 464, 200, 108, 40, "TS{v};", "TS;", @"^TS(?<v>[01]);$");
@@ -237,7 +238,7 @@ namespace HamRadioLink
 
             // ---- bande et mode
             b.Frame("f_mode", "BANDE / MODE (VFO-A)", 10, 564, 830, 190);
-            c = b.Row("band", "BANDE", 24, 590, 802, 52, 1, BANDS, "BS{v};", "", ""); c.Hint = "Manuel : BS P1 = 00 (1,8 MHz) à 11 (GEN). Pas de lecture : la bande allumée vient de la fréquence.";
+            c = b.Row("band", "BANDE", 24, 590, 802, 52, 1, BANDS.Replace("GEN=11", "70=13"), "BS{v};", "", ""); c.Hint = "Manuel : BS P1 = 00 (1,8 MHz) à 11 (GEN). Touche 70 : place le VFO A au début de la bande 70 MHz autorisée en Europe (70,000 MHz). Pas de lecture : la bande allumée vient de la fréquence.";
             b.Row("md0", "MODE", 24, 650, 802, 94, 2, MODES, "MD0{v};", "MD0;", @"^MD0(?<v>[0-9A-F]);$").Period = 1500;
 
             // ---- molette principale
@@ -276,7 +277,10 @@ namespace HamRadioLink
             b.Knob("vd", "VOX DLY", rx + 388, 428, 70, 80, 0, 33, "VD{v:2};", "VD;", @"^VD(?<v>\d{2});$", "raw").Hint = "Délai VOX : numéro 00 à 33 (00 = 30 ms ... 33 = 3000 ms), 2 chiffres comme validé sur un vrai FTdx10 (le manuel imprime 4 chiffres).";
             b.Knob("sd", "BK DLY", rx + 464, 428, 70, 80, 0, 33, "SD{v:2};", "SD;", @"^SD(?<v>\d{2});$", "raw").Hint = "Délai break-in CW : numéro 00 à 33 (33 = 3000 ms), 2 chiffres (format validé sur un vrai FTdx10, bornes du manuel).";
             c = b.Cho("meter", "METER", 1214, 856, 190, 66, "PO=0,COMP=1,ALC=2,VDD=3,ID=4,SWR=5", "MS{v}0;", "MS;", @"^MS(?<v>[0-5])0;$"); c.Hint = "Commutateur METER du poste (MS P1 P2 : 0 PO, 1 COMP, 2 ALC, 3 VDD, 4 ID, 5 SWR). Les mesures affichées ici viennent de RM et ne dépendent pas de ce réglage.";
-            c = b.Knob("clar", "CLAR", 1562, 712, 110, 108, -9990, 9990, "CF001{v:+4};", "IF;", IF, "hz"); c.Step = 10; c.Period = 300; c.Hint = "Le décalage est lu avec IF; (réponse complète, 28 caractères) qui met aussi à jour fréquence A, mode A, CLAR RX/TX et V/M.";
+            c = b.Knob("clar", "CLAR RX", 1562, 712, 110, 108, -9990, 9990, "CF001{v:+4};", "IF;", IF, "hz"); c.Step = 10; c.Period = 300; c.Hint = "Le décalage est lu avec IF; (réponse complète, 28 caractères) qui met aussi à jour fréquence A, mode A, CLAR RX/TX et V/M.";
+            c = b.Knob("clartxk", "CLAR TX", 1678, 712, 110, 108, -9990, 9990, "CF001{v:+4};", "", IF, "hz"); c.Step = 10; c.Hint = "Réglage indépendant de CLAR RX : chaque bouton garde sa position. Le poste n'a qu'un décalage : le programme envoie celui du bouton tourné, avec seul son clarifier actif (touche CLAR RX ou CLAR TX).";
+            c = b.Act("menu", "MENU", 1432, 897, 190, 66, ""); c.Local = true; c.Tip = "Menu du FTdx10 (OPERATION / RADIO / CW / DISPLAY SETTING) : valeurs lues dans le poste et modifiables.";
+            b.Act("clrclar", "CLEAR CLAR", 1562, 828, 110, 44, "RC;").Hint = "Remet à 0 les deux réglages CLAR RX et CLAR TX et le décalage du poste.";
             b.Fin(); return r;
         }
 
@@ -327,6 +331,7 @@ namespace HamRadioLink
             b.Meter("comp", "COMP", 736, 348, 494, 34, 255, "RM3;", @"^RM3(?<v>\d{3});$", "pct", true);
             b.Meter("idd", "Id", 736, 386, 494, 34, 255, "RM7;", @"^RM7(?<v>\d{3});$", "pct", true);
             b.Meter("vdd", "Vdd", 736, 424, 494, 34, 255, "RM8;", @"^RM8(?<v>\d{3});$", "pct", true);
+            b.Gauge("bigmeter", "S-MÈTRE", 244, 310, 480, 148).Hint = "Grand S-mètre à aiguille (clic droit sur un vumètre de gauche pour l'afficher ; clic gauche dessus = fonction suivante PO / SWR / ALC...).";
             c = b.LedRd("l_busy", "BUSY A", 244, 462, 100, 22, "BY;", @"^BY(?<v>[01])(?<busyb>[01]);$", "green"); c.Hint = "BY : silencieux ouvert main (P1) et sub (P2).";
             b.Led("l_busyb", "BUSY B", 352, 462, 100, 22, "busyb", "1", "green");
             b.Led("l_tx", "TX", 460, 462, 90, 22, "ptt", "1|2", "red");

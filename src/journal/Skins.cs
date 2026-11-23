@@ -31,6 +31,9 @@ namespace HamRadioLink.Journal
         public static event Action Changed;
         public static readonly List<ThemeDef> All = Build();
         public static int Index, Version = 1;
+        public static int AddIndex = -1; public static bool AddChanged;   // thème propre à la fenêtre « Add » tant qu'elle est ouverte (-1 = aucun)
+        public static ThemeDef AddCur { get { return AddIndex >= 0 && AddIndex < All.Count ? All[AddIndex] : Cur; } }
+        public static void SetAdd(int i) { if (i < 0 || i >= All.Count) return; AddIndex = i; AddChanged = true; App.Cfg.Set("theme.add", i.ToString()); try { App.Cfg.Save(); } catch { } Version++; Fire(); }
         public static ThemeDef Cur { get { return All[Index]; } }
 
         static ThemeDef T(string name, LookKind look, int radius, string gridFont, params int[] c)
@@ -216,7 +219,7 @@ namespace HamRadioLink.Journal
             catch { }
         }
 
-        static ThemeDef PalFor(Form f) { ThemeDef t = Theme.Cur; return (f is LogbookForm || f is AwardsForm) ? t : (t.Dlg ?? t); }
+        static ThemeDef PalFor(Form f) { ThemeDef t = f is QsoForm ? Theme.AddCur : Theme.Cur; return (f is LogbookForm || f is AwardsForm) ? t : (t.Dlg ?? t); }
 
         public static void Apply(Form f)
         {
@@ -287,22 +290,29 @@ namespace HamRadioLink.Journal
             if (p.Native) { b.FlatStyle = FlatStyle.Standard; b.UseVisualStyleBackColor = true; b.ForeColor = Theme.C(p.Text); b.Region = null; return; }
             Color bb = Theme.C(p.BtnBack), bt = Theme.C(p.BtnText);
             b.FlatStyle = FlatStyle.Flat; b.BackColor = bb; b.ForeColor = bt; b.UseVisualStyleBackColor = false;
-            b.FlatAppearance.BorderColor = p.Look == LookKind.Bevel ? Theme.C(p.Line) : Theme.Mix(Theme.C(p.Text), bb, 0.6); b.FlatAppearance.BorderSize = p.Look == LookKind.Bevel ? 0 : 1;
+            b.FlatAppearance.BorderColor = p.Look == LookKind.Bevel ? Theme.C(p.Line) : Theme.Mix(Theme.C(p.Text), bb, 0.6); b.FlatAppearance.BorderSize = p.Look == LookKind.Flat ? 1 : 0;
             b.FlatAppearance.MouseOverBackColor = Theme.Lift(bb, 0.25f); b.FlatAppearance.MouseDownBackColor = Theme.Lift(bb, 0.4f);
             object o; if (!btnHooked.TryGetValue(b, out o)) { btnHooked.Add(b, b); b.SizeChanged += delegate { Shape(b); }; b.Paint += BevelPaint; }
             Shape(b);
         }
         static readonly ConditionalWeakTable<Control, object> btnHooked = new ConditionalWeakTable<Control, object>();
-        static void Shape(Button b)
-        {
-            Form f = b.FindForm(); ThemeDef p = f != null ? PalFor(f) : Theme.Cur;
-            if (p.Native || p.Look != LookKind.Round || b.Width < 12 || b.Height < 12) { if (b.Region != null) b.Region = null; return; }
-            using (GraphicsPath gp = new GraphicsPath())
-            { int k = Math.Max(4, p.Radius * 2), w = b.Width, h = b.Height; gp.AddArc(0, 0, k, k, 180, 90); gp.AddArc(w - k, 0, k, k, 270, 90); gp.AddArc(w - k, h - k, k, k, 0, 90); gp.AddArc(0, h - k, k, k, 90, 90); gp.CloseFigure(); b.Region = new Region(gp); }
-        }
+        static void Shape(Button b) { if (b.Region != null) { b.Region = null; b.Invalidate(); } }   // plus de découpage (bords crénelés) : les coins arrondis sont dessinés lissés dans BevelPaint
         static void BevelPaint(object s, PaintEventArgs e)
         {
-            Button b = (Button)s; Form f = b.FindForm(); if (f == null) return; ThemeDef p = PalFor(f); if (p.Native || p.Look != LookKind.Bevel) return;
+            Button b = (Button)s; Form f = b.FindForm(); if (f == null) return; ThemeDef p = PalFor(f); if (p.Native) return;
+            if (p.Look == LookKind.Round && b.Width >= 12 && b.Height >= 12)
+            {   // coins arrondis et contour lissés (le fond du parent recouvre les angles du rectangle)
+                Graphics g = e.Graphics; g.SmoothingMode = SmoothingMode.AntiAlias; Color pb = b.Parent != null ? b.Parent.BackColor : Theme.C(p.Back);
+                using (GraphicsPath rp = Looks.Round(new Rectangle(0, 0, b.Width, b.Height), Math.Max(2, Math.Min(p.Radius, (b.Height - 1) / 2))))
+                using (GraphicsPath outer = new GraphicsPath(FillMode.Alternate))
+                {
+                    outer.AddRectangle(new Rectangle(-1, -1, b.Width + 2, b.Height + 2)); outer.AddPath(rp, false);
+                    using (SolidBrush sb = new SolidBrush(pb)) g.FillPath(sb, outer);
+                    using (Pen pen = new Pen(Theme.Mix(Theme.C(p.Text), Theme.C(p.BtnBack), 0.6), 1f)) g.DrawPath(pen, rp);
+                }
+                return;
+            }
+            if (p.Look != LookKind.Bevel) return;
             bool down = b.Capture && (Control.MouseButtons & MouseButtons.Left) != 0 && b.ClientRectangle.Contains(b.PointToClient(Cursor.Position));
             DrawBevel(e.Graphics, new Rectangle(0, 0, b.Width - 1, b.Height - 1), down);
         }

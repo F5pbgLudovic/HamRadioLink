@@ -26,6 +26,7 @@ namespace HamRadioLink
         // Réglages d'origine du FT-2000 (étalonnage relevé sur le poste) : utilisés tant que l'utilisateur n'a rien enregistré
         static string DefPts(string key, string id)
         {
+            if (key == "ftdx10" && id == "width") return "1:300;13:2400;23:4000";   // étalonnage de WIDTH relevé sur le FTdx10
             if (key != "ft2000") return "";
             switch (id)
             {
@@ -77,7 +78,7 @@ namespace HamRadioLink
 
         public static int PMax(string key) { return Math.Max(5, Math.Min(2000, Cfg.GetInt("cal." + key + ".pmax", DefPMax(key)))); }
         // pleine déviation de l'échelle Po (W) : par défaut la puissance max ; plus petite pour agrandir le bas de l'échelle (par ex. 50 W sur un poste 200 W), sans refaire l'étalonnage
-        public static int PFull(string key) { int p = PMax(key); int f = Cfg.GetInt("cal." + key + ".pfull", key == "ft2000" ? 100 : 0); return f >= 5 && f < p ? f : p; }
+        public static int PFull(string key) { int p = PMax(key); int f = Cfg.GetInt("cal." + key + ".pfull", key == "ft2000" ? 50 : 0); return f >= 5 && f < p ? f : p; }
         public static void SetPFull(string key, int w) { if (w >= PMax(key) || w < 5) Cfg.Set("cal." + key + ".pfull", key == "ft2000" ? PMax(key).ToString() : ""); else Cfg.SetInt("cal." + key + ".pfull", w); Cfg.Save(); Ver++; }
         public static void SetPMax(string key, int w) { Cfg.SetInt("cal." + key + ".pmax", Math.Max(5, Math.Min(2000, w))); Cfg.Save(); Ver++; }
         // tension : pleine échelle du Vdd et valeur nominale (200 W = 50 V, sinon 13,8 V)
@@ -127,6 +128,13 @@ namespace HamRadioLink
 
         // ---- ROS : 1 au début, infini au bout, 3 au milieu (position = coefficient de réflexion (ROS-1)/(ROS+1))
         public static double SwrPos(double ratio) { if (ratio < 1) ratio = 1; return (ratio - 1) / (ratio + 1); }
+        // ROS (1 à plus de 100) d'après la lecture brute 0..255 : étalonnage de l'utilisateur s'il existe (interpolé / extrapolé sur le coefficient de réflexion), sinon table d'origine
+        public static double SwrRatio(string key, double raw255)
+        {
+            List<double[]> pts = Points(key, "swr"); if (pts.Count == 0) return RosGuard.RatioOf(raw255, 255);
+            List<double[]> gp = new List<double[]>(); foreach (double[] q in pts) gp.Add(new double[] { q[0], SwrPos(q[1]) });
+            double g = Math.Max(0, Math.Min(1, Interp(gp, raw255, 0.0))); return g >= 0.999 ? 1e6 : (1 + g) / (1 - g);
+        }
         public static double CompDb(double f) { return f <= 0.5 ? 20 * f : 10 + (f - 0.5) * 40; }   // 0 dB au départ, 10 dB au milieu, 30 dB en pleine déviation
 
         // échelle d'un vumètre, ou null si l'échelle d'origine (%) reste en vigueur
@@ -327,17 +335,74 @@ namespace HamRadioLink
         }
     }
 
+    // Étalonnage du ROS (valable pour tous les postes qui lisent le ROS) : on émet sur une charge de ROS connu (ou on lit le ROS sur un appareil de mesure), on saisit le ROS réel,
+    // le programme relève la lecture brute du vumètre SWR du poste et la fait coïncider avec cette valeur. Plusieurs mesures possibles ; « Passer » saute une étape ; le reste est extrapolé.
+    public class SwrCalDlg : Form
+    {
+        Rig rig; string key; Ctl sw; List<double[]> got = new List<double[]>(); int idx;
+        static readonly double[] Steps = { 1.5, 2.0, 3.0, 5.0 };
+        Label lbl, live, pts; TextBox val; Button ok, skip, done, cancel; System.Windows.Forms.Timer tm;
+        public SwrCalDlg(Rig r)
+        {
+            rig = r; key = r.Def.Key; sw = r.Def.Find("swr");
+            Text = "Étalonnage du ROS — " + CmdServer.ModelName(r.Def); FormBorderStyle = FormBorderStyle.FixedDialog; StartPosition = FormStartPosition.CenterParent; MaximizeBox = false; MinimizeBox = false; ShowInTaskbar = false;
+            BackColor = T.Panel; ForeColor = T.Text; ClientSize = new Size(600, 360); Font = new Font("Segoe UI", 10f);
+            lbl = new Label(); lbl.SetBounds(14, 10, 572, 104); Controls.Add(lbl);
+            live = new Label(); live.SetBounds(14, 118, 572, 44); live.ForeColor = T.Dim; Controls.Add(live);
+            Label l2 = new Label(); l2.Text = "ROS réel (appareil de mesure ou charge connue) :"; l2.SetBounds(14, 172, 360, 24); Controls.Add(l2);
+            val = new TextBox(); val.SetBounds(380, 170, 80, 26); val.BackColor = T.Panel2; val.ForeColor = T.Text; Controls.Add(val);
+            pts = new Label(); pts.SetBounds(14, 206, 572, 56); pts.ForeColor = T.Dim; Controls.Add(pts);
+            ok = Btn("OK : relever", 14, 276, 140); ok.Click += delegate { Take(); }; AcceptButton = ok;
+            skip = Btn("Passer", 162, 276, 110); skip.Click += delegate { Next(); };
+            done = Btn("Terminer et enregistrer", 280, 276, 190); done.Click += delegate { Finish(); };
+            cancel = Btn("Abandonner", 478, 276, 108); cancel.DialogResult = DialogResult.Cancel; CancelButton = cancel;
+            tm = new System.Windows.Forms.Timer(); tm.Interval = 200; tm.Tick += delegate { Refresh2(); }; tm.Start(); FormClosed += delegate { tm.Stop(); tm.Dispose(); };
+            Show2();
+        }
+        Button Btn(string t, int x, int y, int w) { Button b = new Button(); b.Text = t; b.SetBounds(x, y, w, 50); b.FlatStyle = FlatStyle.Flat; b.BackColor = T.Panel2; b.ForeColor = T.Text; Controls.Add(b); return b; }
+        double Raw() { string s = rig.Get("swr"); double v; return s != null && double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out v) ? v * 255.0 / Math.Max(1, sw.Max) : -1; }
+        void Show2()
+        {
+            lbl.Text = "Étape " + (idx + 1) + " / " + Steps.Length + "\nÉmettez (TUNE, AM ou CW) sur une antenne ou une charge dont le ROS est d'environ " + Steps[idx].ToString("0.0", CultureInfo.InvariantCulture) + ", en gardant l'émission pendant que vous cliquez sur OK. Saisissez le ROS réel lu sur votre appareil de mesure (1.0 = adapté). « Passer » saute cette étape si vous n'avez pas ce ROS : l'échelle est extrapolée entre les points relevés.";
+            val.Text = Steps[idx].ToString("0.0", CultureInfo.InvariantCulture); val.SelectAll(); val.Focus(); Refresh2(); List2();
+        }
+        void Refresh2() { double r = Raw(); double shown = r < 0 ? -1 : MeterCal.SwrRatio(key, r); live.Text = "Émission : " + (rig.Tx ? "oui" : "non") + "    Lecture brute du vumètre : " + (r < 0 ? "—" : r.ToString("0")) + " / 255\nROS affiché actuellement par le programme : " + (shown < 0 ? "—" : (shown >= 100 ? "∞" : shown.ToString("0.0", CultureInfo.InvariantCulture))); }
+        void List2()
+        {
+            StringBuilder sb = new StringBuilder(got.Count == 0 ? "Aucune mesure pour l'instant (une seule suffit, plusieurs sont plus justes)." : "Mesures relevées : ");
+            foreach (double[] p in got) sb.Append("lecture " + p[0].ToString("0") + " = ROS " + p[1].ToString("0.0#", CultureInfo.InvariantCulture) + "   "); pts.Text = sb.ToString();
+        }
+        void Take()
+        {
+            double real; string s = val.Text.Trim().Replace(',', '.');
+            if (!double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out real) || real < 1) { MessageBox.Show(this, "Saisissez le ROS réel (1.0 ou plus).", "Étalonnage du ROS"); return; }
+            if (!rig.Tx) { MessageBox.Show(this, "Le poste n'émet pas : émettez, puis cliquez sur OK pendant l'émission.", "Étalonnage du ROS"); return; }
+            double sum = 0; int n = 0; DateTime end = DateTime.UtcNow.AddMilliseconds(700);
+            while (DateTime.UtcNow < end) { double r = Raw(); if (r >= 0) { sum += r; n++; } Application.DoEvents(); System.Threading.Thread.Sleep(40); }
+            if (n == 0 || sum / n < 1) { MessageBox.Show(this, "Lecture brute nulle : le vumètre ne bouge pas (ROS trop faible pour la lecture, ou poste non lu).", "Étalonnage du ROS"); return; }
+            double raw = Math.Round(sum / n, 1); got.RemoveAll(delegate(double[] p) { return Math.Abs(p[0] - raw) < 1.5; });
+            got.Add(new double[] { raw, real }); got.Sort(delegate(double[] a, double[] b) { return a[0].CompareTo(b[0]); }); List2(); Next();
+        }
+        void Next() { if (idx + 1 >= Steps.Length) { idx = Steps.Length - 1; if (got.Count > 0) { Finish(); return; } MessageBox.Show(this, "Plus d'étape : relevez au moins un point (OK) ou abandonnez.", "Étalonnage du ROS"); return; } idx++; Show2(); }
+        void Finish()
+        {
+            if (got.Count == 0) { MessageBox.Show(this, "Relevez au moins une mesure (OK) avant d'enregistrer.", "Étalonnage du ROS"); return; }
+            MeterCal.SavePoints(key, "swr", got); MessageBox.Show(this, "Étalonnage du ROS enregistré (" + got.Count + " point(s)). L'échelle est extrapolée à partir de ces points ; l'alerte ROS et les vumètres l'utilisent.", "Étalonnage du ROS"); DialogResult = DialogResult.OK; Close();
+        }
+    }
+
     // Étalonnage des boutons Width (largeur de filtre en Hz) et RF PWR (puissance en W) : l'opérateur règle le poste sur chaque valeur, le programme relève la position correspondante
     public class KnobCalDlg : Form
     {
-        Rig rig; string key, id, unit; Ctl ctl; List<double> steps = new List<double>(); int idx; List<double[]> got = new List<double[]>();
+        Rig rig; RadioDef r0 { get { return rig.Def; } } string key, id, unit; Ctl ctl; List<double> steps = new List<double>(); int idx; List<double[]> got = new List<double[]>();
         Label lbl, live, pts; Button ok, skip, done, cancel; System.Windows.Forms.Timer tm;
         public static string Title(string id) { return id == "width" ? "Width (largeur de filtre)" : id == "contf" ? "CONT (fréquence du contour)" : "RF PWR (puissance HF)"; }
         bool IsHz { get { return id == "width" || id == "contf"; } }
         public KnobCalDlg(Rig r, string knob)
         {
             rig = r; key = r.Def.Key; id = knob; unit = IsHz ? "Hz" : "W"; ctl = r.Def.Find(knob == "width" ? "width" : knob == "contf" ? "contf" : "pwr");
-            if (id == "width") { steps.Add(200); steps.Add(2400); steps.Add(4000); } else if (id == "contf") { steps.Add(100); steps.Add(2000); steps.Add(4000); } else foreach (int w in MeterCal.Steps(MeterCal.PMax(key))) steps.Add(w);
+            // WIDTH : un point tous les 100 Hz de 200 à 4000 Hz (« Passer » saute ceux qu'on ne veut pas relever)
+            if (id == "width") { for (int hz = 200; hz <= 4000; hz += 100) steps.Add(hz); } else if (id == "contf") { steps.Add(100); steps.Add(2000); steps.Add(4000); } else foreach (int w in MeterCal.Steps(MeterCal.PMax(key))) steps.Add(w);
             Text = "Étalonnage " + Title(id) + " — " + CmdServer.ModelName(r.Def); FormBorderStyle = FormBorderStyle.FixedDialog; StartPosition = FormStartPosition.CenterParent; MaximizeBox = false; MinimizeBox = false; ShowInTaskbar = false;
             BackColor = T.Panel; ForeColor = T.Text; ClientSize = new Size(600, 330); Font = new Font("Segoe UI", 10f);
             lbl = new Label(); lbl.SetBounds(14, 10, 572, 100); lbl.Font = new Font("Segoe UI", 11f, FontStyle.Bold); Controls.Add(lbl);
@@ -355,7 +420,7 @@ namespace HamRadioLink
         {
             double t = steps[idx];
             lbl.Text = "Étape " + (idx + 1) + " / " + steps.Count + "\n" + (id == "width"
-                ? (t == 200 ? "Tournez le bouton WIDTH du poste tout à droite : l'afficheur doit indiquer 200 Hz." : t == 2400 ? "Mettez le bouton WIDTH du poste en position milieu : l'afficheur doit indiquer 2400 Hz." : "Tournez le bouton WIDTH du poste tout à gauche : l'afficheur doit indiquer 4000 Hz (la largeur ne dépasse jamais 4000 Hz).") + " Puis cliquez OK. Les valeurs intermédiaires sont extrapolées."
+                ? "Réglez le bouton WIDTH du poste pour que l'afficheur indique " + t + " Hz" + (t == 200 && r0.Key == "ftdx10" ? " (un FTdx10 ne descend pas sous 300 Hz : passez cette étape)" : "") + ". Puis cliquez OK, ou « Passer » si le poste n'a pas cette valeur. Les valeurs intermédiaires sont interpolées, la largeur ne dépasse jamais 4000 Hz."
                 : "Réglez le bouton RF PWR du poste sur " + t + " W (lecture sur l'afficheur du poste), puis cliquez OK. Pas d'émission nécessaire.");
             Refresh2(); List2();
         }

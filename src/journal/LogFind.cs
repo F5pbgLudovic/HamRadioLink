@@ -9,17 +9,20 @@ namespace HamRadioLink.Journal
     public class LoupeButton : ToolStripButton
     {
         public ToolStripItem Like;   // le bouton dont on reprend la taille
-        public LoupeButton() { DisplayStyle = ToolStripItemDisplayStyle.Image; ImageScaling = ToolStripItemImageScaling.None; ImageAlign = ContentAlignment.MiddleCenter; ToolTipText = "Rechercher (date, indicatif, texte)"; SetColor(Color.Black); }
-        public void SetColor(Color c)
+        public LoupeButton() { DisplayStyle = ToolStripItemDisplayStyle.None; ToolTipText = "Rechercher (date, indicatif, texte)"; }
+        public void SetColor(Color c) { ForeColor = c; Invalidate(); }
+        // dessin direct, centré dans le bouton quelle que soit sa forme (pas d'image : rien à cadrer)
+        // dessinée par la ligne d'onglets du journal (LogTabs) : même carré que les autres petits boutons
+        public static void Draw(Graphics g, Rectangle r, Color c)
         {
-            Bitmap b = new Bitmap(20, 20);
-            using (Graphics g = Graphics.FromImage(b))
-            using (Pen p = new Pen(c, 2.2f))
+            int s = Math.Max(10, Math.Min(r.Width, r.Height) - 12); float x = r.X + (r.Width - s) / 2f, y = r.Y + (r.Height - s) / 2f;
+            SmoothingMode old = g.SmoothingMode;
+            using (Pen p = new Pen(c, Math.Max(1.8f, s / 9f)))
             {
                 g.SmoothingMode = SmoothingMode.AntiAlias; p.StartCap = LineCap.Round; p.EndCap = LineCap.Round;
-                g.DrawEllipse(p, 2.5f, 2.5f, 10.5f, 10.5f); g.DrawLine(p, 11.5f, 11.5f, 17f, 17f);
+                float d = s * 0.68f; g.DrawEllipse(p, x, y, d, d); g.DrawLine(p, x + d * 0.88f, y + d * 0.88f, x + s, y + s);
             }
-            Image old = Image; Image = b; if (old != null) old.Dispose();
+            g.SmoothingMode = old;
         }
     }
     // Fenêtre de recherche : NON bloquante (on peut naviguer et modifier le journal pendant qu'elle est ouverte) ; « Suivant » / « Précédent » montent et descendent dans le tableau.

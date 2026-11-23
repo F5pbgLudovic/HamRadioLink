@@ -49,6 +49,9 @@ namespace HamRadioLink.Journal
                 int a, du; AdifImport.Run(App.Log, adi, delegate(string s) { }, out a, out du); check(a == 2 && App.Log.Count("") == 3, "Journal : import ADIF (2 QSO ajoutés, total " + App.Log.Count("") + ")");
                 AdifImport.Run(App.Log, adi, delegate(string s) { }, out a, out du); check(du == 2 && App.Log.Count("") == 3, "Journal : réimport ADIF : doublons ignorés (" + du + ")");
                 string ex = Adif.Export(App.Log.Fetch("", "COL_PRIMARY_KEY ASC", 0, 100)); check(ex.Contains("DL1ABC") && ex.Contains("F6ABC") && ex.Contains("<EOH>"), "Journal : export ADIF");
+                { List<Qso> cq = new List<Qso> { new Qso { { "COL_CALL", "F6TEST" }, { "COL_COMMENT", "texte-secret" }, { "COL_NOTES", "note-ok" } } }; bool sv = App.Cfg.GetBool("online.nocomment", false);
+                  App.Cfg.Set("online.nocomment", "0"); string e0 = Online.ExportOnline(cq); App.Cfg.Set("online.nocomment", "1"); string e1 = Online.ExportOnline(cq); App.Cfg.Set("online.nocomment", sv ? "1" : "0");
+                  check(e0.Contains("<COMMENT:12>texte-secret") && !e1.Contains("COMMENT") && !e1.Contains("texte-secret") && e1.Contains("note-ok") && e1.Contains("F6TEST"), "Envois en ligne : commentaire transmis par défaut, absent quand « Ne pas transmettre les commentaires » est coché"); }
                 check(App.Log.Count(PeerLog.QuickWhere("F6AB")) == 2, "Journal : recherche rapide");
                 // fenêtres : construction hors écran, photographie
                 string dir = Environment.GetEnvironmentVariable("HRL_SHOTS") ?? Path.Combine(tmp, "journal-shots"); Directory.CreateDirectory(dir);

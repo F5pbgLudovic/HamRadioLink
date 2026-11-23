@@ -45,6 +45,8 @@ namespace HamRadioLink
         bool locked; public bool Locked { get { return locked; } set { if (locked != value) { locked = value; Invalidate(); } } }
         // FT-991A DF5DP : sur CTCSS ENC, FREQ CTCSS et CODE DCS, le clic droit ouvre la liste de toutes les valeurs au lieu de verrouiller
         bool DropOnRight { get { return Def.K == Kind.Choice && Rig != null && Rig.Def != null && Rig.Def.Key == "ft991a-df5dp" && (Def.Id == "ctcss" || Def.Id == "ctone" || Def.Id == "dcsc"); } }
+        protected bool StepLike { get { return Def.K == Kind.Choice && Def.Id == "step"; } }   // bouton PAS : clic gauche = valeur suivante, clic droit = précédente, Ctrl + clic droit = verrou
+        protected bool LeftDrop { get { return Def.K == Kind.Choice && Def.Id == "md1" && Rig != null && Rig.Def != null && Rig.Def.Key == "ftdx10"; } }   // mode du second VFO : clic gauche = liste déroulante
         bool Lockable { get { return Def.K == Kind.Toggle || Def.K == Kind.Action || Def.K == Kind.Knob || Def.K == Kind.Choice || Def.K == Kind.Chain || Def.K == Kind.Dsp || Def.K == Kind.Freq || Def.K == Kind.Dial; } }
         // essais automatiques : simulent un clic ou une molette sur l'élément (Ctrl simulé par CtrlOverride)
         public static bool CtrlOverride, NoSave;
@@ -76,6 +78,24 @@ namespace HamRadioLink
             MicRoute.AddItems(mn);
             mn.Items.Add(new ToolStripSeparator()); ToolStripMenuItem lk = new ToolStripMenuItem(locked ? "Déverrouiller la touche" : "Verrouiller la touche");
             lk.Click += delegate { Locked = !locked; Cfg.SetBool(LockKey, locked); Cfg.Save(); }; mn.Items.Add(lk);
+            mn.Show(this, p);
+        }
+        // FTdx10 : source audio du VOX (menu EX030405 « VOX SELECT » : 0 = micro, 1 = data)
+        void VoxMenu(Point p)
+        {
+            ContextMenuStrip mn = new ContextMenuStrip(); mn.BackColor = T.Panel2; mn.ForeColor = T.Text;
+            ToolStripMenuItem t = new ToolStripMenuItem("Source audio du VOX"); t.Enabled = false; mn.Items.Add(t); mn.Items.Add(new ToolStripSeparator());
+            ToolStripMenuItem mic = new ToolStripMenuItem("VOX micro (MIC)"), dat = new ToolStripMenuItem("VOX data (DATA)"); mn.Items.Add(mic); mn.Items.Add(dat);
+            Rig rg = Rig; Action<int> send = delegate(int v) { if (rg.Loading) return; rg.Raw("EX030405" + v + ";"); CatLog.Event(rg.Def.Key, "VOX : source " + (v == 0 ? "micro" : "data")); };
+            mic.Click += delegate { send(0); }; dat.Click += delegate { send(1); };
+            mn.Items.Add(new ToolStripSeparator()); ToolStripMenuItem lk = new ToolStripMenuItem(locked ? "Déverrouiller la touche (Ctrl + clic droit)" : "Verrouiller la touche (Ctrl + clic droit)");
+            lk.Click += delegate { Locked = !locked; Cfg.SetBool(LockKey, locked); Cfg.Save(); }; mn.Items.Add(lk);
+            new System.Threading.Thread(delegate()
+            {   // état actuel lu sur le poste, la coche apparaît dès la réponse
+                string a = null; for (int i = 0; i < 2 && a == null; i++) a = rg.AskPrefix("EX030405;", "EX030405", 700);
+                int v; if (a != null && int.TryParse(a.Substring(a.IndexOf("EX030405") + 8).TrimEnd(';'), out v))
+                    try { BeginInvoke(new Action(delegate { mic.Checked = v == 0; dat.Checked = v == 1; })); } catch { }
+            }) { IsBackground = true }.Start();
             mn.Show(this, p);
         }
         void AfMenu(Point p)
@@ -157,9 +177,13 @@ namespace HamRadioLink
                 return;
             }
             if (Def.Id == "af" && e.Button == MouseButtons.Right && Rig != null && Rig.Def != null && !NoSave && !CtrlHeld) { AfMenu(e.Location); return; }     
-            if (Def.Id == "ptt" && Def.K == Kind.Toggle && e.Button == MouseButtons.Right && Rig != null && Rig.Def != null && !NoSave && !CtrlHeld) { PttMenu(e.Location); return; }      // clic droit sur PTT : délai de sécurité (Ctrl + clic droit : verrou)
+            if (Def.Id == "meq" && e.Button == MouseButtons.Right && Rig != null && Rig.Def != null && Rig.Def.Key == "ftdx10" && !NoSave && !CtrlHeld) { MicEqForm.Open(Rig, FindForm()); return; }   // clic droit sur MIC EQ : fenêtre de l'égaliseur paramétrique (Ctrl + clic droit : verrou)
+            if ((Def.Id == "nb" || Def.Id == "dnr") && e.Button == MouseButtons.Right && Rig != null && Rig.Def != null && Rig.Def.Key == "ftdx10" && !NoSave && !CtrlHeld) { RxFxForm.Open(Rig, FindForm(), Def.Id); return; }   // clic droit sur NB / DNR : fenêtre de réglage détaillé (Ctrl + clic droit : verrou)
+            if ((Def.Id == "ptt" || Def.Id == "mox") && Def.K == Kind.Toggle && e.Button == MouseButtons.Right && Rig != null && Rig.Def != null && !NoSave && !CtrlHeld) { PttMenu(e.Location); return; }
+            if (Def.Id == "notch" && Def.K == Kind.Toggle && e.Button == MouseButtons.Right && Rig != null && Rig.Def != null && Rig.Def.Key == "ftdx10" && !NoSave && !CtrlHeld) { (this as HBtn).NotchAsync(true); return; }   // clic droit sur NOTCH : largeur du notch large / étroit (Ctrl + clic droit : verrou)
+            if (Def.Id == "vox" && Def.K == Kind.Toggle && e.Button == MouseButtons.Right && Rig != null && Rig.Def != null && Rig.Def.Key == "ftdx10" && !NoSave && !CtrlHeld) { VoxMenu(e.Location); return; }   // clic droit sur VOX : VOX micro / VOX data (Ctrl + clic droit : verrou)      // clic droit sur PTT : délai de sécurité (Ctrl + clic droit : verrou)
             HRow hr = this as HRow; if (hr != null && e.Button == MouseButtons.Right && Rig != null) { hr.ToggleCell(e.Location); return; }      // rangée : le clic droit ne verrouille que la case touchée
-            if (Lockable && e.Button == MouseButtons.Right && !(Def.K == Kind.Choice && !(this is HRow) && (DropOnRight ? !CtrlHeld : CtrlHeld)) && Rig != null) { Locked = !locked; Cfg.SetBool(LockKey, locked); if (!NoSave) Cfg.Save(); return; }
+            if (Lockable && e.Button == MouseButtons.Right && !(Def.K == Kind.Choice && !(this is HRow) && (StepLike ? !CtrlHeld : (DropOnRight ? !CtrlHeld : CtrlHeld))) && Rig != null) { Locked = !locked; Cfg.SetBool(LockKey, locked); if (!NoSave) Cfg.Save(); return; }
             if (locked && Lockable && !(DropOnRight && e.Button == MouseButtons.Right && !CtrlHeld)) return;
             Up(e); base.OnMouseUp(e);
         }
@@ -198,7 +222,26 @@ namespace HamRadioLink
     public class HBtn : HW
     {
         bool hot, down; long flash;
-        public override void Sync() { Invalidate(); }
+        public override void Sync() { Invalidate(); if (NotchBtn && Ready && (DateTime.Now - notchRead).TotalSeconds > 5) NotchAsync(false); }
+        // FTdx10 : clic droit sur NOTCH = largeur du notch IF large / étroit (menu EX030204 : 0 étroit, 1 large) ; Ctrl + clic droit = verrou. La largeur courante est affichée sur la touche.
+        string notchW; DateTime notchRead = DateTime.MinValue; volatile bool notchBusy;
+        bool NotchBtn { get { return Def.Id == "notch" && Rig != null && Rig.Def != null && Rig.Def.Key == "ftdx10"; } }
+        int ReadNotchW(Rig rg) { string a = null; for (int i = 0; i < 3 && a == null; i++) a = rg.AskPrefix("EX030204;", "EX030204", 900); int v; return a != null && int.TryParse(a.Substring(a.IndexOf("EX030204") + 8).TrimEnd(';'), out v) ? v : -1; }
+        public void NotchAsync(bool flip)
+        {
+            Rig rg = Rig; if (notchBusy || rg == null || rg.Loading) return; notchBusy = true;
+            new System.Threading.Thread(delegate()
+            {
+                try
+                {
+                    int v = ReadNotchW(rg);
+                    if (v >= 0 && flip) { int n = v == 1 ? 0 : 1; rg.Raw("EX030204" + n + ";"); CatLog.Event(rg.Def.Key, "largeur du notch : " + (n == 1 ? "large" : "étroit")); System.Threading.Thread.Sleep(600); int w = ReadNotchW(rg); if (w >= 0) v = w; }
+                    if (v >= 0) { notchW = v.ToString(); notchRead = DateTime.Now; try { BeginInvoke(new Action(Invalidate)); } catch { } }
+                }
+                catch { }
+                finally { notchBusy = false; notchRead = DateTime.Now; }
+            }) { IsBackground = true }.Start();
+        }
         Action tuneCb;
         protected override void OnHandleCreated(EventArgs e) { base.OnHandleCreated(e); tuneCb = delegate { Invalidate(); }; TuneMic.Changed += tuneCb; }
         protected override void OnHandleDestroyed(EventArgs e) { if (tuneCb != null) TuneMic.Changed -= tuneCb; tuneCb = null; base.OnHandleDestroyed(e); }
@@ -226,7 +269,8 @@ namespace HamRadioLink
             {
                 if (!inside || (e.Button != MouseButtons.Left && e.Button != MouseButtons.Right)) return;
                 Item[] it = Def.ItemList; if (it.Length == 0) return; int cur = Cur(it);
-                if (e.Button == MouseButtons.Right)
+                if (StepLike && e.Button == MouseButtons.Right) { Rig.Set(Def, it[cur <= 0 ? it.Length - 1 : cur - 1].Code); return; }   // sens inverse
+                if (e.Button == MouseButtons.Right || (e.Button == MouseButtons.Left && LeftDrop))
                 {
                     if (it.Length > 20) { LongPick(it, Cur(it), e.Location); return; }
                     ContextMenuStrip m = new ContextMenuStrip(); m.BackColor = T.Panel2; m.ForeColor = T.Text; int cu = Cur(it);
@@ -238,8 +282,8 @@ namespace HamRadioLink
             }
             if (!was || !inside || e.Button != MouseButtons.Left) return;
             if (Def.Id == "tunemic") { TuneMic.Toggle(Rig); Invalidate(); return; }
-            if (Def.Id == "menu" && Rig != null) { RigMenu.Open(Rig, FindForm()); return; }
-            if (Def.K == Kind.Toggle) { bool turnOn = !Rig.IsOn(Def); Rig.Set(Def, turnOn ? Def.OnSend : Def.OffSend); if (Def.Id == "ptt") { if (turnOn) Rig.PttButtonStart(); else Rig.PttButtonStop(); } }
+            if (Def.Id == "menu" && Rig != null) { if (Rig.Def != null && Rig.Def.Key == "ftdx10") Ftdx10MenuForm.Open(Rig, FindForm()); else RigMenu.Open(Rig, FindForm()); return; }
+            if (Def.K == Kind.Toggle) { bool turnOn = !Rig.IsOn(Def); Rig.Set(Def, turnOn ? Def.OnSend : Def.OffSend); if (Def.Id == "ptt" || Def.Id == "mox") { if (turnOn) Rig.PttButtonStart(); else Rig.PttButtonStop(); } }
             else if (Def.K == Kind.Action)
             {
                 if (Def.Id == "poff" && MessageBox.Show(FindForm(), "Éteindre le poste ?", "Poste", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
@@ -248,7 +292,7 @@ namespace HamRadioLink
             }
         }
         // touche PTT : pendant une émission lancée par la touche avec un délai de sécurité, le compte à rebours remplace le nom
-        string Lbl() { if (Def.Id == "tunemic" && TuneMic.ActiveFor(Rig)) return "● TUNE  " + TuneMic.Left; if (Def.Id == "ptt" && Def.K == Kind.Toggle && Ready && Rig.PttByButton) { int l = Rig.PttLeft; if (l >= 0) return "\u25CF TX  " + (l / 60) + ":" + (l % 60).ToString("00"); } return Def.Label; }
+        string Lbl() { if (Def.Id == "tunemic" && TuneMic.ActiveFor(Rig)) return "● TUNE  " + TuneMic.Left; if ((Def.Id == "ptt" || Def.Id == "mox") && Def.K == Kind.Toggle && Ready && Rig.PttByButton && Rig.IsOn(Def)) { int l = Rig.PttLeft; if (l >= 0) return "\u25CF TX  " + (l / 60) + ":" + (l % 60).ToString("00"); } return Def.Label + (NotchBtn && notchW != null ? (notchW == "1" ? " LARGE" : " ÉTROIT") : ""); }
         int Cur(Item[] it) { string v = St(Def.Id); for (int i = 0; i < it.Length; i++) if (it[i].Match(v ?? "\u0001")) return i; return -1; }
         protected override void Draw(Graphics g)
         {
@@ -271,10 +315,10 @@ namespace HamRadioLink
                 using (LinearGradientBrush b = new LinearGradientBrush(r, top, bot, 90f)) g.FillPath(b, p);
                 using (Pen pen = new Pen(on || flashing ? acc : T.Edge, on ? 1.6f : 1f)) g.DrawPath(pen, p);
             }
-            float k = T.Scale, tx = 0;
+            float k = T.Scale, tx = 0; bool nar = Def.K == Kind.Toggle && Def.Id == "narrow" && Rig != null && Rig.Def != null && Rig.Def.Key == "ftdx10";   // NAR (à gauche de MODE VFO-B) : voyant en haut à gauche, texte sur la ligne du mode, même police et même taille
             if (Def.K == Kind.Toggle)
             {
-                float d = 7 * k, lx = 8 * k, ly = Height / 2f - d / 2;
+                float d = 7 * k, lx = nar ? Width / 2f - 3.5f * k : 8 * k, ly = nar ? 2 * k + Height * 0.34f / 2 - d / 2 : Height / 2f - d / 2;
                 using (Brush b = new SolidBrush(lk ? Color.FromArgb(96, 102, 112) : (on ? acc : Color.FromArgb(60, 68, 80)))) g.FillEllipse(b, lx, ly, d, d);      // coche grisée si verrouillé
                 if (on && !lk) using (Brush b = new SolidBrush(Color.FromArgb(60, acc))) g.FillEllipse(b, lx - 3 * k, ly - 3 * k, d + 6 * k, d + 6 * k);
                 tx = 8 * k;
@@ -288,6 +332,7 @@ namespace HamRadioLink
                     using (Brush b = new SolidBrush(T.Dim)) g.DrawString(Def.Label, T.Fn("Segoe UI", 8f), b, new RectangleF(0, 2 * k, Width, lh), sf);
                     using (Brush b = new SolidBrush(c >= 0 ? T.Text : T.Dim)) g.DrawString(val, T.Fn("Segoe UI Semibold", Height > 60 * k ? 14f : 10.5f), b, new RectangleF(2, lh, Width - 4, Height - lh - 2 * k), sf);
                 }
+                else if (nar) { float lh = Height * 0.34f; using (Brush b = new SolidBrush(on ? T.Text : Color.FromArgb(196, 208, 222))) g.DrawString(Lbl(), T.Fn("Segoe UI Semibold", Height > 60 * k ? 14f : 10.5f), b, new RectangleF(2, lh, Width - 4, Height - lh - 2 * k), sf); }   // même ligne, même police et même taille que le mode
                 else using (Brush b = new SolidBrush(on ? T.Text : Color.FromArgb(196, 208, 222))) g.DrawString(Lbl(), T.Fn("Segoe UI Semibold", 9f), b, new RectangleF(tx, 0, Width - tx - 2, Height), sf);
             }
         }
@@ -361,12 +406,22 @@ namespace HamRadioLink
     {
         int val, dragY, dragV; bool dragging;
         int calVer = -1;
-        public override void Sync() { if (calVer != MeterCal.Ver) { calVer = MeterCal.Ver; Invalidate(); } if (dragging || !Ready) return; string s = St(Def.Id); int v; if (s != null && int.TryParse(s, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out v) && v != val) { val = v; Invalidate(); } }
+        public override void Sync() { if (calVer != MeterCal.Ver) { calVer = MeterCal.Ver; Invalidate(); } if (dragging || !Ready) return; if (Ftdx10Clar) { int cv = Def.Id == "clartxk" ? Rig.ClarTx : Rig.ClarRx; if (cv != val) { val = cv; Invalidate(); } return; } string s = St(Def.Id); int v; if (s != null && int.TryParse(s, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out v)) { v = ClarShown(v); if (v != val) { val = v; Invalidate(); } } }
         int Mx { get { return Rig != null && Rig.Def != null ? MeterCal.KnobMax(Rig.Def, Def) : Def.Max; } }   // pleine échelle du bouton (étalonnage RF PWR : valeur du poste correspondant à la puissance max)
         int Clamp(int v) { int mx = Mx; if (v < Def.Min) v = Def.Min; if (v > mx) v = mx; int st = Math.Max(1, Def.Step); if (st > 1) v = (int)Math.Round(v / (double)st) * st; if (v < Def.Min) v = Def.Min; if (v > mx) v = mx; return v; }
-        void User(int v) { v = Clamp(v); if (v == val) return; val = v; Invalidate(); if (Ready) Rig.Set(Def, v.ToString()); }
+        // FTdx10 : un seul décalage de clarifier dans le poste, commun à RX et TX. CLAR RX et CLAR TX ne bougent pas ensemble : chaque bouton n'affiche le décalage que si son clarifier est actif,
+        // et tourner l'un active son clarifier et coupe l'autre.
+        bool Ftdx10Clar { get { return (Def.Id == "clar" || Def.Id == "clartxk") && Rig != null && Rig.Def != null && Rig.Def.Key == "ftdx10"; } }
+        bool FlagOn(string id) { Ctl c = Rig.Def.Find(id); return c != null && Rig.IsOn(c); }
+        int ClarShown(int v) { if (!Ftdx10Clar) return v; bool rx = FlagOn("clarrx"), tx = FlagOn("clartx"); return Def.Id == "clartxk" ? (tx ? v : 0) : (tx && !rx ? 0 : v); }
+        void ClarFlags()
+        {
+            Ctl rx = Rig.Def.Find("clarrx"), tx = Rig.Def.Find("clartx"); if (rx == null || tx == null) return; bool rxOn = Rig.IsOn(rx), txOn = Rig.IsOn(tx);
+            if (Def.Id == "clartxk") { if (!txOn) Rig.Set(tx, tx.OnSend); if (rxOn) Rig.Set(rx, rx.OffSend); } else { if (!rxOn) Rig.Set(rx, rx.OnSend); if (txOn) Rig.Set(tx, tx.OffSend); }
+        }
+        void User(int v) { v = Clamp(v); if (v == val) return; val = v; Invalidate(); if (Ready) { if (Ftdx10Clar) Rig.ClarMove(Def.Id == "clartxk", v); else Rig.Set(Def, v.ToString()); } }
         protected override void Down(MouseEventArgs e) { Focus(); if (e.Button == MouseButtons.Left) { dragging = true; dragY = e.Y; dragV = val; Capture = true; } }
-        bool Fine { get { return Def.Id == "clar" && Def.Fmt == "hz" && Def.Step >= 1; } }   // CLAR : un cran de souris (3 pixels, 1 cran de molette) = un pas de 10 Hz
+        bool Fine { get { return (Def.Id == "clar" || Def.Id == "clartxk") && Def.Fmt == "hz" && Def.Step >= 1; } }   // CLAR : un cran de souris (3 pixels, 1 cran de molette) = un pas de 10 Hz
         protected override void Moving(MouseEventArgs e)
         {
             if (!dragging) return; if (Fine) { int nst = (int)((dragY - e.Y) / (((Control.ModifierKeys & Keys.Shift) != 0 ? 12.0 : 3.0) * T.Scale)); User(dragV + nst * Math.Max(1, Def.Step)); return; } double sens = (Control.ModifierKeys & Keys.Shift) != 0 ? 0.25 : 1.0;
@@ -374,7 +429,8 @@ namespace HamRadioLink
         }
         protected override void Up(MouseEventArgs e) { dragging = false; Capture = false; }
         protected override void DblClick(MouseEventArgs e) { if (Def.Min < 0 && Def.Max > 0) User(0); }
-        protected override void Wheel(MouseEventArgs e) { if (Fine) { User(val + (e.Delta > 0 ? 1 : -1) * Math.Max(1, Def.Step)); return; } int s = Math.Max(Math.Max(1, Def.Step), (int)Math.Round((Mx - Def.Min) * WheelPct / 100.0)); if ((Control.ModifierKeys & Keys.Shift) != 0) s = Math.Max(Math.Max(1, Def.Step), s / 4); User(val + (e.Delta > 0 ? s : -s)); }
+        int lastWh, fastWh;   // molette rapide sur CLAR : le pas passe à 100 Hz, il revient à 10 Hz dès que la molette ralentit
+        protected override void Wheel(MouseEventArgs e) { if (Fine) { int now = Environment.TickCount; fastWh = now - lastWh < 150 ? fastWh + 1 : 0; lastWh = now; int st = fastWh >= 2 ? Math.Max(100, Def.Step) : Math.Max(1, Def.Step); User(val + (e.Delta > 0 ? 1 : -1) * st); return; } int s = Math.Max(Math.Max(1, Def.Step), (int)Math.Round((Mx - Def.Min) * WheelPct / 100.0)); if ((Control.ModifierKeys & Keys.Shift) != 0) s = Math.Max(Math.Max(1, Def.Step), s / 4); User(val + (e.Delta > 0 ? s : -s)); }
         protected override void Draw(Graphics g)
         {
             g.Clear(Parent != null ? Parent.BackColor : T.Panel); float k = T.Scale;
@@ -426,6 +482,7 @@ namespace HamRadioLink
         protected override void Up(MouseEventArgs e)
         {
             if (e.Button != MouseButtons.Right || Rig == null || Rig.Def == null) return;
+            if (BigMeterCfg.Applies(Rig.Def)) { BigMeterCfg.Toggle(Rig.Def); return; }   // les vumètres recouverts par le grand S-mètre sont remplacés par lui
             Analog = !Analog; Cfg.SetBool("analog." + Rig.Def.Key + "." + Def.Id, Analog); Cfg.Save(); Invalidate();
         }
         void DrawAnalog(Graphics g, string[] tt, double[] tp)
@@ -463,7 +520,7 @@ namespace HamRadioLink
         protected override void Draw(Graphics g)
         {
             g.Clear(Parent != null ? Parent.BackColor : T.Panel);
-            if (!anInit && Rig != null && Rig.Def != null) { anInit = true; Analog = Cfg.GetBool("analog." + Rig.Def.Key + "." + Def.Id, Cfg.GetBool("analog.all", false)); }
+            if (!anInit && Rig != null && Rig.Def != null) { anInit = true; Analog = !BigMeterCfg.Applies(Rig.Def) && Cfg.GetBool("analog." + Rig.Def.Key + "." + Def.Id, Cfg.GetBool("analog.all", false)); }   // avec le grand S-mètre, les barres restent des barres (anciens réglages « aiguille » ignorés)
             if (sc == null && Rig != null && scVer != MeterCal.Ver) { scVer = MeterCal.Ver; sc = MeterCal.Scale(Rig.Def, Def); }
             if (Analog) { DrawAnalog(g, sc != null ? sc.Ticks : Def.Fmt == "s" ? sT : new string[] { "0", "25", "50", "75", "100" }, sc != null ? sc.Pos : Def.Fmt == "s" ? sP : new double[] { 0, 0.25, 0.5, 0.75, 1 }); return; }
             float k = T.Scale; int tw = (int)(60 * k), lw = (int)(70 * k);
@@ -634,7 +691,7 @@ namespace HamRadioLink
                 case Kind.Freq: w = new HFreq(); break;
                 case Kind.Dial: w = new HDial(); break;
                 case Kind.Led: w = new HLed(); break;
-                case Kind.Gauge: w = new HGauge(); break;
+                case Kind.Gauge: if (c.Id == "bigmeter") w = new HBigMeter(); else w = new HGauge(); break;
                 case Kind.Chain: w = new HChain(); break;
                 case Kind.Dsp: w = new HDsp(); break;
                 default: w = new HFrame(); break;

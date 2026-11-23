@@ -103,7 +103,7 @@ namespace HamRadioLink
 
         static RadioDef YaesuModel(string key, string name, string cat, string id, int digits, long maxHz, int baud, string modes)
         {
-            RadioDef r = Ftdx10(); r.Key = key; r.Name = name; r.Catalog = cat; r.IdAnswer = id; r.FreqDigits = digits; r.MaxFreq = maxHz; r.DefBaud = baud;
+            RadioDef r = Ftdx10(); foreach (string xid in new[] { "clartxk", "clrclar", "menu", "bigmeter" }) { Ctl xc = r.Find(xid); if (xc != null) r.C.Remove(xc); } { Ctl cl0 = r.Find("clar"); if (cl0 != null) { cl0.Label = "CLAR"; cl0.DLabel = "CLAR"; } }   /* CLAR TX et CLEAR CLAR sont propres au FTdx10 */ r.Key = key; r.Name = name; r.Catalog = cat; r.IdAnswer = id; r.FreqDigits = digits; r.MaxFreq = maxHz; r.DefBaud = baud;
             RadioDef probe = new RadioDef(); probe.Catalog = cat; probe.IdAnswer = id;
             CatalogSim cs = new CatalogSim(probe, new List<string>(), new List<string>(), new Dictionary<string, string>());
             string d = digits.ToString();

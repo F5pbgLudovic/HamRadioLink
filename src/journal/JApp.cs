@@ -138,7 +138,7 @@ namespace HamRadioLink.Journal
             win.FormClosing += (s, e) => { if (!quit && e.CloseReason == CloseReason.UserClosing) { e.Cancel = true; win.Hide(); Action a = LogClosed; if (a != null) a(); AutoSend.OnLogClosed(); } };
             win.FormClosed += delegate { Action a = LogClosed; if (a != null) a(); };
             IntPtr h = win.Handle;      // crée la fenêtre sans l'afficher
-            AutoSend.Attach(win);
+            AutoSend.Attach(win); DbBackup.Attach();
         }
         public static void Open(IWin32Window owner)
         {
@@ -171,7 +171,7 @@ namespace HamRadioLink.Journal
         // Après un QSO reçu : rafraîchit la fenêtre du journal si elle est ouverte.
         public static void Refresh() { try { if (win != null && !win.IsDisposed) win.Reload(); } catch { } }
         public static void ClusterChanged() { try { if (win != null && !win.IsDisposed) win.ApplyCluster(); } catch { } }
-        public static void Shutdown() { try { AutoSend.OnQuit(); } catch { } quit = true; WsjtListener.Stop(); try { DxCluster.Disconnect(); } catch { } try { if (win != null && !win.IsDisposed) win.Close(); } catch { } try { if (win != null && !win.IsDisposed) win.Dispose(); } catch { } try { List<Form> all = new List<Form>(); foreach (Form x in Application.OpenForms) all.Add(x); foreach (Form f in all) if (f != null && !f.IsDisposed && (f.GetType().Namespace ?? "").StartsWith("HamRadioLink.Journal")) f.Dispose(); } catch { } App.Shutdown(); }
+        public static void Shutdown() { try { AutoSend.OnQuit(); } catch { } try { DbBackup.OnQuit(); } catch { } quit = true; WsjtListener.Stop(); try { DxCluster.Disconnect(); } catch { } try { if (win != null && !win.IsDisposed) win.Close(); } catch { } try { if (win != null && !win.IsDisposed) win.Dispose(); } catch { } try { List<Form> all = new List<Form>(); foreach (Form x in Application.OpenForms) all.Add(x); foreach (Form f in all) if (f != null && !f.IsDisposed && (f.GetType().Namespace ?? "").StartsWith("HamRadioLink.Journal")) f.Dispose(); } catch { } App.Shutdown(); }
     }
 
 }

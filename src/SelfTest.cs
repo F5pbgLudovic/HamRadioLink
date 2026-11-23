@@ -15,9 +15,46 @@ namespace HamRadioLink
         static StringBuilder sb; static int ok, ko;
         static void Check(bool c, string what) { if (c) ok++; else { ko++; sb.AppendLine("ÉCHEC : " + what); } }
         static void Info(string s) { sb.AppendLine(s); }
+        // ---- cohérence de TOUS les postes : dispositions, S-mètre, tables du menu, boutons spéciaux (--consist=rapport.txt lance seulement cette partie)
+        public static int ConsistOnly(string file) { sb = new StringBuilder(); ok = ko = 0; Rig.NoGate = true; Consistency(); sb.AppendLine(ko == 0 ? "COHÉRENCE : TOUT PASSE (" + ok + " vérifications)" : ko + " ÉCHEC(S) sur " + (ok + ko)); File.WriteAllText(file, sb.ToString()); return ko == 0 ? 0 : 1; }
+        static void Consistency()
+        {
+            int radios = 0, outsideTot = 0, big = 0, menus = 0; List<string> out0 = new List<string>();
+            foreach (RadioDef d in Radios.All())
+            {
+                radios++; List<Ctl> frames = d.C.FindAll(delegate(Ctl c) { return c.K == Kind.Frame; });
+                // chaque élément tient entièrement dans un cadre (les cadres sont les zones de la face avant)
+                int outside = 0; List<string> ids = new List<string>();
+                if (frames.Count > 0) foreach (Ctl c in d.C)
+                {
+                    if (c.K == Kind.Frame || c.Hidden || c.Id == "tunemic") continue; bool inside = false;   // TUNE est volontairement posé dans un coin libre, hors cadre
+                    foreach (Ctl f in frames) if (c.X >= f.X - 1 && c.Y >= f.Y - 1 && c.X + c.W <= f.X + f.W + 1 && c.Y + c.H <= f.Y + f.H + 1) { inside = true; break; }
+                    if (!inside) { outside++; ids.Add(c.Id); }
+                }
+                outsideTot += outside; if (outside > 0) out0.Add(d.Key + " : " + string.Join(" ", ids.ToArray()));
+                if (d.Key == "ftdx10" || d.Key == "ft2000") Check(outside == 0, d.Key + " : éléments hors de leur zone (cadre) : " + string.Join(" ", ids.ToArray()));
+                // grand S-mètre : présent par défaut sur le FTdx10 et le FT-2000 seulement (les autres postes l'ajoutent par la vue config) ; recouvre au moins un vumètre à barres ; toutes les fonctions de METER ont leur image
+                Ctl bm = d.Find("bigmeter"); bool want = d.Key == "ftdx10" || d.Key == "ft2000"; if (want || bm != null) { big += bm != null ? 1 : 0; Check(want == (bm != null), d.Key + " : grand S-mètre " + (bm != null ? "présent" : "absent") + " (attendu : " + (want ? "oui" : "non") + ")"); }
+                if (bm != null)
+                {
+                    int under = 0; foreach (Ctl m in d.C) if (m.K == Kind.Meter && m.X + m.W / 2 >= bm.X && m.X + m.W / 2 <= bm.X + bm.W && m.Y + m.H / 2 >= bm.Y && m.Y + m.H / 2 <= bm.Y + bm.H) under++;
+                    Check(under >= 3, d.Key + " : le grand S-mètre recouvre " + under + " vumètre(s) à barres (au moins 3 attendus)");
+                    Ctl mc = d.Find("meter"); if (mc != null) foreach (Item it in mc.ItemList) Check(HBigMeter.HasImage(it.Label), d.Key + " : METER « " + it.Label + " » n'a pas d'image de S-mètre");
+                }
+                // touche MENU : propre au FTdx10, ou menu EX du poste ; jamais deux
+                Ctl mn = d.Find("menu"); if (mn != null) menus++; Check(mn == null || mn.Local, d.Key + " : touche MENU non locale");
+                // chaque vumètre à barres a sa commande de lecture, chaque Choice sa commande METER cohérente
+                foreach (Ctl c in d.C) if (c.K == Kind.Meter && c.Id != "bigmeter") Check(c.Read.Length > 0 && c.Parse.Length > 0 && c.Max > 0, d.Key + " : vumètre " + c.Id + " sans lecture ou sans maximum");
+                // les touches à bascule ont une valeur « marche » et une valeur « arrêt » différentes et leur gabarit contient {v}
+                foreach (Ctl c in d.C) if (c.K == Kind.Toggle && !c.Local && c.Set.Length > 0) Check(c.OnSend != c.OffSend, d.Key + " : " + c.Id + " marche = arrêt");
+            }
+            Info("Cohérence des " + radios + " postes : " + (radios - out0.Count) + " sans élément hors de sa zone, " + big + " avec grand S-mètre, " + menus + " avec touche MENU");
+            foreach (string s in out0) Info("  (info) hors zone : " + s);
+        }
+
 
         public static int Run(string report)
-        {
+        { Rig.NoGate = true;
             sb = new StringBuilder(); ok = ko = 0;
             string tmp = Path.Combine(Path.GetTempPath(), "HamRadioLink-selftest-" + Guid.NewGuid().ToString("N").Substring(0, 8)); Directory.CreateDirectory(tmp); Cfg.Dir = tmp;
             try
@@ -100,7 +137,7 @@ namespace HamRadioLink
                 Check(ids.Add(c.Id), d.Key + " : identifiant en double " + c.Id);
                 Check(c.X >= 0 && c.Y >= 118 && c.X + c.W <= 1860 && c.Y + c.H <= (d.Key == "ft2000" ? 985 : 980), d.Key + " : " + c.Id + " hors de la fenêtre (" + c.X + "," + c.Y + "," + c.W + "," + c.H + ")");
                 if (c.Set.Length > 0) Check(Tpl.Check(c.Set) == null, d.Key + " : gabarit invalide " + c.Id);
-                if (c.Parse.Length > 0) { try { new Regex(c.Parse); } catch { Check(false, d.Key + " : regex invalide " + c.Id); } Check(c.Read.Length > 0 || (d.Catalog == "ts890" && c.Id == "ptt"), d.Key + " : " + c.Id + " a une réponse mais pas de lecture"); }
+                if (c.Parse.Length > 0) { try { new Regex(c.Parse); } catch { Check(false, d.Key + " : regex invalide " + c.Id); } Check(c.Read.Length > 0 || (d.Catalog == "ts890" && c.Id == "ptt") || c.Id == "clartxk", d.Key + " : " + c.Id + " a une réponse mais pas de lecture"); }
                 if (c.Read.Length > 0) { Check(c.Read.EndsWith(";"), d.Key + " : " + c.Id + " lecture sans ';'"); Check(c.Parse.Length > 0, d.Key + " : " + c.Id + " lecture sans format de réponse"); }
                 if (c.K == Kind.Choice) Check(c.ItemList.Length > 0, d.Key + " : " + c.Id + " sans valeurs");
                 if (c.K == Kind.Knob) Check(c.Min < c.Max, d.Key + " : " + c.Id + " min>=max");
@@ -114,7 +151,7 @@ namespace HamRadioLink
             for (int i = 0; i < top.Count; i++) for (int j = i + 1; j < top.Count; j++)
                 {
                     Ctl a = top[i], b = top[j]; bool ov = a.X < b.X + b.W && b.X < a.X + a.W && a.Y < b.Y + b.H && b.Y < a.Y + a.H;
-                    Check(!ov || ((a.Id == "ft8" || b.Id == "ft8") && (a.Id == "md0" || b.Id == "md0")) || (d.Key == "ft2000" && Ft2000UserOverlap(a.Id, b.Id)) || (d.Key == "ft991a-df5dp" && Df5dpOverlap(a.Id, b.Id)), d.Key + " : " + a.Id + " et " + b.Id + " se chevauchent");
+                    Check(!ov || a.Id == "bigmeter" || b.Id == "bigmeter" || ((a.Id == "ft8" || b.Id == "ft8") && (a.Id == "md0" || b.Id == "md0")) || (d.Key == "ft2000" && Ft2000UserOverlap(a.Id, b.Id)) || (d.Key == "ft991a-df5dp" && Df5dpOverlap(a.Id, b.Id)), d.Key + " : " + a.Id + " et " + b.Id + " se chevauchent");
                 }
             Info(d.Name + " : " + d.C.Count + " éléments, " + nCat + " avec commande CAT");
         }
@@ -138,6 +175,7 @@ namespace HamRadioLink
                 foreach (string v in vals)
                 {
                     if (c.Set.Length == 0) break;
+                    if (d.Key == "ftdx10" && c.Id == "band" && v == "13") continue;   // touche 70 : le programme envoie FA070000000; (voir Rig.SetRadio), pas de code BS
                     string cmd = Tpl.Fill(c.Set, v); sim.Bad.Clear(); string r = SendSteps(sim, cmd); if (d.Civ >= 0) r = r.Replace("FB;", ""); tested++;
                     Check(r == "" && sim.Bad.Count == 0, d.Key + " : « " + cmd + " » (" + c.Id + ") refusé par le poste : " + r);
                     if (c.Read.Length > 0 && c.Parse.Length > 0 && c.K != Kind.Action)
@@ -200,7 +238,7 @@ namespace HamRadioLink
         {
             Rig rig = new Rig(); VirtualLink vl = new VirtualLink(d); string err; string agk = d.Catalog == "ts890" ? "ag" : "ag0";
             Check(rig.Connect(d, vl, out err), d.Key + " : connexion virtuelle");
-            Wait(delegate { return rig.Connected && rig.Get("fa") != null && rig.Get("af") != null; }, 6000);
+            Wait(delegate { return rig.Connected && rig.Get("fa") != null && rig.Get("af") != null && !rig.Loading; }, 20000);   // les commandes sont refusées tant que tous les paramètres du poste ne sont pas lus
             Check(rig.Connected, d.Key + " : connecté"); Check(d.IdValue.Length == 0 || rig.SeenId == d.IdValue, d.Key + " : identifiant ID lu (" + rig.SeenId + ")");
             Check(rig.GetL("fa") == 14074000, d.Key + " : fréquence A lue (" + rig.Get("fa") + ")");
             Ctl af = d.Find("af"); rig.Set(af, "180"); Wait(delegate { return vl.Sim.S[agk] == "180"; }, 3000);
@@ -529,7 +567,7 @@ namespace HamRadioLink
             foreach (string mid in new string[] { "alc", "swr", "comp", "idd", "vdd" }) MeterCal.SavePoints(k, mid, new List<double[]>());
             Check(MeterCal.Scale(d, d.Find("alc")).Text(100) == "39%", "Échelles : retour aux valeurs d'origine après effacement");
             MeterCal.SavePoints(k, new List<double[]>()); Cfg.Set("cal." + k + ".pmax", ""); Cfg.Set("cal." + k + ".pfull", ""); Ver0();
-            Info("Échelles des vumètres et étalonnage du wattmètre vérifiés"); RadioScaleChecks(); AlignChecks(); MenuChecks(); AllRigChecks();
+            Info("Échelles des vumètres et étalonnage du wattmètre vérifiés"); RadioScaleChecks(); Consistency(); AlignChecks(); MenuChecks(); AllRigChecks();
         }
         static void Ver0() { MeterCal.Ver++; }
         // ---- fonctions étendues à tous les postes : menu EX (tables des manuels), boutons MENU, étalonnage Width / CONT / RF PWR, réglages d'origine
@@ -547,14 +585,14 @@ namespace HamRadioLink
             RigMenu.Key = "ftdx5000"; Check(!RigMenu.HasTable && RigMenu.Count == 199 && RigMenu.Name(new Dictionary<string, string>(), 5) == "Menu 005", "Menu FTdx5000 : pas de table, numéros seuls (199 menus, lecture jusqu'à 20 absences)");
             RigMenu.Key = "ft991a"; bool crit = false; for (int n = 1; n <= RigMenu.Count; n++) if (RigMenu.Critical(n)) crit = true; Check(crit, "Menu FT-991A : des menus critiques (CAT, puissance…) sont signalés");
             RigMenu.Key = "ft2000"; Check(RigMenu.Count == 149 && RigMenu.Critical(28) && RigMenu.Name(RigMenu.LoadDefs(), 10) == "DISP BAR SEL" && RigMenu.Name(RigMenu.LoadDefs(), 17) == "DUS TX LEVEL", "Menu FT-2000 : 149 menus, noms d'origine relevés sur le poste (010, 012, 013, 016, 017)");
-            int withBtn = 0, noBtn = 0, badBtn = 0;
+            int withBtn = 0, noBtn = 0, badBtn = 0; string ovl = "";
             foreach (RadioDef d in Radios.All())
             {
-                Ctl m = d.Find("menu"); bool has = Backup.HasMenu(d);
+                Ctl m = d.Find("menu"); bool has = Backup.HasMenu(d) || d.Key == "ftdx10";
                 if (has != (m != null)) badBtn++; else if (has) { withBtn++; if (!m.Local || m.K != Kind.Action || m.W < 60 || m.H < 30 || m.X < 0 || m.Y < 118 || m.X + m.W > 1860 || m.Y + m.H > 980) badBtn++; } else noBtn++;
-                foreach (Ctl o in d.C) if (has && m != null && o != m && o.K != Kind.Frame && m.X < o.X + o.W && o.X < m.X + m.W && m.Y < o.Y + o.H && o.Y < m.Y + m.H) badBtn++;
+                foreach (Ctl o in d.C) if (has && m != null && o != m && o.K != Kind.Frame && m.X < o.X + o.W && o.X < m.X + m.W && m.Y < o.Y + o.H && o.Y < m.Y + m.H) { badBtn++; ovl += d.Key + ":" + o.Id + " "; }
             }
-            Check(withBtn == 7 && badBtn == 0, "Bouton MENU : sur les " + withBtn + " postes à menu (FT-2000, FTdx5000, FT-450, FT-950, FT-991A, FT-991A DF5DP, FTdx3000), absent des " + noBtn + " autres, sans chevauchement (" + badBtn + " défaut)");
+            Check(withBtn == 8 && badBtn == 0, "Bouton MENU : sur les " + withBtn + " postes à menu (FTdx10 avec son menu propre, FT-2000, FTdx5000, FT-450, FT-950, FT-991A, FT-991A DF5DP, FTdx3000), absent des " + noBtn + " autres, sans chevauchement (" + badBtn + " défaut " + ovl + ")");
             // étalonnage Width / CONT / RF PWR : disponible sur tous les postes qui ont ces boutons ; sans étalonnage l'affichage d'origine est conservé
             int kn = 0, knBad = 0;
             foreach (RadioDef d in Radios.All())
@@ -562,7 +600,7 @@ namespace HamRadioLink
                 {
                     Ctl c = d.Find(id); if (c == null || c.K != Kind.Knob) { if (MeterCal.KnobActive(d, c)) knBad++; continue; }
                     kn++; if (!MeterCal.KnobActive(d, c)) knBad++;
-                    if (d.Key != "ft2000" && (MeterCal.KnobText(d, c, c.Min) != null || MeterCal.KnobMax(d, c) != c.Max)) knBad++;
+                    if (d.Key != "ft2000" && !(d.Key == "ftdx10" && id == "width") && (MeterCal.KnobText(d, c, c.Min) != null || MeterCal.KnobMax(d, c) != c.Max)) knBad++;
                 }
             Check(kn > 20 && knBad == 0, "Width / CONT / RF PWR : " + kn + " boutons sur tous les postes, affichage d'origine inchangé tant qu'il n'est pas étalonné (" + knBad + " défaut)");
             RadioDef x = Radios.ByKey("ftdx10"); Ctl xw = x.Find("width"), xp = x.Find("pwr"); string kx = x.Key; Cfg.RemovePrefix("cal." + kx + ".");
@@ -573,7 +611,7 @@ namespace HamRadioLink
             }
             // réglages d'origine du FT-2000 : tout ce que l'utilisateur a réglé, sauf la pleine déviation Po à 100 W (et non 50 W)
             RadioDef ft = Radios.ByKey("ft2000"); Cfg.RemovePrefix("cal.ft2000."); MeterCal.Ver++; Sc po = MeterCal.Scale(ft, ft.Find("po")); Ctl pw = ft.Find("pwr");
-            Check(MeterCal.PMax("ft2000") == 200 && MeterCal.PFull("ft2000") == 100 && po.Ticks[po.Ticks.Length - 1] == "100" && MeterCal.KnobMax(ft, pw) == 142 && MeterCal.KnobText(ft, pw, 249) == "100 W", "FT-2000 : réglages d'origine = ceux de l'utilisateur, pleine déviation Po à 100 W");
+            Check(MeterCal.PMax("ft2000") == 200 && MeterCal.PFull("ft2000") == 50 && po.Ticks[po.Ticks.Length - 1] == "50" && MeterCal.KnobMax(ft, pw) == 95 && MeterCal.KnobText(ft, pw, 249) == "50 W", "FT-2000 : réglages d'origine = ceux de l'utilisateur, pleine déviation Po à 50 W (" + MeterCal.PFull("ft2000") + " W, tick " + po.Ticks[po.Ticks.Length - 1] + ", max " + MeterCal.KnobMax(ft, pw) + ", " + MeterCal.KnobText(ft, pw, 249) + ")");
             { Cfg.RemovePrefix("ros."); Cfg.RemovePrefix("tune."); Cfg.RemovePrefix("meter.hold"); Cfg.RemovePrefix("wheelpct"); HW.WheelPct = Math.Max(1, Math.Min(10, Cfg.GetInt("wheelpct", 1))); string bad = ""; if (RosGuard.Threshold != 2.0) bad += " seuil=" + RosGuard.Threshold; if (RosGuard.DelayMs != 300) bad += " delai=" + RosGuard.DelayMs; if (RosGuard.IntervalMs != 50) bad += " pause=" + RosGuard.IntervalMs; if (!RosGuard.Drop) bad += " chute"; if (RosGuard.DropPct != 0) bad += " pct=" + RosGuard.DropPct; if (!RosGuard.TestVox) bad += " voxtest"; if (TuneMic.Level != 15) bad += " tune=" + TuneMic.Level; if (!TuneMic.Vox) bad += " tunevox"; if (HMeter.HoldMs != 10000) bad += " hold=" + HMeter.HoldMs; if (HW.WheelPct != 1) bad += " molette=" + HW.WheelPct; Check(bad.Length == 0, "Réglages d'origine du programme : ROS (seuil 2, délai 0,3 s, bips 50 ms, chute 0 %, test VOX), TUNE 15 % en VOX, maintien vumètre 10 s, molette 1 %" + bad); }
             Rig rr = new Rig(); rr.Def = ft; Rig r2 = new Rig(); r2.Def = x; Check(rr.PttLimit == 30 && r2.PttLimit == 0, "Délai de sécurité TX : 30 s d'origine pour le FT-2000 seulement");
             Info("Fonctions étendues à tous les postes vérifiées");
@@ -591,7 +629,7 @@ namespace HamRadioLink
             Check(RigMenu.ManualChoices(144, false)[0].Value == "10 W" && RigMenu.ManualChoices(144, true)[0].Value == "20 W" && RigMenu.ManualChoices(144, true)[3].Value == "200 W" && RigMenu.ManualChoices(147, true)[3].Value == "200 W" && RigMenu.ManualChoices(147, false)[3].Value == "100 W", "Menu FT-2000 : puissances maximales distinctes FT-2000 (100 W) et FT-2000D (200 W)");
             Check(RigMenu.Format("0300", "400") == "0400" && RigMenu.Format("0300", "12345") == null && RigMenu.Format("+0000", "-25") == "-0025" && RigMenu.Format("+0000", "30") == "+0030" && RigMenu.Format("1", "7") == "7" && RigMenu.Format("1", "-1") == null && RigMenu.Format("00", "abc") == null && RigMenu.Format(null, "1") == null, "Menu FT-2000 : saisie mise au format du poste (chiffres, signe)");
             RadioDef d = Radios.ByKey("ft2000"); Ctl mn = d.Find("menu"), me = d.Find("meter");
-            Check(mn != null && me != null && mn.Local && mn.K == Kind.Action && mn.W == me.W && mn.H == me.H && mn.Y == me.Y && mn.X == me.X + me.W + 10 && Radios.ByKey("ftdx10").Find("menu") == null && Radios.ByKey("ftdx5000").Find("menu") != null, "Menu FT-2000 : bouton MENU à droite de METER, même taille ; absent des postes sans menu EX");
+            Check(mn != null && me != null && mn.Local && mn.K == Kind.Action && mn.W == me.W && mn.H == me.H && mn.Y == me.Y && mn.X == me.X + me.W + 10 && Radios.ByKey("ftdx10").Find("menu") != null && Radios.ByKey("ftdx5000").Find("menu") != null, "Menu FT-2000 : bouton MENU à droite de METER, même taille ; présent sur le FTdx10 (menu propre), absent des postes sans menu EX");
             d.LoadUser(); Rig rig = new Rig(); VirtualLink vl = new VirtualLink(d); string err; rig.Connect(d, vl, out err); Wait(delegate { return rig.Get("pwr") != null; }, 8000);
             int got = 0; Dictionary<int, string> vals = new Dictionary<int, string>(); for (int n = 1; n <= 149; n++) { string v = RigMenu.Read(rig, n); if (v != null) { got++; vals[n] = v; } }
             Check(got == 149 && vals[1] == "0300" && vals[86] == "+0000", "Menu FT-2000 : les 149 menus sont lus (" + got + ")");
@@ -622,14 +660,14 @@ namespace HamRadioLink
         static bool Ft2000UserOverlap(string a, string b)
         {
             string p = a + "+" + b, q = b + "+" + a;
-            foreach (string s in new string[] { "nar+narb", "afb+nbl", "rfb+dnrl", "sqlb+procl", "mic+monil", "pwr+voxg" }) if (s == p || s == q) return true;
+            foreach (string s in new string[] { }) if (s == p || s == q) return true;   // plus aucun chevauchement toléré sur le FT-2000
             return false;
         }
         // ---- « Aligner » : même taille pour les éléments de même forme d'une section, centre conservé, résultat stable, valable pour tous les postes
         static void AlignChecks()
         {
             RadioDef f0 = Radios.ByKey("ft2000"); Ctl k1 = f0.Find("clar"), k2 = f0.Find("clartx"), k3 = f0.Find("nbl");
-            Check(k1 != null && k2 != null && k3 != null && k1.X == 1680 && k1.Y == 594 && k1.DX == 1680 && k1.W == 110 && k1.H == 112 && k2.X == 1684 && k2.Y == 772 && k2.DY == 772 && k3.X == 324 && k3.Y == 887 && k3.W == 94 && k3.H == 96, "FT-2000 : disposition d'origine = disposition validée sur le poste");
+            Check(k1 != null && k2 != null && k3 != null && k1.X == 1680 && k1.Y == 594 && k1.DX == 1680 && k1.W == 110 && k1.H == 112 && k2.X == 1684 && k2.Y == 772 && k2.DY == 772 && k3.X == 324 && k3.Y == 894 && k3.W == 94 && k3.H == 76, "FT-2000 : disposition d'origine = disposition validée sur le poste");
             Check(Radios.ByKey("ftdx5000").Find("clar").X != 1680, "FT-2000 : la disposition d'origine ne touche pas les autres postes");
             RadioDef t = Radios.ByKey("ft2000"); Ctl[] kn = new Ctl[] { t.Find("clar"), t.Find("shift"), t.Find("width"), t.Find("notch"), t.Find("cont") };
             Ctl cl = t.Find("clar"); int cx = cl.X + cl.W / 2, cy = cl.Y + cl.H / 2; cl.W -= 24; cl.H -= 20; cl.X += 12; cl.Y += 10;   // CLAR plus petit que ses voisins
@@ -652,12 +690,16 @@ namespace HamRadioLink
             RadioDef ft = Radios.ByKey("ft2000"); string fk = ft.Key;
             Cfg.RemovePrefix("cal." + fk + "."); MeterCal.Ver++;
             Sc fpo = MeterCal.Scale(ft, ft.Find("po"));
-            Check(MeterCal.PMax(fk) == 200 && MeterCal.PFull(fk) == 100 && MeterCal.Points(fk).Count == 15 && fpo.Text(224) == "200 W" && fpo.Text(115) == "50 W" && Math.Abs(fpo.Frac(160) - 1) < 1e-9 && MeterCal.Scale(ft, ft.Find("swr")).Text(77) == "1.7" && MeterCal.Scale(ft, ft.Find("alc")).Text(129) == "50%" && MeterCal.Scale(ft, ft.Find("idd")).Text(20) == "1.1 A" && MeterCal.Scale(ft, ft.Find("vdd")).Text(195) == "50.0 V", "FT-2000 : réglages d'origine (200 W, échelle Po 100 W, étalonnage relevé) appliqués sans rien enregistrer");
+            Check(MeterCal.PMax(fk) == 200 && MeterCal.PFull(fk) == 50 && MeterCal.Points(fk).Count == 15 && fpo.Text(224) == "200 W" && fpo.Text(115) == "50 W" && Math.Abs(fpo.Frac(115) - 1) < 1e-9 && MeterCal.Scale(ft, ft.Find("swr")).Text(77) == "1.7" && MeterCal.Scale(ft, ft.Find("alc")).Text(129) == "50%" && MeterCal.Scale(ft, ft.Find("idd")).Text(20) == "1.1 A" && MeterCal.Scale(ft, ft.Find("vdd")).Text(195) == "50.0 V", "FT-2000 : réglages d'origine (200 W, échelle Po 50 W, étalonnage relevé) appliqués sans rien enregistrer");
             Ctl wc = ft.Find("width"), pw = ft.Find("pwr");
-            Check(MeterCal.KnobText(ft, wc, 1) == "200 Hz" && MeterCal.KnobText(ft, wc, 16) == "2400 Hz" && MeterCal.KnobText(ft, wc, 29) == "3790 Hz" && MeterCal.KnobText(ft, wc, 31) == "4000 Hz" && MeterCal.KnobText(ft, wc, 0) == "200 Hz" && MeterCal.KnobText(ft, wc, 22) == "3040 Hz" && MeterCal.KnobText(ft, wc, 8) == "1230 Hz" && MeterCal.KnobText(ft, pw, 95) == "50 W" && MeterCal.KnobText(ft, pw, 70) == "30 W" && MeterCal.KnobMax(ft, pw) == 142 && MeterCal.KnobText(Radios.ByKey("ftdx5000"), Radios.ByKey("ftdx5000").Find("width"), 16) == null, "Width : 200 Hz / 2400 Hz / 4000 Hz aux positions 1 / 16 / 31 ; RF PWR en W (échelle Po 100 W) ; autres postes inchangés");
+            Check(MeterCal.KnobText(ft, wc, 1) == "200 Hz" && MeterCal.KnobText(ft, wc, 16) == "2400 Hz" && MeterCal.KnobText(ft, wc, 29) == "3790 Hz" && MeterCal.KnobText(ft, wc, 31) == "4000 Hz" && MeterCal.KnobText(ft, wc, 0) == "200 Hz" && MeterCal.KnobText(ft, wc, 22) == "3040 Hz" && MeterCal.KnobText(ft, wc, 8) == "1230 Hz" && MeterCal.KnobText(ft, pw, 95) == "50 W" && MeterCal.KnobText(ft, pw, 70) == "30 W" && MeterCal.KnobMax(ft, pw) == 95 && MeterCal.KnobText(Radios.ByKey("ftdx5000"), Radios.ByKey("ftdx5000").Find("width"), 16) == null, "Width : 200 Hz / 2400 Hz / 4000 Hz aux positions 1 / 16 / 31 ; RF PWR en W (échelle Po 50 W) ; autres postes inchangés");
             MeterCal.SavePoints(fk, "width", new List<double[]> { new double[] { 2, 400 }, new double[] { 10, 1800 }, new double[] { 20, 3000 } }); MeterCal.SavePoints(fk, "rfpwr", new List<double[]> { new double[] { 11, 10 }, new double[] { 110, 100 }, new double[] { 200, 200 } });
             MeterCal.SetPFull(fk, 200); Check(MeterCal.KnobText(ft, wc, 10) == "1800 Hz" && MeterCal.KnobText(ft, wc, 2) == "400 Hz" && MeterCal.KnobText(ft, pw, 110) == "100 W" && MeterCal.KnobText(ft, pw, 200) == "200 W" && MeterCal.KnobMax(ft, pw) == 200, "Width / RF PWR étalonnés : Hz et W relevés, pleine échelle de RF PWR = puissance max");
             MeterCal.SetPMax(fk, 100); Check(MeterCal.KnobMax(ft, pw) == 110, "RF PWR : pleine échelle suit la puissance max (100 W)"); MeterCal.SetPMax(fk, 200); MeterCal.SetPFull(fk, 50); Check(MeterCal.KnobMax(ft, pw) == 55 && MeterCal.KnobText(ft, pw, 200) == "50 W" && MeterCal.KnobText(ft, pw, 55) == "50 W" && MeterCal.KnobText(ft, pw, 30) == "27 W" && MeterCal.KnobText(ft, pw, 11) == "10 W", "RF PWR : échelle Po à 50 W -> bouton de 10 à 50 W, au-delà il reste à 50 W"); Cfg.RemovePrefix("cal." + fk + "."); MeterCal.Ver++;
+            Cfg.RemovePrefix("cal.zzz."); MeterCal.Ver++; bool swrOk = Math.Abs(MeterCal.SwrRatio("zzz", 48) - 1.5) < 0.01;
+            MeterCal.SavePoints("zzz", "swr", new List<double[]> { new double[] { 100, 2.0 }, new double[] { 200, 5.0 } });
+            Check(swrOk && Math.Abs(MeterCal.SwrRatio("zzz", 100) - 2.0) < 0.01 && Math.Abs(MeterCal.SwrRatio("zzz", 200) - 5.0) < 0.01 && MeterCal.SwrRatio("zzz", 0) < 1.01 && MeterCal.SwrRatio("zzz", 150) > 2.0 && MeterCal.SwrRatio("zzz", 150) < 5.0 && MeterCal.SwrRatio("zzz", 255) > 5.0, "Étalonnage du ROS : table d'origine sans point, puis lecture calée sur les mesures et extrapolée entre / au-delà");
+            Cfg.RemovePrefix("cal.zzz."); MeterCal.Ver++;
             int rigs = 0, meters = 0;
             foreach (RadioDef d in Radios.All())
             {
@@ -814,7 +856,7 @@ namespace HamRadioLink
                     w.SimClick(System.Windows.Forms.MouseButtons.Right); Check(hr.LockCount == 0, d.Key + " : " + c.Id + " : la case ne se déverrouille pas");
                     w.Dispose(); n++; continue;
                 }
-                bool dr = d.Key == "ft991a-df5dp" && (c.Id == "ctcss" || c.Id == "ctone" || c.Id == "dcsc");   // sur ces trois touches : clic droit = liste, Ctrl + clic droit = verrou
+                bool dr = (d.Key == "ft991a-df5dp" && (c.Id == "ctcss" || c.Id == "ctone" || c.Id == "dcsc")) || (c.K == Kind.Choice && c.Id == "step");   // sur ces trois touches : clic droit = liste, Ctrl + clic droit = verrou
                 HW.CtrlOverride = dr; w.SimClick(System.Windows.Forms.MouseButtons.Right); HW.CtrlOverride = false; Check(w.Locked, d.Key + " : " + c.Id + " (" + c.K + ") : le clic droit ne verrouille pas");
                 long v0 = rig.Version; w.SimClick(System.Windows.Forms.MouseButtons.Left); w.SimWheel(120); w.SimWheel(-120);
                 Check(rig.Version == v0, d.Key + " : " + c.Id + " (" + c.K + ") : une commande part malgré le verrou");

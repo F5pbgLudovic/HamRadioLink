@@ -251,6 +251,15 @@ namespace HamRadioLink
             Action recolor = delegate { bool act = TuneMic.SafeActiveFor(rig); tt.BackColor = act ? TuneMic.ColOn : T.Panel2; tt.Text = act ? "● TEST EN COURS (" + TuneMic.Left + " s) — cliquer pour arrêter" : "Test : TUNE 1500 Hz à la puissance de sécurité"; };
             Action rc = delegate { if (!tt.IsDisposed) { try { tt.BeginInvoke(recolor); } catch { } } }; TuneMic.Changed += rc; tt.Disposed += delegate { TuneMic.Changed -= rc; }; recolor();
             Label hint = Lbl("Le test émet le TUNE à la puissance réduite (durée et niveau : onglet Bouton TUNE) puis remet la puissance d'origine. Second clic = arrêt.", 6, 394, 584); hint.Height = 34; hint.ForeColor = T.Dim;
+            // ---- étalonnage du ROS (tous les postes qui lisent le ROS) : la lecture du poste est calée sur le ROS réel ; l'alerte et les vumètres s'en servent
+            Label ch = Lbl("Étalonnage du ROS", 6, 436, 300); ch.Font = new Font("Segoe UI Semibold", 11f); ch.ForeColor = T.Amber;
+            Label cdesc = Lbl("Émettez sur une charge de ROS connu (ou lisez le ROS sur un appareil de mesure) et saisissez la valeur réelle : le programme la fait coïncider avec la lecture du poste. Plusieurs mesures sont possibles, « Passer » saute une étape, le reste est extrapolé.", 6, 462, 584); cdesc.Height = 48; cdesc.ForeColor = T.Dim;
+            Label cst = Lbl("", 6, 520, 250); Button cbtn = Mk("Étalonner le ROS…", 262, 514, 190), cclr = Mk("Effacer", 460, 514, 110);
+            Ctl swc = rig != null && rig.Def != null ? rig.Def.Find("swr") : null; bool hasSwr = swc != null && swc.HasCat; string rk = rig != null && rig.Def != null ? rig.Def.Key : "";
+            Action cshow = delegate { if (!hasSwr) { cst.Text = "ce poste ne donne pas le ROS"; cbtn.Enabled = cclr.Enabled = false; return; } int n = MeterCal.Points(rk, "swr").Count; cst.Text = n == 0 ? "échelle d'origine" : "étalonné (" + n + " point" + (n > 1 ? "s" : "") + ")"; cclr.Enabled = n > 0; };
+            cbtn.Click += delegate { if (rig.Link == null) { MessageBox.Show(this, "Connectez d'abord le poste.", "Étalonnage du ROS"); return; } using (SwrCalDlg d = new SwrCalDlg(rig)) d.ShowDialog(this); cshow(); };
+            cclr.Click += delegate { MeterCal.SavePoints(rk, "swr", new List<double[]>()); cshow(); };
+            cshow();
         }
         void UpdatePage()
         {

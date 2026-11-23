@@ -35,7 +35,7 @@ namespace HamRadioLink
         public static double Ratio(Rig r)
         {
             if (r == null || r.Def == null) return -1; Ctl c = r.Def.Find("swr"); if (c == null || !c.HasCat) return -1;
-            string s = r.Get("swr"); int v; if (s == null || !int.TryParse(s, out v)) return -1; return RatioOf(v, c.Max);
+            string s = r.Get("swr"); int v; if (s == null || !int.TryParse(s, out v)) return -1; double q = MeterCal.SwrRatio(r.Def.Key, v * 255.0 / Math.Max(1, c.Max)); return q > 10 && MeterCal.Points(r.Def.Key, "swr").Count == 0 ? 10 : Math.Min(q, 100);
         }
         public static Ctl PowerCtl(Rig r) { return r == null ? null : PowerCtl(r.Def); }
         public static Ctl PowerCtl(RadioDef def)

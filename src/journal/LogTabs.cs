@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -61,9 +61,9 @@ items.Clear(); box = null;   // la zone de recherche n'est plus affichée (elle 
                     else if (it.Kind == 3) { it.R = Rectangle.Empty; if (box != null) { Point p = new Point(x, (Height - box.Height) / 2); if (box.Location != p) box.Location = p; x += box.Width + 6; } }
                     else
                     {
-                        int w = it.Text == "▲" ? Height - 6 : it.Text == "↔" ? 36 : TextRenderer.MeasureText(it.Text, f).Width + 16; it.R = new Rectangle(x, 3, w, Height - 6);
+                        bool lp = it.Src is LoupeButton; int w = (it.Text == "▲" || it.Text == "↶" || it.Text == "↷" || lp) ? Height - 6 : it.Text == "↔" ? 36 : TextRenderer.MeasureText(it.Text, f).Width + 16; it.R = new Rectangle(x, 3, w, Height - 6);
                         Color tc = Looks.DrawButton(g, it.R, null, tt, hotItem == i, false, true, back);
-                        if (it.Text == "↔") FitIcon(g, it.R, tc); else TextRenderer.DrawText(g, it.Text, f, it.R, tc, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding); x += w + 4;
+                        if (lp) LoupeButton.Draw(g, it.R, tc); else if (it.Text == "↔") FitIcon(g, it.R, tc); else TextRenderer.DrawText(g, it.Text, f, it.R, tc, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding); x += w + 4;
                     }
                 }
                 int dz = Math.Min(22, Height - 6); zPlus = new Rectangle(Width - dz - 8, (Height - dz) / 2, dz, dz); zMinus = new Rectangle(zPlus.X - dz - 4, zPlus.Y, dz, dz); zReset = new Rectangle(zMinus.X - dz - 8, zPlus.Y, dz, dz);

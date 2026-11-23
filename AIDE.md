@@ -171,3 +171,17 @@ Les envois en ligne se font par **sessions de 100 QSO** (pause de 3 s entre deux
 **Réception du poste sur le PC** (1.7) : clic droit sur le bouton de volume AF d'un poste : « Écouter la réception du poste sur le PC » (activer / désactiver), « Carte son du poste » (réglage propre à chaque poste), et « Couper le haut-parleur du poste (le son reste sur le PC) » qui met le volume AF du transceiver à 0 par CAT tant que l'écoute est active (volume rétabli ensuite et à l'arrêt du programme). Ctrl + clic droit : verrouiller le bouton. La loupe du journal : bouton « Début » (haut du tableau) et, pour une date absente, aller à la date la plus proche.
 
 Quand « Couper le haut-parleur du poste » est actif, le **bouton de volume AF règle le volume du son joué sur le PC** (le poste reste à 0 ; son volume d'origine est rétabli à la désactivation et à l'arrêt du programme).
+
+## 4 terdecies. Nouveautés de la 1.8
+
+**Touche MENU du FTdx10** (entre METER et TUNE) : fenêtre qui reprend le menu du poste. Onglets MENU RAPIDE (réglages d'accueil), RADIO / CW / OPERATION / DISPLAY SETTING et leurs sous-pages ; chaque ligne montre la valeur lue dans le poste et la modifie ; les changements faits sur le poste apparaissent (relecture toutes les 5 s). Un bandeau rouge signale ce que le poste refuse. La fenêtre prend la hauteur de l'écran.
+
+**Clic droit sur les touches du FTdx10** : MIC EQ = égaliseur du micro (courbe en direct ; le poste refuse par CAT les gains sous −10 dB, défaut connu : réglez-les sur le poste), NB = niveau / largeur / réjection, DNR = niveau, VOX = source micro ou data, MOX = délai de sécurité comme PTT, NOTCH = largeur large / étroite (affichée sur la touche), PAS = valeur précédente. Ctrl + clic droit verrouille la touche. Clic gauche sur le mode du VFO B : liste des modes. Touche 70 : début de la bande 70 MHz. CLAR RX et CLAR TX sont deux réglages indépendants (le programme envoie celui que vous tournez, avec seul son clarifier actif) ; CLEAR CLAR remet les deux à 0 ; tourner la molette vite = pas de 100 Hz.
+
+**Grand S-mètre à aiguille** (FTdx10, FT-2000 ; autres postes : bouton « S-mètre » de la vue config) : clic droit sur un vumètre de gauche = remplacer les barres par le S-mètre (et inversement) ; clic gauche = fonction suivante (PO, SWR, ALC, COMP, ID, VDD, commande METER du poste). L'aiguille suit le signal en réception et la mesure choisie en émission. En vue config, on voit soit le S-mètre soit les barres.
+
+**Au démarrage**, aucune commande n'est envoyée au poste avant la lecture de tous ses paramètres ; les positions de la dernière session s'affichent aussitôt. **FT8** : l'état d'avant (PROC, niveau de PROC, MIC EQ, mode) est mémorisé sur disque et rétabli en sortant de FT8, même après un arrêt du programme.
+
+**Roue crantée > Alerte ROS** (en bas) : étalonnage du ROS pour tous les postes (plusieurs mesures ou « Passer », extrapolation) ; WIDTH s'étalonne tous les 100 Hz.
+
+**Journal** : fenêtre Add (RST proposés selon le mode, thème propre à la fenêtre) ; menu Fichier réorganisé avec « Sauvegarder la base maintenant… » (fichier .sql daté, dossier et nombre de copies au choix, sauvegarde automatique à la fermeture / chaque jour / semaine / mois) et « Restaurer la base maintenant… » (dossier des sauvegardes ou autre chemin, avec sauvegarde préalable) ; journal de destination des QSO reçus (Réglages des ports) ; Online services : case « Ne pas transmettre les commentaires ».

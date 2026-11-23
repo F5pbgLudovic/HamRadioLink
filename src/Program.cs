@@ -18,6 +18,16 @@ namespace HamRadioLink
             foreach (string a in args) if (a.StartsWith("--dump=") || a.StartsWith("--selftest=") || a.StartsWith("--shot=")) Updater.Disabled = true;
             foreach (string a in args) if (a.StartsWith("--dump=")) { SelfTest.Dump(a.Substring(7)); return; }
             foreach (string a in args) if (a.StartsWith("--selftest=")) { Environment.Exit(SelfTest.Run(a.Substring(11))); return; }
+            foreach (string a in args) if (a.StartsWith("--rxfxshot=")) { RxFxForm.Shot(a.Substring(11)); return; }
+            foreach (string a in args) if (a.StartsWith("--consist=")) { Journal.WsjtListener.Disabled = true; Updater.Disabled = true; Environment.Exit(SelfTest.ConsistOnly(a.Substring(10))); return; }
+            foreach (string a in args) if (a.StartsWith("--menushot=")) { Ftdx10MenuForm.Shot(a.Substring(11)); return; }
+            foreach (string a in args) if (a.StartsWith("--metershot=")) { HBigMeter.Shot(a.Substring(12)); return; }
+            foreach (string a in args) if (a.StartsWith("--miceqshot=")) { MicEqForm.Shot(a.Substring(12)); return; }
+            foreach (string a in args) if (a.StartsWith("--clartest=")) { Journal.WsjtListener.Disabled = true; Updater.Disabled = true; Environment.Exit(RadioTest.Clar(a.Substring(11))); return; }
+            foreach (string a in args) if (a.StartsWith("--menuscan=")) { Journal.WsjtListener.Disabled = true; Updater.Disabled = true; Environment.Exit(RadioTest.MenuScan(a.Substring(11))); return; }
+            foreach (string a in args) if (a.StartsWith("--menuprobe=")) { Journal.WsjtListener.Disabled = true; Updater.Disabled = true; Environment.Exit(RadioTest.MenuProbe(a.Substring(12))); return; }
+            foreach (string a in args) if (a.StartsWith("--miceqtest=")) { Journal.WsjtListener.Disabled = true; Updater.Disabled = true; Environment.Exit(RadioTest.MicEq(a.Substring(12))); return; }
+            foreach (string a in args) if (a.StartsWith("--radiotest=")) { Journal.WsjtListener.Disabled = true; Updater.Disabled = true; Environment.Exit(RadioTest.Run(a.Substring(12))); return; }
             string radio = null; bool virt = false; string shot = null;
             foreach (string a in args)
             {

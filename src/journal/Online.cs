@@ -110,7 +110,14 @@ namespace HamRadioLink.Journal
         }
 
         // ---------- envoi des QSO ----------
-        static string OneAdif(List<Qso> q) { return Adif.Export(q); }
+        // ADIF des envois en ligne : sans le commentaire si la case « Ne pas transmettre les commentaires » est cochée (Services en ligne)
+        public static string ExportOnline(IEnumerable<Qso> qsos)
+        {
+            if (!App.Cfg.GetBool("online.nocomment", false)) return Adif.Export(qsos);
+            List<Qso> c = new List<Qso>(); foreach (Qso q in qsos) { Qso n = new Qso(); foreach (KeyValuePair<string, string> kv in q) if (kv.Key != "COL_COMMENT") n[kv.Key] = kv.Value; c.Add(n); }
+            return Adif.Export(c);
+        }
+        static string OneAdif(List<Qso> q) { return ExportOnline(q); }
 
         public static string UploadQrz(List<Qso> qsos)
         {
@@ -201,7 +208,7 @@ namespace HamRadioLink.Journal
             string call = App.Cfg.Get("qrzcq.call", App.Cfg.Get("me.call", "")), key = App.Cfg.Get("qrzcq.key", "").Trim();
             if (key.Length == 0 || call.Length == 0) throw new Exception(Tr.T("QRZCQ.com : indicatif et clé API à renseigner (Outils > Online services)."));
             double wait = 61 - (DateTime.UtcNow - lastQrzcq).TotalSeconds; if (wait > 0) System.Threading.Thread.Sleep((int)(wait * 1000));
-            string adif = Adif.Export(qsos); adif = adif.Substring(adif.IndexOf("<EOH>") + 5).Trim();
+            string adif = ExportOnline(qsos); adif = adif.Substring(adif.IndexOf("<EOH>") + 5).Trim();
             int code; string r = HttpBearer("https://ssl.qrzcq.com/api/logupload", "{\"auth\":{\"call\":\"" + JEsc(call) + "\",\"key\":\"" + JEsc(key) + "\"},\"data\":{\"adif\":\"" + JEsc(adif) + "\"}}", null, out code);
             lastQrzcq = DateTime.UtcNow;
             if (code != 200 || !Regex.IsMatch(r, "\"status\"\\s*:\\s*\"OK\"", RegexOptions.IgnoreCase)) throw new Exception(Tr.T("QRZCQ.com : ") + code + " " + r.Trim());
@@ -269,7 +276,7 @@ namespace HamRadioLink.Journal
         {
             string key = App.Cfg.Get("wrl.key", "").Trim();
             if (key.Length == 0) throw new Exception(Tr.T("World Radio League : clé API à renseigner (Outils > Online services)."));
-            string adif = Adif.Export(qsos); int code; string r = ""; string lb = WrlLogbook(key);
+            string adif = ExportOnline(qsos); int code; string r = ""; string lb = WrlLogbook(key);
             for (int t = 0; t < 12; t++)   // un seul import à la fois par compte : on attend si un autre est en cours
             {
                 r = HttpReq("POST", "https://api.worldradioleague.com/v1/imports", "{\"programId\":\"HamRadioLink\"" + (lb.Length > 0 ? ",\"logbookId\":\"" + lb + "\"" : "") + "}", "application/json", key, out code);
@@ -334,7 +341,7 @@ namespace HamRadioLink.Journal
             if (!File.Exists(tqsl)) throw new Exception(Tr.T("TQSL introuvable : ") + tqsl + " (Tools > Online services).");
             if (loc.Length == 0) throw new Exception(Tr.T("LoTW : nom de la « Station Location » de TQSL à renseigner."));
             string f = Path.Combine(Path.GetTempPath(), "hrl-lotw-" + Guid.NewGuid().ToString("N") + ".adi");
-            File.WriteAllText(f, Adif.Export(qsos), new UTF8Encoding(false));
+            File.WriteAllText(f, ExportOnline(qsos), new UTF8Encoding(false));
             try
             {
                 int code; string o = RunTqsl(tqsl, Tr.T("-d -q -a all -u -l \"") + loc + "\" \"" + f + "\"", 600000, out code);
@@ -350,7 +357,7 @@ namespace HamRadioLink.Journal
     public class OnlineForm : Form
     {
         readonly Dictionary<string, TextBox> t = new Dictionary<string, TextBox>();
-        ComboBox cLook;
+        ComboBox cLook; CheckBox kNoCom;
         public OnlineForm()
         {
             AutoScaleMode = AutoScaleMode.None; Text = Tr.T("Online services"); Size = new Size(560, 560); StartPosition = FormStartPosition.CenterParent; FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; MinimizeBox = false; Font = Ui.Normal;
@@ -372,6 +379,7 @@ namespace HamRadioLink.Journal
             Ui.Btn(this, Tr.T("Aide"), 496, y - 2, 56, 26, (s, e) => ShowHelp(Tr.T("Pour envoyer vos QSO vers World Radio League, il faut une clé API :\n\n1. Cliquez sur « Demander une clé » : la page de WRL s'ouvre dans votre navigateur (connectez-vous à votre compte).\n2. Ouvrez « Integrations », rubrique « Developer API », puis cliquez sur « Generate API key ».\n3. La clé (elle commence par wrl_live_) n'est affichée QU'UNE SEULE FOIS : copiez-la tout de suite, sans espace en trop.\n4. Collez-la ici dans le champ « Clé API », puis cliquez sur OK.\n\nLa clé se traite comme un mot de passe : ne la montrez à personne. Les QSO sont envoyés sous forme de fichier ADIF ; les doublons sont ignorés par le service."))); y += 32;
             Ui.Lbl(this, "eQSL.cc", 12, y); y += 22; Row(Tr.T("Identifiant :"), "eqsl.user", ref y, false); Row(Tr.T("Mot de passe :"), "eqsl.pass", ref y, true); y += 6;
             Ui.Lbl(this, Tr.T("LoTW (TQSL)"), 12, y); y += 22; Row(Tr.T("tqsl.exe :"), "lotw.tqsl", ref y, false); Row(Tr.T("Station Location :"), "lotw.location", ref y, false);
+            y += 6; kNoCom = Ui.Chk(this, Tr.T("Ne pas transmettre les commentaires"), 12, y, 520); kNoCom.Checked = App.Cfg.GetBool("online.nocomment", false); y += 30;   // valable pour tous les envois en ligne
             Button ok = Ui.Btn(this, "OK", 360, y + 8, 80, 28, (s, e) => Save()); Ui.Btn(this, Tr.T("Annuler"), 450, y + 8, 80, 28, (s, e) => { DialogResult = DialogResult.Cancel; Close(); });
             ClientSize = new Size(560, Math.Min(y + 50, Screen.PrimaryScreen.WorkingArea.Height - 80)); AutoScroll = true; AutoScrollMinSize = new Size(0, y + 50); AcceptButton = ok;
         }
@@ -405,7 +413,7 @@ namespace HamRadioLink.Journal
         {
             Ui.Lbl(this, label, 24, y); TextBox b = Ui.Txt(this, 160, y - 2, 360); b.Text = App.Cfg.Get(key, key == "lotw.tqsl" ? Tr.T("C:\\Program Files (x86)\\TrustedQSL\\tqsl.exe") : ""); b.UseSystemPasswordChar = pw; t[key] = b; y += 28;
         }
-        void Save() { App.Cfg.Set("lookup.service", cLook.Text); foreach (KeyValuePair<string, TextBox> kv in t) App.Cfg.Set(kv.Key, kv.Value.Text.Trim()); App.Cfg.Save(); DialogResult = DialogResult.OK; Close(); }
+        void Save() { App.Cfg.Set("online.nocomment", kNoCom.Checked ? "1" : "0"); App.Cfg.Set("lookup.service", cLook.Text); foreach (KeyValuePair<string, TextBox> kv in t) App.Cfg.Set(kv.Key, kv.Value.Text.Trim()); App.Cfg.Save(); DialogResult = DialogResult.OK; Close(); }
     }
 }
 

@@ -65,7 +65,8 @@ namespace HamRadioLink.Journal
             foreach (string kv in App.Cfg.Get("lb.colw", "").Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries)) { int q = kv.LastIndexOf('='), wv; if (q > 0 && int.TryParse(kv.Substring(q + 1), out wv)) foreach (ColDef c in cols) if (c.Title == kv.Substring(0, q)) c.Width = Math.Max(20, wv); }   // largeurs mémorisées (à 100 % de zoom)
 
             MenuStrip ms = new ClickMenuStrip();
-            ToolStripMenuItem file = M("File", M(Tr.T("Fenêtre de télécommande"), (s, e) => { Action a = Hub.ShowMain; if (a != null) a(); }), new ToolStripSeparator(), M("Open database...", (s, e) => OpenDb()), M(Tr.T("Importer / partager une base..."), (s, e) => OpenSetup()), M(Tr.T("Réglages des ports..."), (s, e) => Ui.ShowFree(new PortsForm(), this)), M(Tr.T("Moteur MariaDB..."),(s, e) => Ui.ShowFree(new EngineForm(), this)), M("New log...", (s, e) => NewLog("")), M("Import ADIF...", (s, e) => ImportAdif()), M("Export ADIF (selection or all)...", (s, e) => ExportAdif()), new ToolStripSeparator(), M("Exit", (s, e) => Close()));
+            ToolStripMenuItem file = M("File", M(Tr.T("Fenêtre de télécommande"), (s, e) => { Action a = Hub.ShowMain; if (a != null) a(); }), new ToolStripSeparator(), M("Import ADIF...", (s, e) => ImportAdif()), M("Export ADIF (selection or all)...", (s, e) => ExportAdif()), M("New log...", (s, e) => NewLog("")), new ToolStripSeparator(), M(Tr.T("Réglages des ports..."), (s, e) => Ui.ShowFree(new PortsForm(), this)), new ToolStripSeparator(), M("Open database...", (s, e) => OpenDb()), M(Tr.T("Importer / partager une base..."), (s, e) => OpenSetup()), M(Tr.T("Sauvegarder la base maintenant..."), (s, e) => Ui.ShowFree(new DbBackupForm(this), this)), M(Tr.T("Restaurer la base maintenant..."), (s, e) => Ui.ShowFree(new DbRestoreForm(this), this)), M(Tr.T("Moteur MariaDB..."),(s, e) => Ui.ShowFree(new EngineForm(), this)), new ToolStripSeparator(), M("Exit", (s, e) => Close()));
+            file.DropDownOpening += delegate { bool emb = App.Cfg.Get("db.mode", "") == "embedded"; ToolStripItem eng = null; foreach (ToolStripItem it in file.DropDownItems) if (it.Text.StartsWith("Moteur MariaDB") || it.Text.StartsWith("MariaDB engine")) eng = it; if (eng != null) eng.Visible = emb; };   // le moteur n'a de réglages que pour le MariaDB intégré
             ToolStripMenuItem edit = M("Edit", M("Add\tCtrl+N", (s, e) => AddQso()), M("View / Edit\tEnter", (s, e) => EditSelected()), M("Delete\tDel", (s, e) => DeleteSelected()), new ToolStripSeparator(), M("Edit selections...", (s, e) => EditSelections()), M("Copy	Ctrl+C", (s, e) => CopyRows()), M("Cut	Ctrl+X", (s, e) => CutRows()), M("Paste	Ctrl+V", (s, e) => PasteRows()));
             ToolStripMenuItem view = M("View", M("Refresh\tF5", (s, e) => Reload()), M("Show all", (s, e) => { where = ""; search.Text = ""; Reload(); }), M("Columns (Layout)...", (s, e) => ChooseColumns()));
             ToolStripMenuItem logb = M("Logbook", M("Awards tracking...", (s, e) => ShowAwards(0)), M("Statistics...", (s, e) => Stats()), M("Find duplicates...", (s, e) => FindDupes()), M(Tr.T("QSL à envoyer (filtre)"), (s, e) => SetFilter("COL_QSL_SENT='Y' AND COL_QSL_RCVD<>'Y'")), M("Backup (ADIF)...", (s, e) => ExportAdif(true)), M("Update countries from QRZ/HamQTH data", (s, e) => UpdateFromCountries()));
@@ -89,7 +90,7 @@ namespace HamRadioLink.Journal
             ts.Items.Add(B("Filter", (s, e) => AdvancedFilter())); ts.Items.Add(B("All", (s, e) => { search.Text = ""; SetFilter(""); }));
             ts.Items.Add(B("▲", (s, e) => { if (grid.RowCount > 0) { grid.FirstDisplayedScrollingRowIndex = 0; foreach (DataGridViewColumn c in grid.Columns) if (c.Visible) { grid.CurrentCell = grid[c.Index, 0]; break; } grid.ClearSelection(); grid.Rows[0].Selected = true; } }));   // remonter tout en haut
             ts.Items.Add(B("↔", (s, e) => FitColumns()));   // ajuste la largeur de chaque colonne à son contenu
-            ts.Items.Add(B("↶", (s, e) => DoUndo(true))); ToolStripButton redo = B("↷", (s, e) => DoUndo(false)); ts.Items.Add(redo); LoupeButton loupe = new LoupeButton { Like = redo }; loupe.Click += (s, e) => Ui.ShowFree(new SearchForm(this), this); ts.Items.Add(loupe); Shown += delegate { loupe.AutoSize = false; loupe.Size = redo.Size; };   // loupe : recherche Suivant / Précédent (fenêtre non bloquante)   // annuler / refaire (Ctrl+Z / Ctrl+Y)
+            ts.Items.Add(B("↶", (s, e) => DoUndo(true))); ToolStripButton redo = B("↷", (s, e) => DoUndo(false)); ts.Items.Add(redo); LoupeButton loupe = new LoupeButton { Like = redo }; loupe.Click += (s, e) => Ui.ShowFree(new SearchForm(this), this); ts.Items.Add(loupe); { int q = 26; foreach (ToolStripItem it in ts.Items) if (it is LoupeButton || it.Text == "▲" || it.Text == "↔" || it.Text == "↶" || it.Text == "↷") { it.AutoSize = false; it.Size = new Size(q, q); it.Margin = new Padding(1, 1, 1, 2); } }   // ▲ ↔ ↶ ↷ et loupe : même petit carré   // loupe : recherche Suivant / Précédent (fenêtre non bloquante)   // annuler / refaire (Ctrl+Z / Ctrl+Y)
 
             grid = new LogGrid
             {
@@ -326,7 +327,7 @@ namespace HamRadioLink.Journal
         }
         public void ApplyLanguage() { Ui.Translate(menuStrip); Ui.Translate(toolStrip); if (logTabs != null) logTabs.SetItems(toolStrip, search); }
         static ToolStripMenuItem M(string t, params ToolStripItem[] items) { ToolStripMenuItem m = new ToolStripMenuItem(t); m.DropDownItems.AddRange(items); return m; }
-        static ToolStripMenuItem M(string t, EventHandler h) { return new ToolStripMenuItem(t, null, h); }
+        static ToolStripMenuItem M(string t, EventHandler h) { int k = t.IndexOf('\t'); ToolStripMenuItem m = new ToolStripMenuItem(k >= 0 ? t.Substring(0, k) : t, null, h); if (k >= 0) m.ShortcutKeyDisplayString = t.Substring(k + 1); return m; }
         static ToolStripButton B(string t, EventHandler h) { ToolStripButton b = new ToolStripButton(t) { DisplayStyle = ToolStripItemDisplayStyle.Text }; b.Click += h; return b; }
 
         // ---------- colonnes ----------
@@ -730,8 +731,22 @@ namespace HamRadioLink.Journal
             DbForm f = new DbForm(); f.FormClosed += (s, e) => { if (f.DialogResult == DialogResult.OK) { Text = Tr.T("HamRadioLink ") + App.Version + " Logbook - [" + App.Cfg.Get("db.name", "F5PBG") + "]"; Reload(); } }; Ui.ShowFree(f, this);
         }
 
+        // Plusieurs journaux : demande dans lequel importer (le journal choisi devient le journal affiché). false = annulé.
+        bool PickImportLog()
+        {
+            if (App.Logs == null || App.Logs.Count < 2) return true;
+            using (Form f = new Form { Text = Tr.T("Importer un ADIF"), FormBorderStyle = FormBorderStyle.FixedDialog, StartPosition = FormStartPosition.CenterParent, ClientSize = new Size(420, 110), MaximizeBox = false, MinimizeBox = false, ShowInTaskbar = false, Font = Ui.Normal })
+            {
+                Ui.Lbl(f, Tr.T("Importer dans quel journal ?"), 12, 14, 396); List<string> nm = new List<string>(); foreach (LogRef l in App.Logs) nm.Add(l.Name);
+                ComboBox cb = Ui.Combo(f, 12, 40, 396, nm); cb.DropDownStyle = ComboBoxStyle.DropDownList; cb.SelectedIndex = Math.Max(0, App.Logs.IndexOf(App.CurrentLog));
+                Button ok = Ui.Btn(f, "OK", 230, 72, 85, 28, (s, e) => { f.DialogResult = DialogResult.OK; }); Ui.Btn(f, Tr.T("Annuler"), 323, 72, 85, 28, (s, e) => { f.DialogResult = DialogResult.Cancel; }); f.AcceptButton = ok;
+                if (f.ShowDialog(this) != DialogResult.OK) return false;
+                SwitchLog(App.Logs[cb.SelectedIndex]); return App.CurrentLog == App.Logs[cb.SelectedIndex];
+            }
+        }
         void ImportAdif()
         {
+            if (!PickImportLog()) return;
             using (OpenFileDialog o = new OpenFileDialog { Filter = Tr.T("ADIF (*.adi;*.adif)|*.adi;*.adif|All|*.*") })
             {
                 if (o.ShowDialog(this) != DialogResult.OK) return;
@@ -800,7 +815,7 @@ namespace HamRadioLink.Journal
                         List<Qso> list = sel;
                         if (!useSel) { list = new List<Qso>(); say(Tr.T("Lecture des QSO…"), -1); long n = Math.Min(cnt, 100000); for (int off = 0; off < n; off += 2000) { List<Qso> p = log.Fetch(wl, "COL_TIME_ON ASC", off, 2000); list.AddRange(p); if (p.Count < 2000) break; } }
                         say(Tr.T("Signature par TQSL de ") + list.Count + " QSO (peut durer plusieurs minutes)…", -1);
-                        File.WriteAllText(adi, Adif.Export(list), new UTF8Encoding(false));
+                        File.WriteAllText(adi, Online.ExportOnline(list), new UTF8Encoding(false));
                         int code; string o = Online.RunTqsl(tqsl, Tr.T("-d -q -a all -l \"") + loc + "\" -o \"" + tmp8 + "\" \"" + adi + "\"", 600000, out code);
                         bool signed = code == 0 && File.Exists(tmp8) && new FileInfo(tmp8).Length > 100; if (signed) File.Copy(tmp8, tq8, true);
                         if (signed)
@@ -875,7 +890,7 @@ namespace HamRadioLink.Journal
             try
             {
                 string dir = Path.Combine(App.DataDir ?? ".", "exports"); Directory.CreateDirectory(dir);
-                string file = Path.Combine(dir, "QRZ-" + DateTime.Now.ToString("yyyy-MM-dd_HHmm") + ".adi"); File.WriteAllText(file, Adif.Export(rest), new UTF8Encoding(false)); List<int> qid = new List<int>(); foreach (Qso q in rest) qid.Add(q.Id); QrzState.Mark(qid); ReloadKeep();   // fichier préparé pour l'import = marqués « envoyés à QRZ.com »
+                string file = Path.Combine(dir, "QRZ-" + DateTime.Now.ToString("yyyy-MM-dd_HHmm") + ".adi"); File.WriteAllText(file, Online.ExportOnline(rest), new UTF8Encoding(false)); List<int> qid = new List<int>(); foreach (Qso q in rest) qid.Add(q.Id); QrzState.Mark(qid); ReloadKeep();   // fichier préparé pour l'import = marqués « envoyés à QRZ.com »
                 try { Clipboard.SetText(file); } catch { }   // chemin du fichier prêt à coller (Ctrl+V) dans la fenêtre « Ouvrir » du navigateur
                 try { Process.Start(new ProcessStartInfo("https://logbook.qrz.com/logbook") { UseShellExecute = true }); } catch { }
                 Form h = new Form(); h.Text = Tr.T("QRZ.com : envoi manuel"); h.FormBorderStyle = FormBorderStyle.FixedToolWindow; h.StartPosition = FormStartPosition.CenterParent; h.Font = Ui.Normal; h.ShowInTaskbar = false; h.TopMost = true;

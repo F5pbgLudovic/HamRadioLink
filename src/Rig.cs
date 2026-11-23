@@ -25,7 +25,8 @@ namespace HamRadioLink
         readonly Dictionary<string, long> hold = new Dictionary<string, long>();
         readonly Dictionary<Ctl, long> next = new Dictionary<Ctl, long>();
         readonly Dictionary<Ctl, int> fails = new Dictionary<Ctl, int>();
-        readonly HashSet<Ctl> dead = new HashSet<Ctl>();
+        readonly HashSet<Ctl> dead = new HashSet<Ctl>(); readonly Dictionary<Ctl, long> deadAt = new Dictionary<Ctl, long>();
+        readonly HashSet<Ctl> got = new HashSet<Ctl>(); volatile bool loaded; long lastSave, lastLoadMsg; int loadTotal, loadDone;
         readonly StringBuilder rx = new StringBuilder();
         readonly System.Diagnostics.Stopwatch clock = System.Diagnostics.Stopwatch.StartNew();
         volatile bool sendPoll; Thread th; volatile bool run; Ctl lastRead; long lastSentT, lastRxT, startT; string lastCmd = "";
@@ -47,18 +48,78 @@ namespace HamRadioLink
             long el = clock.ElapsedMilliseconds - pttSince;
             if (Tx) pttSaw = true; else if (pttSaw || (el > 5000 && Link != null && Connected)) { PttByButton = false; return false; }      // fin d'émission (touche, Échap, poste…) ou le poste n'a jamais émis
             int lim = PttLimit; if (lim <= 0 || el < lim * 1000L) return false;
-            PttByButton = false; Set(p, p.OffSend); CatLog.Event(Def.Key, "émission coupée après " + lim + " s (délai de sécurité TX)"); return true;
+            PttByButton = false; Set(p, p.OffSend); { Ctl mx = Def.Find("mox"); if (mx != null && IsOn(mx)) Set(mx, mx.OffSend); } CatLog.Event(Def.Key, "émission coupée après " + lim + " s (délai de sécurité TX)"); return true;
         }
         public bool Tx { get { Ctl p = Def != null ? Def.Find("ptt") : null; return p != null && p.IsOn(Get("ptt")); } }
         public void Feed(string s) { OnData(s); }
         public bool ReadDisabled(Ctl c) { return dead.Contains(c); }
+
+        // ---- FTdx10 : deux réglages de clarifier indépendants (CLAR RX / CLAR TX). Le poste n'a qu'un décalage : le programme garde chaque position et envoie celle du bouton tourné,
+        // avec le clarifier correspondant seul actif. Les positions sont mémorisées (settings.ini) et suivent les changements faits sur le poste.
+        public int ClarRx, ClarTx; int clarSent = int.MinValue; bool inClar;
+        void ClarSave() { if (Def == null) return; Cfg.SetInt("clar." + Def.Key + ".rx", ClarRx); Cfg.SetInt("clar." + Def.Key + ".tx", ClarTx); }
+        public void ClarMove(bool tx, int v)
+        {
+            Ctl rx = Def.Find("clarrx"), txc = Def.Find("clartx"), cl = Def.Find("clar"); if (rx == null || txc == null || cl == null) return;
+            if (tx) ClarTx = v; else ClarRx = v; ClarSave();
+            inClar = true;
+            try
+            {
+                if (tx) { if (!IsOn(txc)) Set(txc, txc.OnSend); if (IsOn(rx)) Set(rx, rx.OffSend); } else { if (!IsOn(rx)) Set(rx, rx.OnSend); if (IsOn(txc)) Set(txc, txc.OffSend); }
+                clarSent = v; Set(cl, v.ToString());
+            }
+            finally { inClar = false; }
+        }
+        // décalage lu sur le poste : s'il ne vient pas de nous, il a été changé sur le poste -> mis dans la position du clarifier actif
+        void ClarSeen()
+        {
+            Ctl rx = Def.Find("clarrx"), txc = Def.Find("clartx"); int v; string s = Get("clar");
+            if (rx == null || txc == null || s == null || !int.TryParse(s, System.Globalization.NumberStyles.AllowLeadingSign, System.Globalization.CultureInfo.InvariantCulture, out v) || v == clarSent) return;
+            clarSent = v; bool r = IsOn(rx), t = IsOn(txc);
+            if (t && !r) ClarTx = v; else if (r && !t) ClarRx = v; else { ClarRx = v; if (r && t) ClarTx = v; }
+            ClarSave();
+        }
+
+        // ---- chargement initial : toutes les commandes sont refusées tant que le poste n'a pas été lu en entier ; les positions de la dernière session s'affichent entre-temps ----
+        public static bool NoGate;   // essais automatiques : pas de blocage pendant la lecture initiale
+        public bool Loading { get { return !NoGate && Link != null && !loaded; } }
+        string StateFile { get { return System.IO.Path.Combine(Cfg.Dir ?? ".", "etat-" + (Def != null ? Def.Key : "poste") + ".txt"); } }
+        static bool Remembered(Ctl c) { return c != null && !c.Local && c.Id != "ptt" && !c.TxOnly && c.K != Kind.Freq && !c.Id.StartsWith("md") && c.Id != "fa" && c.Id != "fb" && c.K != Kind.Meter && c.K != Kind.Gauge && c.K != Kind.Led && c.K != Kind.Action; }
+        public void SaveState()
+        {
+            try
+            {
+                if (Def == null || !loaded) return; StringBuilder sb = new StringBuilder();
+                foreach (KeyValuePair<string, string> kv in V) { if (kv.Value == null || kv.Value.IndexOfAny(new char[] { '\r', '\n' }) >= 0) continue; if (Remembered(Def.Find(kv.Key))) sb.Append(kv.Key).Append('=').Append(kv.Value).Append('\n'); }
+                System.IO.File.WriteAllText(StateFile, sb.ToString(), new UTF8Encoding(false)); lastSave = clock.ElapsedMilliseconds;
+            }
+            catch { }
+        }
+        void LoadState(RadioDef def)
+        {
+            try
+            {
+                string p = StateFile; if (!System.IO.File.Exists(p)) return;
+                foreach (string l in System.IO.File.ReadAllLines(p, Encoding.UTF8)) { int i = l.IndexOf('='); if (i <= 0) continue; string id = l.Substring(0, i); if (Remembered(def.Find(id)) && !V.ContainsKey(id)) V[id] = l.Substring(i + 1); }
+            }
+            catch { }
+        }
+        // appelée par la boucle : le chargement est terminé quand chaque valeur lue en continu a répondu une fois (ou après 15 s)
+        void CheckLoaded(long now)
+        {
+            if (loaded || !Connected || Def == null) return;
+            int tot = 0, ok = 0; lock (got) { foreach (Ctl c in Def.C) { if (string.IsNullOrEmpty(c.Read) || c.NoPoll || c.TxOnly || dead.Contains(c)) continue; tot++; if (got.Contains(c)) ok++; } }
+            loadTotal = tot; loadDone = ok;
+            if (ok >= tot || now - startT > 15000) { loaded = true; Status = "Connecté"; Version++; CatLog.Event(Def.Key, "paramètres du poste lus (" + ok + "/" + tot + ") : commandes autorisées"); SaveState(); }
+            else if (now - lastLoadMsg > 400) { lastLoadMsg = now; Status = "Lecture des paramètres du poste… " + ok + "/" + tot + " — commandes bloquées jusqu'à la fin"; Version++; }
+        }
         void Fire(string s, bool tx) { Action<string, bool> l = Log; if (l != null) l(s, tx); }
 
         // ------------------------------------------------------------- connexion
         public bool Connect(RadioDef def, ILink link, out string err)
         {
             Disconnect();
-            Def = def; Link = link; foreach (string k in new List<string>(V.Keys)) { Ctl lc = def.Find(k); string rm; if (lc == null || !lc.Local) V.TryRemove(k, out rm); } next.Clear(); fails.Clear(); dead.Clear(); hold.Clear(); coal.Clear(); lock (sync) outq.Clear(); lock (rx) rx.Length = 0;
+            Def = def; Link = link; foreach (string k in new List<string>(V.Keys)) { Ctl lc = def.Find(k); string rm; if (lc == null || !lc.Local) V.TryRemove(k, out rm); } { Ctl f8 = def.Find("ft8"); if (f8 != null && f8.Local && Cfg.Get("ft8." + def.Key + ".act", "") == "1") V[f8.Id] = f8.OnSend; }   /* FT8 était actif à l'arrêt : le bouton le montre, un clic remet l'état d'avant */ loaded = false; lock (got) got.Clear(); LoadState(def); { string pk0 = Cfg.Get("pl." + def.Key, ""); if (pk0.Length > 0) plKeep = pk0; }   if (def.Key == "ftdx10") { ClarRx = Cfg.GetInt("clar.ftdx10.rx", 0); ClarTx = Cfg.GetInt("clar.ftdx10.tx", 0); clarSent = int.MinValue; } next.Clear(); fails.Clear(); dead.Clear(); deadAt.Clear(); hold.Clear(); coal.Clear(); lock (sync) outq.Clear(); lock (rx) rx.Length = 0;
             Errors = 0; LastError = ""; SeenId = ""; Gap = link.Baud >= 38400 ? 22 : (link.Baud >= 9600 ? 35 : 60);
             link.Data += OnData;
             if (!link.Open(out err)) { link.Data -= OnData; Link = null; Status = "Échec : " + err; Version++; CatLog.Event(def.Key, "connexion impossible : " + err + " (" + link.Name + ")"); return false; }
@@ -70,7 +131,7 @@ namespace HamRadioLink
         }
         public void Disconnect()
         {
-            run = false; ILink l = Link; Link = null; if (l != null) CatLog.Event(Def != null ? Def.Key : "?", "déconnexion de " + l.Name);
+            SaveState(); run = false; ILink l = Link; Link = null; if (l != null) CatLog.Event(Def != null ? Def.Key : "?", "déconnexion de " + l.Name);
             if (l != null) { try { l.Data -= OnData; l.Close(); } catch { } }
             Connected = false; Status = "Déconnecté — choisissez l'interface et le port en haut à droite, puis CONNECTER (le poste virtuel sert de démonstration)"; Version++;
         }
@@ -79,6 +140,7 @@ namespace HamRadioLink
         // v : valeur à placer dans {v} (pour une action : null). La mise à jour locale est immédiate.
         public void Set(Ctl c, string v)
         {
+            if (Loading && !(c != null && c.Id == "ptt" && v == c.OffSend)) return;   // rien n'est envoyé au poste avant la fin de la lecture de tous ses paramètres
             if (v != null && Def != null && RxAudio.Local(this, c, v)) { V[c.Id] = v; Version++; return; }   // volume AF = volume de l'écoute sur le PC quand le haut-parleur du poste est coupé
             SetRadio(c, v);
         }
@@ -86,43 +148,69 @@ namespace HamRadioLink
         // écriture réelle vers le poste (sans détour par le volume de l'écoute sur le PC)
         public void SetRadio(Ctl c, string v)
         {
+            if (Def != null && Def.Key == "ftdx10" && !Loading)
+            {
+                if (c.Id == "clrclar" || c.Id == "clr") { ClarRx = ClarTx = 0; ClarSave(); clarSent = 0; }   // CLEAR CLAR : les deux positions et le décalage du poste à 0
+                else if (!inClar && v != null && (c.Id == "clarrx" || c.Id == "clartx") && c.IsOn(v))
+                { Ctl cl = Def.Find("clar"); int o = c.Id == "clarrx" ? ClarRx : ClarTx; if (cl != null) { clarSent = o; Raw(Tpl.Fill(cl.Set, o.ToString())); } }   // le clarifier qu'on allume reprend sa propre position
+            }
+            if (Loading && !(c != null && c.Id == "ptt" && v == c.OffSend)) return;
             if (v != null) V[c.Id] = v; Version++;
             Hooks(c, v);
             if (c.Local) { if (c.K == Kind.Choice && v != null) Cfg.Set("local." + c.Id, v); return; }
             hold[c.Id] = clock.ElapsedMilliseconds + 900;
+            if (c.Id == "band" && v == "13" && Def.Key == "ftdx10") { Raw("FA070000000;"); return; }   // touche 70 : début de la bande 70 MHz (Europe : 70,000 à 70,500 MHz), pas de code BS pour cette bande
             if (string.IsNullOrEmpty(c.Set)) return;
             if (c.K == Kind.Knob || c.K == Kind.Freq) { lock (sync) coal[c.Id] = v; return; }
             Raw(Tpl.Fill(c.Set, v));
         }
         // Enchaînements propres au poste : PROC retrouve son niveau ; « FT8 / FT4 » met en USB et coupe PROC / MIC EQ, puis les remet
         string plKeep, ft8Mode; bool ft8Proc, ft8Eq, ft8Quiet;
+        // niveau de PROC à retrouver : seul un niveau lu PROC allumé (> 0) est retenu, et mémorisé sur disque (FTdx10 : PROC coupé, le poste lit 000 et, à la remise en marche,
+        // revient à son niveau de menu s'il n'est pas réécrit)
+        void KeepPl(string cur) { long n; if (Def == null || string.IsNullOrEmpty(cur) || !long.TryParse(cur, out n) || n <= 0) return; plKeep = cur; Cfg.Set("pl." + Def.Key, cur); }
         void Hooks(Ctl c, string v)
         {
             if (Def == null || v == null) return;
             if (c.Id == "proc" && !c.Local)
             {
                 if (c.IsOn(v)) { Ctl pl = Def.Find("procl"); if (pl != null && !string.IsNullOrEmpty(plKeep)) Set(pl, plKeep); }
-                else { string cur = Get("procl"); if (!string.IsNullOrEmpty(cur)) plKeep = cur; }
+                else { string cur = Get("procl"); KeepPl(cur); }
             }
             else if (c.Id == "ft8" && c.Local)
             {
                 Ctl pr = Def.Find("proc"), eq = Def.Find("meq"), md = Def.Find("md0");
                 if (c.IsOn(v))
                 {
-                    ft8Proc = pr != null && IsOn(pr); ft8Eq = eq != null && IsOn(eq);
+                    string fk = "ft8." + Def.Key + ".";
+                    if (Cfg.Get(fk + "act", "") == "1")
+                    {   // FT8 déjà actif au moment de l'arrêt du programme : on garde l'état d'avant (PROC, MIC EQ, mode, niveau de PROC)
+                        ft8Proc = Cfg.Get(fk + "proc", "") == "1"; ft8Eq = Cfg.Get(fk + "eq", "") == "1"; ft8Mode = Cfg.Get(fk + "mode", ""); string pk = Cfg.Get(fk + "pl", ""); if (pk.Length > 0) plKeep = pk;
+                    }
+                    else
+                    {
+                        ft8Proc = pr != null && IsOn(pr); ft8Eq = eq != null && IsOn(eq); ft8Mode = Get("md0"); string cur0 = Get("procl"); if (ft8Proc) KeepPl(cur0);
+                        Cfg.Set(fk + "act", "1"); Cfg.Set(fk + "proc", ft8Proc ? "1" : "0"); Cfg.Set(fk + "eq", ft8Eq ? "1" : "0"); Cfg.Set(fk + "mode", ft8Mode ?? ""); Cfg.Set(fk + "pl", plKeep ?? ""); Cfg.Save();   // mémorisé : survit à l'arrêt du programme
+                    }
                     List<KeyValuePair<Ctl, string>> q = new List<KeyValuePair<Ctl, string>>();
-                    ft8Mode = Get("md0"); if (md != null) q.Add(new KeyValuePair<Ctl, string>(md, "2"));
+                    if (md != null) q.Add(new KeyValuePair<Ctl, string>(md, "2"));
                     if (ft8Proc) q.Add(new KeyValuePair<Ctl, string>(pr, pr.OffSend));
                     if (ft8Eq) q.Add(new KeyValuePair<Ctl, string>(eq, eq.OffSend));
                     Seq(q);
                 }
                 else
                 {
+                    string fk0 = "ft8." + Def.Key + ".";
+                    if (!ft8Proc && !ft8Eq && string.IsNullOrEmpty(ft8Mode) && Cfg.Get(fk0 + "act", "") == "1")
+                    {   // le programme a été relancé pendant FT8 : on reprend l'état mémorisé
+                        ft8Proc = Cfg.Get(fk0 + "proc", "") == "1"; ft8Eq = Cfg.Get(fk0 + "eq", "") == "1"; ft8Mode = Cfg.Get(fk0 + "mode", ""); string pk = Cfg.Get(fk0 + "pl", ""); if (pk.Length > 0) plKeep = pk;
+                    }
                     List<KeyValuePair<Ctl, string>> q = new List<KeyValuePair<Ctl, string>>();
                     if (!ft8Quiet && md != null && !string.IsNullOrEmpty(ft8Mode)) q.Add(new KeyValuePair<Ctl, string>(md, ft8Mode));
                     if (ft8Proc && pr != null) q.Add(new KeyValuePair<Ctl, string>(pr, pr.OnSend));
                     if (ft8Eq && eq != null) q.Add(new KeyValuePair<Ctl, string>(eq, eq.OnSend));
                     Seq(q); ft8Proc = ft8Eq = false; ft8Mode = null;
+                    string fk = "ft8." + Def.Key + "."; if (Cfg.Get(fk + "act", "") == "1") { Cfg.Set(fk + "act", ""); Cfg.Save(); }
                 }
             }
             else if (c.Id == "md0" && v != "2" && v != "C") { Ctl f = Def.Find("ft8"); if (f != null && IsOn(f)) { ft8Quiet = true; try { Set(f, f.OffSend); } finally { ft8Quiet = false; } } }
@@ -138,7 +226,7 @@ namespace HamRadioLink
                 if (c.Id == "proc")
                 {
                     Ctl pl = Def.Find("procl");
-                    if (!c.IsOn(v)) { string cur = Get("procl"); if (!string.IsNullOrEmpty(cur)) plKeep = cur; }
+                    if (!c.IsOn(v)) { string cur = Get("procl"); KeepPl(cur); }
                     else if (pl != null && !string.IsNullOrEmpty(plKeep) && !string.IsNullOrEmpty(pl.Set)) { V[pl.Id] = plKeep; hold[pl.Id] = now + 4000 + 400 * q.Count; sb.Append(Tpl.Fill(pl.Set, plKeep)).Append("{wait:350}"); }
                 }
             }
@@ -148,6 +236,7 @@ namespace HamRadioLink
         public void SetNow(Ctl c, string v)
         {
             if (c == null || string.IsNullOrEmpty(c.Set) || v == null) return;
+            if (Loading && !(c.Id == "ptt" && v == c.OffSend)) return;
             V[c.Id] = v; hold[c.Id] = clock.ElapsedMilliseconds + 2500; Version++; Raw(Tpl.Fill(c.Set, v));
         }
         // texte brut (déjà complet, peut contenir {wait:ms})
@@ -188,6 +277,7 @@ namespace HamRadioLink
                             }
                         }
                     }
+                    CheckLoaded(now); if (loaded && now - lastSave > 15000) SaveState();
                     bool poll = false; if (cmd == null) { cmd = NextPoll(now); poll = cmd != null; } sendPoll = poll;
                     if (cmd != null) SendText(cmd);
                     Thread.Sleep(Gap);
@@ -205,7 +295,8 @@ namespace HamRadioLink
             Ctl best = null; long bt = long.MaxValue; bool tx = Tx;
             foreach (Ctl c in Def.C)
             {
-                if (string.IsNullOrEmpty(c.Read) || c.NoPoll || dead.Contains(c)) continue;
+                if (string.IsNullOrEmpty(c.Read) || c.NoPoll) continue;
+                if (dead.Contains(c)) { long da; if (deadAt.TryGetValue(c, out da) && now - da > 15000) { dead.Remove(c); fails[c] = 2; } else continue; }   // une lecture refusée 3 fois (poste occupé au démarrage) est retentée toutes les 15 s
                 if (c.TxOnly && !tx) continue;
                 long h; if (hold.TryGetValue(c.Id, out h) && now < h) continue;
                 long n; if (!next.TryGetValue(c, out n)) n = 0;
@@ -253,7 +344,7 @@ namespace HamRadioLink
             {
                 Errors++; LastError = lastCmd + " → " + m;
                 if (lastRead != null && now - lastSentT < 500 && lastCmd == lastRead.Read)
-                { int f; fails.TryGetValue(lastRead, out f); fails[lastRead] = ++f; if (f >= 3) { dead.Add(lastRead); Fire("Lecture de « " + lastRead.Label + " » (" + lastRead.Read + ") refusée 3 fois : lecture désactivée.", false); } }
+                { int f; fails.TryGetValue(lastRead, out f); fails[lastRead] = ++f; if (f >= 3) { dead.Add(lastRead); deadAt[lastRead] = now; Fire("Lecture de « " + lastRead.Label + " » (" + lastRead.Read + ") refusée 3 fois : lecture désactivée.", false); } }
                 return;
             }
             Match idm = IdRx.Match(m);
@@ -264,7 +355,7 @@ namespace HamRadioLink
             foreach (Ctl c in Def.C)
             {
                 Regex re = c.Rx; if (re == null) continue;
-                Match mt = re.Match(m); if (!mt.Success) continue; fails.Remove(c);
+                Match mt = re.Match(m); if (!mt.Success) continue; fails.Remove(c); if (!loaded) lock (got) got.Add(c);
                 foreach (string gn in re.GetGroupNames())
                 {
                     if (char.IsDigit(gn[0])) continue; string key = gn == "v" ? c.Id : gn; Group g = mt.Groups[gn]; if (!g.Success) continue;
@@ -273,8 +364,10 @@ namespace HamRadioLink
                     string val = g.Value; Ctl tgt = key == c.Id ? c : Def.Find(key);
                     if (tgt != null && tgt.K == Kind.Choice) { foreach (Item it in tgt.ItemList) if (it.Match(val)) { val = it.Code; break; } }
                     string old; if (!V.TryGetValue(key, out old) || old != val) { V[key] = val; any = true; }
+                    if (key == "procl") { Ctl pc = Def.Find("proc"); if (pc != null && pc.IsOn(Get("proc"))) KeepPl(val); }   // dernier niveau de PROC lu PROC allumé
                 }
             }
+            if (any && Def.Key == "ftdx10") ClarSeen();
             if (any) Version++;
         }
 

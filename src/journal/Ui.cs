@@ -55,7 +55,8 @@ namespace HamRadioLink.Journal
             {
                 string o; if (!orig.TryGetValue(it, out o)) { o = it.Text; orig[it] = o; }
                 string key = o, tail = ""; int t = o.IndexOf('\t'); if (t >= 0) { key = o.Substring(0, t); tail = o.Substring(t); }
-                string tr = null; if (lg != "en") { Fr.TryGetValue(key, out tr); if (lg != "fr") tr = Tr.T(tr ?? key); } it.Text = tr != null ? tr + tail : o;
+                string tr = null; if (lg != "en") { Fr.TryGetValue(key, out tr); if (lg != "fr") tr = Tr.T(tr ?? key); } string full = tr != null ? tr + tail : o; ToolStripMenuItem mi = it as ToolStripMenuItem; int ft = full.IndexOf('\t');
+                if (mi != null && ft >= 0) { mi.Text = full.Substring(0, ft); mi.ShortcutKeyDisplayString = full.Substring(ft + 1); } else it.Text = full;   // le raccourci s'affiche dans sa colonne, séparé du libellé
             }
             ToolStripDropDownItem dd = it as ToolStripDropDownItem; if (dd != null) foreach (ToolStripItem c in dd.DropDownItems) TranslateItem(c, lg);
         }

@@ -1,5 +1,27 @@
 # Historique des versions
 
+
+## 1.8 — 2026-11-23
+
+**FTdx10 (et autres postes) : nouvelles fenêtres et réglages**
+- **Touche MENU** (entre METER et TUNE) : fenêtre non bloquante qui reprend l'organisation du menu du poste (page MENU RAPIDE, puis RADIO / CW / OPERATION / DISPLAY SETTING et leurs sous-pages, 197 lignes d'après le manuel CAT). Valeurs lues dans le poste, modifiables, relues toutes les 5 s ; un refus du poste est annoncé par un bandeau rouge. Hauteur maximale de l'écran.
+- **Égaliseur micro** (clic droit sur MIC EQ) : trois bandes (fréquence, gain, largeur), jeu « PROC éteint / allumé », filtre d'émission SSB, courbe de correction en direct (lignes ou barres), « Restore old menu settings ». Constaté : le poste refuse par CAT les gains sous −10 dB (défaut connu du firmware) ; la fenêtre affiche tout de même les valeurs −11 à −20 réglées sur le poste et signale le refus.
+- **NB** (clic droit) : niveau, largeur et réjection ; **DNR** (clic droit) : niveau. Valeurs réelles lues à l'ouverture.
+- **VOX** (clic droit) : source micro / data ; **MOX** (clic droit) : mêmes réglages que PTT (délai de sécurité) ; **NOTCH** : clic droit = largeur large / étroite (affichée sur la touche) ; clic gauche sur le mode du VFO B = liste des modes ; **bouton 70** (début de la bande 70 MHz, remplace GEN) ; bouton **PAS** : clic gauche = suivant, clic droit = précédent, Ctrl + clic droit = verrou ; « NAR » aligné sur la ligne du mode.
+- **CLAR RX et CLAR TX indépendants** (le poste n'a qu'un décalage : le programme garde les deux positions et envoie celle du bouton tourné), touche **CLEAR CLAR**, molette rapide = pas de 100 Hz.
+- **Grand S-mètre à aiguille** (FTdx10 et FT-2000, ajout possible à tout poste par le bouton « S-mètre » de la vue config) : fond = image de l'afficheur pour la fonction de METER (PO, COMP, ALC, VDD, ID, SWR), aiguille redessinée (réception : signal ; émission : mesure choisie). Clic droit sur un vumètre de gauche = le remplacer par le S-mètre (et inversement), clic gauche = fonction suivante. Les retouches de l'aiguille de repos sont dessinées à la main.
+- **Étalonnage du ROS** (roue crantée > Alerte ROS, tout en bas, tous les postes) : plusieurs mesures ou « Passer », extrapolation ; l'alerte ROS et les vumètres l'utilisent. Étalonnage de WIDTH tous les 100 Hz (200 à 4000 Hz).
+- **Au démarrage** : tant que tous les paramètres du poste ne sont pas lus, aucune commande n'est envoyée (statut « Lecture des paramètres… n/N ») ; les positions de la dernière session s'affichent tout de suite (fichier `etat-<poste>.txt`). Une lecture refusée est retentée toutes les 15 s.
+- **FT8 / PROC** : l'état d'avant FT8 (PROC, niveau de PROC, MIC EQ, mode) est mémorisé sur disque, même si le programme est arrêté pendant FT8 ; le bouton FT8 s'affiche enfoncé au redémarrage. Constaté sur le FTdx10 : PROC coupé, le poste lit 000 et revient à son niveau de menu s'il n'est pas réécrit.
+- **Dispositions par défaut intégrées** : FTdx10 (rangée ATT à MODE VFO-B alignée et centrée, CLAR sous NOTCH/CONT…) et FT-2000 (rangée ATT à NAR B centrée dans « ÉCRAN », cinq potentiomètres rentrés dans leur cadre) ; étalonnages FT-2000 et FTdx10 intégrés (plus de fichier à part).
+
+**Journal**
+- **Fenêtre Add** : RST proposés par mode (phonie 51 à 59 puis 59+10 à 59+60, CW et modes à clavier 519 à 599, modes WSJT en dB, SSTV en RSV) ; thème propre à la fenêtre ; libellés et champs DXCC / CQ / ITU recadrés ; boutons à coins lissés dans tous les thèmes arrondis.
+- **Sauvegarde / restauration de la base** (Fichier) : fichier .sql daté par journal, dossier au choix, nombre de copies conservé, sauvegarde automatique (fermeture / jour / semaine / mois, désactivable) ; restauration depuis le dossier des sauvegardes ou un autre chemin, avec sauvegarde préalable. « Moteur MariaDB » masqué hors moteur intégré.
+- **Fichier** réorganisé ; « Importer un ADIF » demande le journal quand il y en a plusieurs ; **journal de destination des QSO reçus** réglable dans Réglages des ports ; touche loupe carrée ; raccourcis des menus affichés dans leur colonne.
+- **Services en ligne** : case « Ne pas transmettre les commentaires » (tous les envois).
+
+**Divers** : correction des étapes d'étalonnage de CONT et RF PWR (supprimées par erreur pendant le développement) ; essais automatiques élargis (cohérence des 126 postes, ROS, S-mètre).
 ## 1.7 — 2026-11-23
 
 - **Club Log : envoi avec un jeton personnel** : Club Log ne demande plus de clé API de logiciel (ni d'e-mail ni de mot de passe). Dans **Outils > Online services**, saisir son **indicatif** et son **jeton** « cl_… » (à créer sur clublog.org > Settings > API > Create token, affiché une seule fois). Les QSO partent par lots de 50 vers l'API REST de Club Log ; les doublons sont comptés, un jeton refusé (401) ou un indicatif étranger au compte (403) arrête l'envoi. Non essayé avec un vrai compte.

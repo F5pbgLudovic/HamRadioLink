@@ -156,3 +156,17 @@ Online uploads are sent in **sessions of 100 QSOs** (3 s pause between sessions)
 **Receiving the radio on the PC** (1.7): right-click the AF volume knob of a radio: "Listen to the radio on the PC" (on/off), "sound card of the radio" (per radio), and "mute the radio speaker (sound stays on the PC)", which sets the radio AF volume to 0 over CAT while listening is on (restored afterwards and when the program exits). Ctrl + right-click: lock the knob. Log magnifier: "Début" button (top of the table); a date that does not exist jumps to the nearest date.
 
 When "mute the radio speaker" is on, the **AF volume knob sets the volume of the sound played on the PC** (the radio stays at 0; its original volume is restored when turned off and when the program exits).
+
+## 4 terdecies. What's new in 1.8
+
+**FTdx10 MENU key** (between METER and TUNE): a window that follows the radio's own menu. Tabs QUICK MENU (home settings), RADIO / CW / OPERATION / DISPLAY SETTING and their sub-pages; each line shows the value read from the radio and changes it; changes made on the radio show up (re-read every 5 s). A red banner reports anything the radio refuses. The window takes the full screen height.
+
+**Right-click on FTdx10 keys**: MIC EQ = microphone equalizer (live curve; the radio refuses gains below -10 dB over CAT, a known firmware limit: set them on the radio), NB = level / width / rejection, DNR = level, VOX = mic or data source, MOX = safety timeout like PTT, NOTCH = wide / narrow width (shown on the key), STEP = previous value. Ctrl + right-click locks the key. Left-click on the VFO B mode: mode list. 70 key: start of the 70 MHz band. CLAR RX and CLAR TX are two independent settings (the program sends the one you turn, with only its clarifier on); CLEAR CLAR resets both to 0; turning the wheel fast = 100 Hz steps.
+
+**Big needle S-meter** (FTdx10, FT-2000; other radios: "S-mètre" button of the config view): right-click a left-hand meter = replace the bars with the S-meter (and back); left-click = next function (PO, SWR, ALC, COMP, ID, VDD, the radio's METER command). The needle follows the signal on receive and the selected measurement on transmit. In the config view you see either the S-meter or the bars.
+
+**At startup** no command is sent to the radio until all its parameters have been read; the last session's positions are shown at once. **FT8**: the previous state (PROC, PROC level, MIC EQ, mode) is saved on disk and restored when leaving FT8, even after the program was stopped.
+
+**Gear > SWR alert** (at the bottom): SWR calibration for every radio (several measurements or "Passer", extrapolation); WIDTH is calibrated every 100 Hz.
+
+**Log**: Add window (RST proposed by mode, its own theme); reorganized File menu with "Sauvegarder la base maintenant…" (dated .sql file, folder and number of copies of your choice, automatic backup at close / daily / weekly / monthly) and "Restaurer la base maintenant…" (backup folder or another path, with a safety backup first); destination log for received QSOs (Ports settings); Online services: "Ne pas transmettre les commentaires" check box.

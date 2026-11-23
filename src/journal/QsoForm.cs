@@ -13,8 +13,8 @@ namespace HamRadioLink.Journal
         readonly bool isNew;
         public Qso Result; PeerLog log = App.Log; MySqlClient extraDb; ComboBox cLog; List<LogRef> logChoices = new List<LogRef>();   // le journal ouvert quand la fenetre a ete creee (un changement d onglet ne deroute pas l enregistrement)
         DateTimePicker dDate; DateTimePicker dStart, dEnd;
-        TextBox tCall, tRstS, tRstR, tName, tComment, tIota, tLoc, tState, tQth, tWpx, tFreq, tCountry, tCont, tDxcc, tCq, tItu, tDist, tVia, tQslMsg, tContest, tSrx, tStx, tNotes, tSub;
-        ComboBox cBand, cMode, cSub;
+        TextBox tCall, tName, tComment, tIota, tLoc, tState, tQth, tWpx, tFreq, tCountry, tCont, tDxcc, tCq, tItu, tDist, tVia, tQslMsg, tContest, tSrx, tStx, tNotes, tSub;
+        ComboBox cBand, cMode, cSub, tRstS, tRstR;   // RST envoyé / reçu : liste déroulante selon le mode (modifiable à la main)
         ComboBox cQslS, cQslR, cLotwS, cLotwR, cEqslS, cEqslR;
         CheckBox kBand, kMode, kSwl, kEndNow;
         DataGridView prev;
@@ -51,9 +51,12 @@ namespace HamRadioLink.Journal
                 dDate.Value = now.Date; dStart.Value = now; dEnd.Value = now;
                 if (!string.IsNullOrEmpty(freqHz)) SetFreq(freqHz);
                 if (!string.IsNullOrEmpty(mode)) cMode.Text = mode;
-                tRstS.Text = "59"; tRstR.Text = "59";
+                SetDefaultRst();
             }
             else Load(q);
+            bool firstAdd = true; foreach (Form of in Application.OpenForms) if (of is QsoForm && of != this) firstAdd = false;
+            if (firstAdd) { int sv; Theme.AddIndex = int.TryParse(App.Cfg.Get("theme.add", ""), out sv) && sv >= 0 && sv < Theme.All.Count ? sv : Theme.Index; Theme.AddChanged = false; }   // la fenêtre garde son thème : un changement du thème principal ne la touche plus
+            FormClosed += (s, e) => { foreach (Form of in Application.OpenForms) if (of is QsoForm && of != this && !of.IsDisposed) return; Theme.AddIndex = -1; Theme.AddChanged = false; Theme.Fire(); };   // le thème de « Add » reste propre à cette fenêtre (mémorisé), la fenêtre principale ne change pas
             Shown += (s, e) => tCall.Focus();
             FormClosed += (s, e) => { if (extraDb != null) { try { extraDb.Dispose(); } catch { } } };
         }
@@ -76,11 +79,11 @@ namespace HamRadioLink.Journal
         {
             Panel top = new Panel { Left = 0, Top = 0, Width = 1060, Height = 350 };
             Controls.Add(top);
-            Ui.Lbl(top, "Date:", 8, 12); dDate = new DateTimePicker { Left = 68, Top = 10, Width = 140, Format = DateTimePickerFormat.Short }; top.Controls.Add(dDate);
-            Ui.Lbl(top, Tr.T("(F2) Start:"), 8, 40); dStart = TimePick(top, 68, 38);
-            Ui.Lbl(top, Tr.T("(F3) End:"), 8, 66); dEnd = TimePick(top, 68, 64);
-            kEndNow = Ui.Chk(top, "now", 190, 66); kEndNow.Checked = true;
-            Ui.Lbl(top, Tr.T("(F5) Call:"), 8, 100); tCall = Ui.Txt(top, 68, 98, 140); tCall.BackColor = Color.FromArgb(255, 255, 200); tCall.CharacterCasing = CharacterCasing.Upper;
+            Ui.Lbl(top, "Date:", 8, 12); dDate = new DateTimePicker { Left = 86, Top = 10, Width = 140, Format = DateTimePickerFormat.Short }; top.Controls.Add(dDate);
+            Ui.Lbl(top, Tr.T("(F2) Start:"), 8, 40); dStart = TimePick(top, 86, 38);
+            Ui.Lbl(top, Tr.T("(F3) End:"), 8, 66); dEnd = TimePick(top, 86, 64);
+            kEndNow = Ui.Chk(top, "now", 208, 66); kEndNow.Checked = true;
+            Ui.Lbl(top, Tr.T("(F5) Call:"), 8, 100); tCall = Ui.Txt(top, 86, 98, 140); tCall.BackColor = Color.FromArgb(255, 255, 200); tCall.CharacterCasing = CharacterCasing.Upper;
             tCall.Leave += (s, e) => { callTimer.Stop(); OnCallLeft(); };
             // Dès qu'on modifie l'indicatif : on efface les infos de l'ancien ; les nouvelles s'affichent 0,5 s après la fin de la frappe.
             callTimer.Tick += delegate { callTimer.Stop(); OnCallLeft(); };
@@ -90,24 +93,24 @@ namespace HamRadioLink.Journal
                 if (lastCall.Length > 0 && tCall.Text.Trim() != lastCall) { ClearCallInfo(); lastCall = ""; DeepOff(); }
                 callTimer.Stop(); if (tCall.Text.Trim().Length > 0) callTimer.Start();
             };
-            Ui.Btn(top, "qrz.com", 215, 96, 66, 24, (s, e) => OpenSite("https://www.qrz.com/db/"));
-            Ui.Btn(top, "qrzcq", 287, 96, 56, 24, (s, e) => OpenSite("https://www.qrzcq.com/call/"));
-            kDeep = Ui.Chk(top, Tr.T("Recherche approfondie"), 68, 122, 300); kDeep.CheckedChanged += (s, e) => { if (!deepReset && tCall.Text.Trim().Length > 0) LoadPrev(); };
+            Ui.Btn(top, "qrz.com", 233, 96, 66, 26, (s, e) => OpenSite("https://www.qrz.com/db/"));
+            Ui.Btn(top, "qrzcq", 311, 96, 60, 26, (s, e) => OpenSite("https://www.qrzcq.com/call/"));
+            kDeep = Ui.Chk(top, Tr.T("Recherche approfondie"), 86, 122, 300); kDeep.CheckedChanged += (s, e) => { if (!deepReset && tCall.Text.Trim().Length > 0) LoadPrev(); };
             tLoc_TextChangedHook = true;
-            Ui.Lbl(top, Tr.T("RST Sent:"), 8, 148); tRstS = Ui.Txt(top, 68, 146, 90);
-            Ui.Lbl(top, Tr.T("RST Rcvd:"), 8, 174); tRstR = Ui.Txt(top, 68, 172, 90);
-            Ui.Lbl(top, "Name:", 8, 202); tName = Ui.Txt(top, 68, 200, 320);
-            Ui.Lbl(top, Tr.T("Comment:"), 8, 228); tComment = Ui.Txt(top, 68, 226, 320, 56);
-            Ui.Lbl(top, Tr.T("Country:"), 8, 292); tCountry = Ui.Txt(top, 68, 290, 280);
-            tCont = Ui.Txt(top, 352, 290, 36);
-            Ui.Lbl(top, "DXCC:", 8, 318); tDxcc = Ui.Txt(top, 68, 316, 50);
-            Ui.Lbl(top, "CQ:", 126, 318); tCq = Ui.Txt(top, 150, 316, 40);
-            Ui.Lbl(top, "ITU:", 198, 318); tItu = Ui.Txt(top, 224, 316, 40);
+            Ui.Lbl(top, Tr.T("RST Sent:"), 8, 148); tRstS = Ui.Combo(top, 86, 146, 90, RstFor("", out rstDef), true);
+            Ui.Lbl(top, Tr.T("RST Rcvd:"), 8, 174); tRstR = Ui.Combo(top, 86, 172, 90, RstFor("", out rstDef), true);
+            Ui.Lbl(top, "Name:", 8, 202); tName = Ui.Txt(top, 86, 200, 322);
+            Ui.Lbl(top, Tr.T("Comment:"), 8, 228); tComment = Ui.Txt(top, 86, 226, 322, 56);
+            Ui.Lbl(top, Tr.T("Country:"), 8, 292); tCountry = Ui.Txt(top, 86, 290, 278);
+            tCont = Ui.Txt(top, 372, 290, 36);
+            Ui.Lbl(top, "DXCC:", 8, 318); tDxcc = Ui.Txt(top, 86, 316, 74);
+            Ui.Lbl(top, "CQ:", 168, 318); tCq = Ui.Txt(top, 196, 316, 74);
+            Ui.Lbl(top, "ITU:", 278, 318); tItu = Ui.Txt(top, 308, 316, 100); tDxcc.TextAlign = tCq.TextAlign = tItu.TextAlign = HorizontalAlignment.Center;
 
             Ui.Lbl(top, Tr.T("Freq (MHz):"), 430, 12); tFreq = Ui.Txt(top, 510, 10, 110); tFreq.Font = Ui.Mono;
             tFreq.Leave += (s, e) => { long hz = ParseFreq(tFreq.Text); if (hz > 0) { SetFreq(hz.ToString()); } };
             Ui.Lbl(top, "Band:", 430, 40); cBand = Ui.Combo(top, 510, 38, 90, Ui.Bands, true); kBand = Ui.Chk(top, "track", 610, 40);
-            Ui.Lbl(top, "Mode:", 430, 66); cMode = Ui.Combo(top, 510, 64, 90, Ui.Modes, true); kMode = Ui.Chk(top, "track", 610, 66); Ui.Lbl(top, Tr.T("Radio :"), 650, 12); cRadio = Ui.Combo(top, 700, 10, 190, null); FillRadios(); cRadio.DropDown += (s2, e2) => FillRadios();
+            Ui.Lbl(top, "Mode:", 430, 66); cMode = Ui.Combo(top, 510, 64, 90, Ui.Modes, true); cMode.TextChanged += delegate { ApplyRst(); }; kMode = Ui.Chk(top, "track", 610, 66); Ui.Lbl(top, Tr.T("Radio :"), 650, 12); cRadio = Ui.Combo(top, 700, 10, 190, null); FillRadios(); cRadio.DropDown += (s2, e2) => FillRadios();
             Ui.Lbl(top, Tr.T("Journal :"), 650, 40); cLog = new ComboBox { Left = 715, Top = 38, Width = 180, DropDownStyle = ComboBoxStyle.DropDownList, Font = Ui.Normal }; top.Controls.Add(cLog);
             if (isNew && App.Logs.Count > 1) { foreach (LogRef lr in App.Logs) { logChoices.Add(lr); cLog.Items.Add(lr.Name); } cLog.SelectedIndex = Math.Max(0, logChoices.IndexOf(App.CurrentLog)); cLog.SelectedIndexChanged += (s, e) => ChooseLog(); }
             else { cLog.Visible = false; top.Controls[top.Controls.Count - 2].Visible = false; }
@@ -141,6 +144,7 @@ namespace HamRadioLink.Journal
             int bx = isNew ? 108 : 148;
             Ui.Btn(this, Tr.T("Cancel"), bx, 700, 90, 28, (s, e) => { DialogResult = DialogResult.Cancel; Close(); });
             Ui.Btn(this, Tr.T("Reset (F4)"), bx + 100, 700, 90, 28, (s, e) => { if (isNew) ResetFields(); });
+            Button bTheme = null; bTheme = Ui.Btn(this, Tr.T("Thème"), bx + 200, 700, 90, 28, (s, e) => { ThemePicker tp = new ThemePicker(null, true); Point pp = bTheme.PointToScreen(new Point(0, 0)); tp.Location = new Point(pp.X, Math.Max(0, pp.Y - tp.Height)); tp.Show(this); });   // thème propre à cette fenêtre
             KeyDown += (s, e) =>
             {
                 if (e.KeyCode == Keys.F7) { Commit(); e.Handled = true; }
@@ -156,6 +160,36 @@ namespace HamRadioLink.Journal
                 else if (e.KeyCode == Keys.Escape) { DialogResult = DialogResult.Cancel; Close(); }
             };
         }
+
+        // ---- rapports RST proposés selon le mode : phonie 51 à 59 puis 59+10 à 59+60 ; CW, RTTY et modes à clavier 519 à 599 ; modes WSJT en dB ; SSTV / fax en RSV
+        static readonly string[] RstPhone = { "51", "52", "53", "54", "55", "56", "57", "58", "59", "59+10", "59+20", "59+30", "59+40", "59+50", "59+60" };
+        static readonly string[] RstCw = { "519", "529", "539", "549", "559", "569", "579", "589", "599" };
+        static readonly string[] RstSstv = { "515", "525", "535", "545", "555", "565", "575", "585", "595" };
+        static string[] RstDbList() { List<string> l = new List<string>(); for (int v = -30; v <= 30; v++) l.Add(v < 0 ? "-" + (-v).ToString("00") : "+" + v.ToString("00")); return l.ToArray(); }
+        static readonly string[] RstDb = RstDbList();
+        string rstDef = "59"; string[] rstCur = RstPhone;
+        static string[] RstFor(string mode, out string def)
+        {
+            string m = (mode ?? "").Trim().ToUpperInvariant();
+            if (Array.IndexOf(new[] { "FT8", "FT4", "FT2", "JT65", "JT9", "JT4", "JT6M", "JS8", "WSPR", "MSK144", "FST4", "FST4W", "Q65", "QRA64", "ISCAT", "FSK441", "JTMS", "FREEDATA" }, m) >= 0) { def = "-10"; return RstDb; }
+            if (m == "SSTV" || m == "FAX" || m == "WEFAX") { def = "595"; return RstSstv; }
+            if (m == "CW" || m == "RTTY" || m == "PKT" || m.StartsWith("PSK") || m.StartsWith("OLIVIA") || m.StartsWith("CONTESTIA") || m.StartsWith("MFSK") || m.StartsWith("THOR") || m.StartsWith("HELL") || m.StartsWith("DOMINO") || m.StartsWith("MT63") || m.StartsWith("THRB") || m.StartsWith("FELDHELL") || m.StartsWith("BPSK") || m.StartsWith("QPSK") || m.StartsWith("FSK") || m.StartsWith("ASCI") || m.StartsWith("AMTOR") || m.StartsWith("PACKET") || m.StartsWith("ARDOP") || m.StartsWith("VARA")) { def = "599"; return RstCw; }
+            def = "59"; return RstPhone;   // AM, FM, SSB, LSB, USB, voix numérique et mode inconnu
+        }
+        // le mode change : la liste change ; une valeur laissée telle que proposée (ou vide) passe à la valeur par défaut du nouveau mode, une valeur tapée à la main est conservée
+        void ApplyRst()
+        {
+            if (tRstS == null || tRstR == null || cMode == null) return;
+            string def; string[] nl = RstFor(cMode.Text, out def); if (ReferenceEquals(nl, rstCur) && def == rstDef) return;
+            string[] old = rstCur; string odef = rstDef; rstCur = nl; rstDef = def;
+            foreach (ComboBox c in new[] { tRstS, tRstR })
+            {
+                string t = c.Text; c.Items.Clear(); c.Items.AddRange(nl);
+                bool untouched = t.Length == 0 || t == odef || Array.IndexOf(old, t) >= 0;
+                c.Text = isNew && untouched ? def : t;
+            }
+        }
+        void SetDefaultRst() { string def; string[] l = RstFor(cMode != null ? cMode.Text : "", out def); rstCur = l; rstDef = def; foreach (ComboBox c in new[] { tRstS, tRstR }) { c.Items.Clear(); c.Items.AddRange(l); c.Text = def; } }
 
         public bool IsNewQso { get { return isNew; } }
         public void PrefillCall(string call) { tCall.Text = call; OnCallLeft(); }
@@ -189,7 +223,7 @@ namespace HamRadioLink.Journal
         void ResetFields()
         {
             foreach (TextBox t in new[] { tCall, tName, tComment, tCountry, tCont, tDxcc, tCq, tItu, tIota, tLoc, tState, tQth, tWpx, tDist, tVia, tQslMsg, tContest, tSrx, tStx, tNotes }) t.Text = "";
-            tRstS.Text = "59"; tRstR.Text = "59"; prev.Rows.Clear(); DeepOff(); lastCall = ""; tCall.Focus();
+            SetDefaultRst(); prev.Rows.Clear(); DeepOff(); lastCall = ""; tCall.Focus();
         }
 
         bool tLoc_TextChangedHook;
@@ -197,7 +231,7 @@ namespace HamRadioLink.Journal
         void ClearCallInfo()
         {
             foreach (TextBox t in new[] { tName, tComment, tCountry, tCont, tDxcc, tCq, tItu, tIota, tLoc, tState, tQth, tWpx, tDist, tVia, tQslMsg }) t.Text = "";
-            tRstS.Text = "59"; tRstR.Text = "59"; prev.Rows.Clear(); prevQsos = new List<Qso>();
+            SetDefaultRst(); prev.Rows.Clear(); prevQsos = new List<Qso>();
         }
         void OnCallLeft()
         {

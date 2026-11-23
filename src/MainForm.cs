@@ -50,14 +50,14 @@ namespace HamRadioLink
 
     public class MainForm : Form
     {
-        public const string Version = "1.7";
+        public const string Version = "1.8";
         const int DesignW = 1860, DesignH = 944; const double Ratio = DesignW / (double)DesignH;
         readonly List<RadioDef> radios = Radios.All(); RadioDef cur; Rig rig = new Rig();      // cur / rig / widgets = poste ACTIF (plusieurs postes peuvent être connectés en même temps)
         readonly Panel stage = new Panel(); readonly ToolTip tip = new ToolTip();
         List<HW> widgets = new List<HW>(); readonly Dictionary<Control, Rectangle> hdr = new Dictionary<Control, Rectangle>(); readonly Dictionary<Control, float> hdrPt = new Dictionary<Control, float>();
         readonly System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer();
         DarkCombo cbRadio, cbView, cbIface, cbPort, cbBaud, cbStop; TextBox tbHost, tbPort, tbCiv; Label lbCiv; CheckBox chkRts, chkDtr;
-        Btn btnAlert, btnOpt, btnExp, btnConnect, btnMon, btnHelp, btnDefLayout, btnOk, btnUndo, btnReset, btnAdd, btnAlign; List<string> undo = new List<string>(); string lastSnap = "", baseSnap = ""; Label lbRos, lbStatus, lbClock, lbHint, lbLink, lbRadio, lbView;
+        Btn btnAlert, btnOpt, btnExp, btnConnect, btnMon, btnHelp, btnDefLayout, btnOk, btnUndo, btnReset, btnAdd, btnAlign, btnSMeter; List<string> undo = new List<string>(); string lastSnap = "", baseSnap = ""; Label lbRos, lbStatus, lbClock, lbHint, lbLink, lbRadio, lbView;
         MonitorForm monitor; int lastVer = -1, lastFull; bool loading = true;
         IC7760.MainForm ic; Panel icBar; DarkCombo icRadio;
         // un poste ouvert = une session : son moteur (Rig), sa face avant (panneau) et ses éléments
@@ -118,8 +118,8 @@ namespace HamRadioLink
                 SetView(cbView.SelectedIndex == 1);
             };
             btnSplitV = Bt("", 508, 44, 36, 26, delegate { SetSplit(split == 1 ? 0 : 1); }); btnSplitH = Bt("", 550, 44, 36, 26, delegate { SetSplit(split == 2 ? 0 : 2); }); btnSplitV.Icon = 1; btnSplitH.Icon = 2; btnSplitV.Visible = btnSplitH.Visible = false;
-            btnAdd = Bt("Ajouter", 250, 44, 90, 26, AddElement); btnAdd.Visible = false; btnOk = Bt("Valider", 346, 44, 90, 26, ValidateView); btnOk.Accent = T.Green; btnUndo = Bt("Retour arrière", 442, 44, 130, 26, UndoMove); btnReset = Bt("Réinit", 578, 44, 80, 26, ResetAll); btnReset.Accent = T.Red; btnDefLayout = btnReset; btnAlign = Bt("Aligner", 664, 44, 80, 26, AlignAll); btnOk.Visible = btnUndo.Visible = btnReset.Visible = btnAlign.Visible = false;
-            lbHint = Lab("Glisser = déplacer · coin = taille · clic droit = commande CAT", 750, 44, 440, 26, 9f, T.Amber, false); lbHint.Visible = false;
+            btnAdd = Bt("Ajouter", 250, 44, 90, 26, AddElement); btnAdd.Visible = false; btnOk = Bt("Valider", 346, 44, 90, 26, ValidateView); btnOk.Accent = T.Green; btnUndo = Bt("Retour arrière", 442, 44, 130, 26, UndoMove); btnReset = Bt("Réinit", 578, 44, 80, 26, ResetAll); btnReset.Accent = T.Red; btnDefLayout = btnReset; btnAlign = Bt("Aligner", 664, 44, 80, 26, AlignAll); btnSMeter = Bt("S-mètre", 750, 44, 80, 26, AddBigMeter); btnOk.Visible = btnUndo.Visible = btnReset.Visible = btnAlign.Visible = btnSMeter.Visible = false;
+            lbHint = Lab("Glisser = déplacer · coin = taille · clic droit = commande CAT", 840, 44, 400, 26, 9f, T.Amber, false); lbHint.Visible = false;
             btnMon = Bt("Moniteur CAT", 384, 8, 130, 26, ShowMonitor); btnHelp = Bt("?", 522, 8, 34, 26, ShowHelp); btnAlert = Bt("", 562, 8, 26, 26, ShowAlerts); btnAlert.Icon = 3; btnAlert.Accent = T.Red; btnOpt = Bt("\u2699", 592, 8, 34, 26, ShowOptions); btnExp = Bt("\u21C5", 632, 8, 34, 26, ShowExport);
             lbClock = Lab("", 672, 8, 104, 26, 10f, T.Cyan, true);
             lbLink = Lab("LIAISON", 1110, 0, 120, 16, 8.5f, T.Amber, true);
@@ -227,7 +227,7 @@ namespace HamRadioLink
                 }
                 bool multi = sess.Count >= 2; btnSplitV.Visible = btnSplitH.Visible = multi;
                 if (multi) { hdr[btnSplitV] = new Rectangle(x + 4, 44, 36, 26); hdr[btnSplitH] = new Rectangle(x + 46, 44, 36, 26); x += 90; btnSplitV.Checked = split == 1; btnSplitH.Checked = split == 2; btnSplitV.Invalidate(); btnSplitH.Invalidate(); }
-                int ex = x + 10; hdr[btnAdd] = new Rectangle(ex, 44, 90, 26); ex += 96; hdr[btnOk] = new Rectangle(ex, 44, 90, 26); ex += 96; hdr[btnUndo] = new Rectangle(ex, 44, 130, 26); ex += 136; hdr[btnReset] = new Rectangle(ex, 44, 80, 26); ex += 86; hdr[btnAlign] = new Rectangle(ex, 44, 80, 26); ex += 86;
+                int ex = x + 10; hdr[btnAdd] = new Rectangle(ex, 44, 90, 26); ex += 96; hdr[btnOk] = new Rectangle(ex, 44, 90, 26); ex += 96; hdr[btnUndo] = new Rectangle(ex, 44, 130, 26); ex += 136; hdr[btnReset] = new Rectangle(ex, 44, 80, 26); ex += 86; hdr[btnAlign] = new Rectangle(ex, 44, 80, 26); ex += 86; hdr[btnSMeter] = new Rectangle(ex, 44, 80, 26); ex += 86;
                 hdr[lbHint] = new Rectangle(ex, 44, Math.Max(160, 1236 - ex), 26);
                 Relayout();
             }
@@ -314,8 +314,28 @@ namespace HamRadioLink
             widgets.Clear(); act.Pane.SuspendLayout();
             foreach (Ctl c in cur.C) if (c.K == Kind.Frame) AddWidget(c);
             foreach (Ctl c in cur.C) if (c.K != Kind.Frame) AddWidget(c);
+            BigMeterCfg.Changed -= ApplyBigMeter; BigMeterCfg.Changed += ApplyBigMeter; ApplyBigMeter();
             foreach (HW w in widgets) if (w.Def.K == Kind.Frame) w.SendToBack(); foreach (HW w in widgets) if (w.Def.Id == "ft8") w.BringToFront();   // « FT8/FT4... » occupe la case libre de la grille des modes
             act.Pane.ResumeLayout(false); UpdateTips(); Text = "HamRadioLink " + Version + " @F5PBG 2026 - " + cur.Name;
+        }
+        // grand S-mètre à aiguille : quand il est affiché, il remplace les vumètres à barres qu'il recouvre (même chose en vue config)
+        void ApplyBigMeter()
+        {
+            HW big = null; foreach (HW w in widgets) if (w.Def.Id == "bigmeter") big = w; bool on = big != null && BigMeterCfg.On(cur);   // même état en vue config qu'en vue normale : l'un ou l'autre, jamais les deux
+            foreach (HW w in widgets)
+            {
+                if (w == big) { w.Visible = on; continue; }
+                if (big != null && w.Def.K == Kind.Meter) { int cx = w.Def.X + w.Def.W / 2, cy = w.Def.Y + w.Def.H / 2; if (cx >= big.Def.X && cx <= big.Def.X + big.Def.W && cy >= big.Def.Y && cy <= big.Def.Y + big.Def.H) w.Visible = !on; }   // remplace les vumètres qu'il recouvre (ceux de gauche) ; les autres restent en barres
+            }
+        }
+        // « S-mètre » (vue config) : ajoute le grand S-mètre à aiguille au poste actif
+        void AddBigMeter()
+        {
+            if (cur.Find("bigmeter") != null) { BigMeterCfg.Toggle(cur); lbStatus.Text = BigMeterCfg.On(cur) ? "S-mètre à aiguille affiché (les vumètres qu'il recouvre sont masqués) : vous pouvez le déplacer. Cliquez de nouveau sur « S-mètre » pour revenir aux barres." : "Barres affichées : cliquez sur « S-mètre » pour afficher le S-mètre à aiguille et le déplacer."; return; }
+            Ctl c = new Ctl(); c.K = Kind.Gauge; c.Id = "bigmeter"; c.Label = c.DLabel = "S-MÈTRE"; c.Local = true; c.X = c.DX = 30; c.Y = c.DY = HW.HeaderH + 10; c.W = c.DW = 480; c.H = c.DH = 148;
+            c.DSet = c.DRead = c.DParse = c.DItems = ""; c.DOnVal = "1"; c.DOffVal = "0"; c.Tip = "Grand S-mètre à aiguille : clic droit sur un vumètre pour l'afficher à la place des vumètres qu'il recouvre ; clic gauche = fonction suivante (PO / SWR / ALC...).";
+            cur.AddCtl(c); AddWidget(c); Staged(); Cfg.SetBool("bigmeter." + cur.Key, true); foreach (HW w in widgets) if (w.Def == c) { w.BringToFront(); break; } ApplyBigMeter();
+            lbStatus.Text = "S-mètre à aiguille ajouté : déplacez-le et dimensionnez-le sur les vumètres à remplacer, puis « Valider ».";
         }
         void AddWidget(Ctl c)
         {
@@ -397,9 +417,9 @@ namespace HamRadioLink
         {
             if (HW.Edit && !edit && !Settle()) { loading = true; cbView.SelectedIndex = 1; loading = false; return; }
             if (HW.Edit && !edit) cur.SaveCat();
-            if (edit && split != 0) { split = 0; Relayout(); } HW.Edit = edit; btnAdd.Visible = btnOk.Visible = btnUndo.Visible = btnReset.Visible = btnAlign.Visible = lbHint.Visible = edit; UpdateIface(); UpdateTips();
+            if (edit && split != 0) { split = 0; Relayout(); } HW.Edit = edit; btnAdd.Visible = btnOk.Visible = btnUndo.Visible = btnReset.Visible = btnAlign.Visible = btnSMeter.Visible = lbHint.Visible = edit; UpdateIface(); UpdateTips();
             if (edit) { undo.Clear(); baseSnap = lastSnap = Snap(); ViewButtons(); }
-            foreach (HW w in widgets) { if (w.Def.Hidden) w.Visible = edit; w.Invalidate(); } Cursor = Cursors.Default;
+            foreach (HW w in widgets) { if (w.Def.Hidden) w.Visible = edit; w.Invalidate(); } ApplyBigMeter(); Cursor = Cursors.Default;
         }
         void ResetAll()
         {
