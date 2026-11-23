@@ -186,3 +186,7 @@ When "mute the radio speaker" is on, the **AF volume knob sets the volume of the
 ## 4 sexdecies. What's new in 1.11
 
 **Audio equalizer**: the 10 sliders now cover **50 Hz to 10 kHz** (50, 100, 200, 400, 800 Hz, 1.6, 3.15, 5, 7, 10 kHz) and the direction is fixed: **slider up = gain, down = attenuation**. Presets redone; old band settings are not kept (the equalizer starts flat).
+
+## 4 septdecies. What's new in 1.12
+
+**ADIF import**: files whose frequency is in kHz or Hz (OPSLOG, for example) now import without the "out of range value for column col_freq" error. The scale (MHz, kHz, Hz) is chosen from the QSO's band; a frequency that does not fit the band, or above 2.147 GHz, is not stored and its original value is appended to the comment ("[FREQ … ?]").

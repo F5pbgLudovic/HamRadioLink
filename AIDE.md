@@ -201,3 +201,7 @@ Quand « Couper le haut-parleur du poste » est actif, le **bouton de volume AF 
 ## 4 sexdecies. Nouveautés de la 1.11
 
 **Égaliseur audio** : les 10 curseurs couvrent maintenant **50 Hz à 10 kHz** (50, 100, 200, 400, 800 Hz, 1,6, 3,15, 5, 7, 10 kHz) et le sens est corrigé : **monter un curseur = gain, le descendre = atténuation**. Préréglages refaits ; les anciens réglages de bandes ne sont pas repris (l'égaliseur repart à plat).
+
+## 4 septdecies. Nouveautés de la 1.12
+
+**Import ADIF** : les fichiers dont la fréquence est en kHz ou en Hz (OPSLOG, par exemple) s'importent maintenant sans l'erreur « out of range value for column col_freq ». L'échelle (MHz, kHz, Hz) est choisie d'après la bande du contact ; une fréquence incompatible avec la bande, ou supérieure à 2,147 GHz, n'est pas enregistrée et sa valeur d'origine est ajoutée au commentaire (« [FREQ … ?] »).

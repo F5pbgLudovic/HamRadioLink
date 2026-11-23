@@ -17,6 +17,10 @@ namespace HamRadioLink.Journal
         {
             string src = Environment.GetEnvironmentVariable("HRL_ENGINE") ?? "";
             App.Init(); App.Cfg.Set("test.nosystem", true);
+            check(Adif.FreqHz("14.074", "20m") == 14074000 && Adif.FreqHz("14074", "20m") == 14074000 && Adif.FreqHz("14074000", "20m") == 14074000 && Adif.FreqHz("14,074", "") == 14074000, "Journal : fréquence ADIF en MHz, kHz, Hz ou virgule décimale lue correctement (OPSLOG)");
+            check(Adif.FreqHz("144.174", "2m") == 144174000 && Adif.FreqHz("7074", "") == 7074000 && Adif.FreqHz("10368.1", "3cm") == 10368100000L && Adif.FreqHz("abc", "") == -1, "Journal : fréquence ADIF : bande 2 m, kHz sans bande, 10 GHz (au-delà de 32 bits), valeur illisible");
+            check(Adif.FreqHz("7061.000000", "40m") == 7061000 && Adif.FreqHz("145500.000000", "2m") == 145500000 && Adif.FreqHz("14257.000000", "20m") == 14257000, "Journal : fréquences OPSLOG en kHz (7061, 14257, 145500) lues en MHz");
+            check(Adif.FreqHz("71007113.000000", "40m") == -2 && Adif.FreqHz("1424.000000", "20m") == -2 && Adif.FreqHz("71500.000000", "40m") == -2, "Journal : fréquences incompatibles avec la bande (71007113, 1424 en 20 m) écartées sans erreur");
             check(Embedded.SystemServer() == null, "Journal : un MariaDB déjà installé n'est pas vu (réglage d'essai)");
             check(!Embedded.EnginePresent, "Journal : moteur intégré absent au départ");
             if (!Directory.Exists(Path.Combine(src, "bin"))) { info("Journal : moteur d'essai introuvable (HRL_ENGINE) : essai de la base ignoré."); return; }

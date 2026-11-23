@@ -78,6 +78,21 @@ namespace HamRadioLink.Journal
             return list;
         }
 
+        // Fréquence d'un ADIF en Hz. Norme : MHz (« 14.074 »), mais certains logiciels (OPSLOG...) écrivent des kHz, des Hz ou une virgule décimale :
+        // on teste les trois échelles et on garde celle qui tombe dans la bande du contact (champ BAND) ; sans bande, une valeur de 1000 à 99999 est lue en kHz,
+        // une valeur de 100000 et plus en Hz. Retourne -1 si la valeur est illisible, -2 si elle est incompatible avec la bande indiquée.
+        static readonly string[] BandNames = { "2190m", "630m", "560m", "160m", "80m", "60m", "40m", "30m", "20m", "17m", "15m", "12m", "10m", "8m", "6m", "5m", "4m", "2m", "1.25m", "70cm", "33cm", "23cm", "13cm", "9cm", "6cm", "3cm", "1.25cm", "6mm", "4mm", "2.5mm", "2mm", "1mm" };
+        static readonly double[][] BandMhz = { new[] { 0.13, 0.14 }, new[] { 0.47, 0.48 }, new[] { 0.5, 0.51 }, new[] { 1.8, 2.0 }, new[] { 3.5, 4.0 }, new[] { 5.06, 5.45 }, new[] { 7.0, 7.3 }, new[] { 10.1, 10.15 }, new[] { 14.0, 14.35 }, new[] { 18.068, 18.168 }, new[] { 21.0, 21.45 }, new[] { 24.89, 24.99 }, new[] { 28.0, 29.7 }, new[] { 40.0, 45.0 }, new[] { 50.0, 54.0 }, new[] { 54.000001, 69.9 }, new[] { 70.0, 71.0 }, new[] { 144.0, 148.0 }, new[] { 222.0, 225.0 }, new[] { 420.0, 450.0 }, new[] { 902.0, 928.0 }, new[] { 1240.0, 1300.0 }, new[] { 2300.0, 2450.0 }, new[] { 3300.0, 3500.0 }, new[] { 5650.0, 5925.0 }, new[] { 10000.0, 10500.0 }, new[] { 24000.0, 24250.0 }, new[] { 47000.0, 47200.0 }, new[] { 75500.0, 81000.0 }, new[] { 119980.0, 123000.0 }, new[] { 134000.0, 149000.0 }, new[] { 241000.0, 250000.0 } };
+        public static long FreqHz(string value, string band)
+        {
+            double v; string s = (value ?? "").Trim().Replace(',', '.'); if (!double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out v) || v <= 0 || double.IsInfinity(v)) return -1;
+            int bi = Array.IndexOf(BandNames, (band ?? "").Trim().ToLowerInvariant());
+            double[] cand = { v, v / 1000.0, v / 1e6 };   // MHz, kHz, Hz
+            if (bi >= 0) { foreach (double m in cand) if (m >= BandMhz[bi][0] * 0.95 && m <= BandMhz[bi][1] * 1.05) return (long)Math.Round(m * 1e6); return -2; }   // bande connue mais fréquence incompatible : saisie erronée, non enregistrée
+            double mhz = v >= 100000 ? v / 1e6 : v >= 1000 && !(bi >= 0 && BandMhz[bi][0] >= 1000) ? v / 1000.0 : v;
+            return (long)Math.Round(mhz * 1e6);
+        }
+
         public static Qso ToQso(Dictionary<string, string> a, PeerLog log)
         {
             Qso q = new Qso();
@@ -85,13 +100,17 @@ namespace HamRadioLink.Journal
             if (d.Length == 8) q["COL_TIME_ON"] = FmtDt(d, t);
             string d2 = Get(a, "QSO_DATE_OFF"), t2 = Get(a, "TIME_OFF");
             if (d2.Length == 8) q["COL_TIME_OFF"] = FmtDt(d2, t2); else if (d.Length == 8) q["COL_TIME_OFF"] = FmtDt(d, t2.Length > 0 ? t2 : t);
+            string big = null;
             foreach (KeyValuePair<string, string> kv in a)
             {
                 string n = kv.Key, col = "COL_" + n;
                 if (n == "QSO_DATE" || n == "TIME_ON" || n == "QSO_DATE_OFF" || n == "TIME_OFF") continue;
                 if (n == "FREQ" || n == "FREQ_RX")
                 {
-                    double mhz; if (double.TryParse(kv.Value, NumberStyles.Float, CultureInfo.InvariantCulture, out mhz)) q[col] = ((long)Math.Round(mhz * 1e6)).ToString();
+                    long hz = FreqHz(kv.Value, Get(a, "BAND"));
+                    if (hz == -2) { if (n == "FREQ") big = "[FREQ " + kv.Value.Trim() + " ?]"; }
+                    else if (hz > int.MaxValue) { if (n == "FREQ") big = "[FREQ " + (hz / 1e6).ToString("0.######", CultureInfo.InvariantCulture) + " MHz]"; }   // la colonne COL_FREQ est un entier 32 bits (2,147 GHz au plus) : la valeur passe dans le commentaire
+                    else if (hz > 0) q[col] = hz.ToString();
                     continue;
                 }
                 if (!log.Has(col)) continue;
@@ -99,6 +118,7 @@ namespace HamRadioLink.Journal
                 if (c.DateTime) { if (kv.Value.Length == 8) q[col] = FmtDt(kv.Value, "000000"); continue; }
                 q[col] = kv.Value;
             }
+            if (big != null) q["COL_COMMENT"] = (q.S("COL_COMMENT").Length > 0 ? q.S("COL_COMMENT") + " " : "") + big;
             return q;
         }
 

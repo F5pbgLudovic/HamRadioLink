@@ -295,7 +295,7 @@ namespace HamRadioLink
             List<string> bad = new List<string>(), seen = new List<string>(); Dictionary<string, string> S = new Dictionary<string, string>(); CivSim sim = new CivSim(d, bad, seen, S);
             CivWireLink wl = new CivWireLink(sim, d.Civ, n % 2 == 0); CivLink cl = new CivLink(wl, d.Civ); Rig r2 = new Rig(); string err;
             Check(r2.Connect(d, cl, out err), d.Key + " : connexion CI-V (fil simulé)");
-            Wait(delegate { return r2.Connected && r2.Get("fa") != null && r2.Get("md0") != null; }, 9000);
+            Wait(delegate { return r2.Connected && r2.Get("fa") != null && r2.Get("md0") != null && (d.IdValue == null || r2.SeenId == d.IdValue); }, 9000);
             Check(r2.Connected, d.Key + " : connecté"); Check(r2.SeenId == d.IdValue, d.Key + " : identifiant CI-V lu (" + r2.SeenId + " / " + d.IdValue + ")");
             Check(r2.GetL("fa") == 14074000, d.Key + " : fréquence lue sur le fil (" + r2.Get("fa") + ")");
             r2.Set(d.Find("fa"), "7100000"); Wait(delegate { return S["fa"] == "7100000"; }, 4000); Check(S["fa"] == "7100000", d.Key + " : fréquence envoyée en BCD (" + S["fa"] + ")");

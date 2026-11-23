@@ -1,5 +1,12 @@
 # Historique des versions
 
+## 1.12 — 2026-11-23
+
+**Import ADIF : fréquences OPSLOG (erreur « out of range value for column col_freq »)**
+- La fréquence du fichier est lue en MHz, en kHz ou en Hz selon la bande du contact (champ BAND) ; sans bande, 1000 à 99999 = kHz, 100000 et plus = Hz ; la virgule décimale est acceptée.
+- Une fréquence incompatible avec la bande (saisie erronée) ou au-delà de 2,147 GHz (colonne entière 32 bits) n'est plus enregistrée et ne bloque plus l'import : la valeur d'origine est ajoutée au commentaire (« [FREQ … ?] »).
+- Essais du journal complétés ; l'essai de connexion CI-V simulée attend maintenant la lecture de l'identifiant (échecs au hasard sur machine chargée).
+
 ## 1.11 — 2026-11-23
 
 **Égaliseur audio (émission et réception)**
