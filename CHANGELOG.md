@@ -1,5 +1,12 @@
 # Historique des versions
 
+## 1.13 — 2026-11-23
+
+**Exports : un contact défectueux n'arrête plus rien**
+- Export ADIF (fichier, sauvegarde) : un contact qui fait échouer l'écriture est ignoré, les autres sont exportés ; le message final indique le nombre de contacts ignorés.
+- Envois en ligne QRZ.com, HRDLog.net, HamQTH et eQSL : un contact refusé ou en erreur est compté et l'envoi continue ; l'erreur n'est affichée en entier que si aucun contact n'est passé.
+- Un contact refusé est marqué **No** dans la colonne « envoyé » du service (eQSL : colonne de la base à `N` ; QRZ, HRDLog, HamQTH : non envoyé) ; il sera réessayé à l'envoi suivant.
+
 ## 1.12 — 2026-11-23
 
 **Import ADIF : fréquences OPSLOG (erreur « out of range value for column col_freq »)**

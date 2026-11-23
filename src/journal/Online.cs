@@ -117,17 +117,22 @@ namespace HamRadioLink.Journal
             List<Qso> c = new List<Qso>(); foreach (Qso q in qsos) { Qso n = new Qso(); foreach (KeyValuePair<string, string> kv in q) if (kv.Key != "COL_COMMENT") n[kv.Key] = kv.Value; c.Add(n); }
             return Adif.Export(c);
         }
+        public static readonly HashSet<int> Refused = new HashSet<int>();   // 1.13 : QSO refusés par le service lors du dernier envoi (marqués No)
         static string OneAdif(List<Qso> q) { return ExportOnline(q); }
 
         public static string UploadQrz(List<Qso> qsos)
         {
             string key = App.Cfg.Get("qrzlog.key", ""); if (key.Length == 0) throw new Exception(Tr.T("QRZ Logbook : clé API à renseigner (Tools > Online services)."));
-            int ok = 0, dup = 0; string msg = "";
+            Refused.Clear(); int ok = 0, dup = 0; string msg = "";
             foreach (Qso q in qsos)
             {
-                string adif = OneAdif(new List<Qso> { q }); adif = adif.Substring(adif.IndexOf("<EOH>") + 5).Trim();
-                string r = Http("https://logbook.qrz.com/api", Tr.T("KEY=") + Enc(key) + "&ACTION=INSERT&ADIF=" + Enc(adif));
-                if (r.Contains("RESULT=OK")) ok++; else if (r.Contains("duplicate")) dup++; else msg = r;
+                try
+                {
+                    string adif = OneAdif(new List<Qso> { q }); adif = adif.Substring(adif.IndexOf("<EOH>") + 5).Trim();
+                    string r = Http("https://logbook.qrz.com/api", Tr.T("KEY=") + Enc(key) + "&ACTION=INSERT&ADIF=" + Enc(adif));
+                    if (r.Contains("RESULT=OK")) ok++; else if (r.Contains("duplicate")) dup++; else { msg = r; Refused.Add(q.Id); }
+                }
+                catch (Exception ex) { msg = ex.Message; Refused.Add(q.Id); }   // 1.13
             }
             if (ok + dup == 0 && msg.Length > 0) throw new Exception(Tr.T("QRZ Logbook : ") + msg);
             return Tr.T("QRZ Logbook : ") + ok + " envoyés, " + dup + Tr.T(" déjà présents.");
@@ -191,14 +196,20 @@ namespace HamRadioLink.Journal
             string call = App.Cfg.Get("hrdlog.call", App.Cfg.Get("me.call", "")), code = App.Cfg.Get("hrdlog.code", "").Trim();
             if (code.Length == 0 || call.Length == 0) throw new Exception(Tr.T("HRDLog.net : indicatif et code d'envoi à renseigner (Outils > Online services)."));
             int ok = 0, dup = 0;
+            Refused.Clear(); int bad = 0; string first = null;
             foreach (Qso q in qsos)
             {
-                string r = Http("https://robot.hrdlog.net/NewEntry.aspx", "Callsign=" + Enc(call) + "&Code=" + Enc(code) + "&App=" + Enc("HamRadioLink") + "&ADIFData=" + Enc(AdifBody(q)), 30000);
-                if (r.IndexOf("dup", StringComparison.OrdinalIgnoreCase) >= 0) { dup++; continue; }   // doublon : on continue
-                if (r.IndexOf("<error", StringComparison.OrdinalIgnoreCase) >= 0 || r.IndexOf("Error", StringComparison.OrdinalIgnoreCase) >= 0 && r.IndexOf("<insert", StringComparison.OrdinalIgnoreCase) < 0) throw new Exception(Tr.T("HRDLog.net : ") + Regex.Replace(r, "<[^>]+>", " ").Trim());
-                ok++;
+                try
+                {
+                    string r = Http("https://robot.hrdlog.net/NewEntry.aspx", "Callsign=" + Enc(call) + "&Code=" + Enc(code) + "&App=" + Enc("HamRadioLink") + "&ADIFData=" + Enc(AdifBody(q)), 30000);
+                    if (r.IndexOf("dup", StringComparison.OrdinalIgnoreCase) >= 0) { dup++; continue; }   // doublon : on continue
+                    if (r.IndexOf("<error", StringComparison.OrdinalIgnoreCase) >= 0 || r.IndexOf("Error", StringComparison.OrdinalIgnoreCase) >= 0 && r.IndexOf("<insert", StringComparison.OrdinalIgnoreCase) < 0) throw new Exception(Tr.T("HRDLog.net : ") + Regex.Replace(r, "<[^>]+>", " ").Trim());
+                    ok++;
+                }
+                catch (Exception ex) { bad++; Refused.Add(q.Id); if (first == null) first = ex.Message; }   // 1.13 : un contact refusé n arrête pas l envoi, il sera marqué No
             }
-            return Tr.T("HRDLog.net : ") + ok + " envoyés, " + dup + Tr.T(" déjà présents.");
+            if (ok + dup == 0 && bad > 0) throw new Exception(first);
+            return Tr.T("HRDLog.net : ") + ok + " envoyés, " + dup + Tr.T(" déjà présents.") + (bad > 0 ? " " + bad + Tr.T(" refusé(s).") : "");
         }
 
         static DateTime lastQrzcq = DateTime.MinValue;
@@ -220,12 +231,12 @@ namespace HamRadioLink.Journal
         {
             string u = App.Cfg.Get("hamqth.user", App.Cfg.Get("lookup.user", "")), p = App.Cfg.Get("hamqth.pass", App.Cfg.Get("lookup.pass", ""));
             if (u.Length == 0 || p.Length == 0) throw new Exception(Tr.T("HamQTH : identifiant et mot de passe à renseigner (Outils > Online services)."));
-            int ok = 0, rej = 0;
+            Refused.Clear(); int ok = 0, rej = 0;
             foreach (Qso q in qsos)
             {
                 string r = Http("https://www.hamqth.com/qso_realtime.php", "u=" + Enc(u) + "&p=" + Enc(p) + "&prg=HamRadioLink&cmd=insert&adif=" + Enc(AdifBody(q)), 30000);
                 if (r.IndexOf("QSO OK", StringComparison.OrdinalIgnoreCase) >= 0 || r.IndexOf("inserted", StringComparison.OrdinalIgnoreCase) >= 0 || r.IndexOf("updated", StringComparison.OrdinalIgnoreCase) >= 0) ok++;   // HamQTH répond « QSO inserted » (la doc annonçait « QSO OK »)
-                else if (r.IndexOf("Forbidden", StringComparison.OrdinalIgnoreCase) < 0 && r.IndexOf("Access denied", StringComparison.OrdinalIgnoreCase) < 0 && r.IndexOf("Internal error", StringComparison.OrdinalIgnoreCase) < 0 && r.IndexOf("password", StringComparison.OrdinalIgnoreCase) < 0 && r.IndexOf("user", StringComparison.OrdinalIgnoreCase) < 0 && r.Trim().Length > 0) rej++;   // tout refus de ce QSO (déjà présent, bande inconnue…) : on continue ; seules les erreurs d'accès arrêtent   // doublon, bande inconnue ou champ manquant : on continue
+                else if (r.IndexOf("Forbidden", StringComparison.OrdinalIgnoreCase) < 0 && r.IndexOf("Access denied", StringComparison.OrdinalIgnoreCase) < 0 && r.IndexOf("Internal error", StringComparison.OrdinalIgnoreCase) < 0 && r.IndexOf("password", StringComparison.OrdinalIgnoreCase) < 0 && r.IndexOf("user", StringComparison.OrdinalIgnoreCase) < 0 && r.Trim().Length > 0) { rej++; Refused.Add(q.Id); }   // tout refus de ce QSO (déjà présent, bande inconnue…) : on continue ; seules les erreurs d'accès arrêtent   // doublon, bande inconnue ou champ manquant : on continue
                 else throw new Exception(Tr.T("HamQTH : ") + Regex.Replace(r, "<[^>]+>", " ").Trim());
             }
             return Tr.T("HamQTH : ") + ok + " envoyés" + (rej > 0 ? ", " + rej + Tr.T(" refusés par HamQTH (doublons ou fiches incomplètes).") : ".");
@@ -308,16 +319,21 @@ namespace HamRadioLink.Journal
         public static string UploadEqsl(List<Qso> qsos)
         {
             string u = App.Cfg.Get("eqsl.user", ""), p = App.Cfg.Get("eqsl.pass", ""); if (u.Length == 0) throw new Exception(Tr.T("eQSL : identifiant et mot de passe à renseigner."));
-            int sent = 0; string last = "";
+            Refused.Clear(); int sent = 0, bad = 0; string last = "", first = null;
             foreach (Qso q in qsos)   // une fiche par requête, au fur et à mesure
             {
-                string adif = OneAdif(new List<Qso> { q }); int eoh = adif.IndexOf("<EOH>");
-                string body = "<EQSL_USER:" + u.Length + ">" + u + "<EQSL_PSWD:" + p.Length + ">" + p + "<PROGRAMID:12>HamRadioLink<EOH>" + adif.Substring(eoh + 5);
-                string r = Http("https://www.eqsl.cc/qslcard/ImportADIF.cfm", Tr.T("ADIFData=") + Enc(body), 60000);
-                if (r.IndexOf("Result: ", StringComparison.OrdinalIgnoreCase) < 0 && r.IndexOf("Error", StringComparison.OrdinalIgnoreCase) >= 0) throw new Exception(Tr.T("eQSL (") + q.S("COL_CALL") + ") : " + Regex.Replace(r, "<[^>]+>", " ").Trim());
-                Match m = Regex.Match(r, Tr.T("Result:[^<]*"), RegexOptions.IgnoreCase); last = m.Success ? m.Value : ""; sent++;
+                try
+                {
+                    string adif = OneAdif(new List<Qso> { q }); int eoh = adif.IndexOf("<EOH>");
+                    string body = "<EQSL_USER:" + u.Length + ">" + u + "<EQSL_PSWD:" + p.Length + ">" + p + "<PROGRAMID:12>HamRadioLink<EOH>" + adif.Substring(eoh + 5);
+                    string r = Http("https://www.eqsl.cc/qslcard/ImportADIF.cfm", Tr.T("ADIFData=") + Enc(body), 60000);
+                    if (r.IndexOf("Result: ", StringComparison.OrdinalIgnoreCase) < 0 && r.IndexOf("Error", StringComparison.OrdinalIgnoreCase) >= 0) throw new Exception(Tr.T("eQSL (") + q.S("COL_CALL") + ") : " + Regex.Replace(r, "<[^>]+>", " ").Trim());
+                    Match m = Regex.Match(r, Tr.T("Result:[^<]*"), RegexOptions.IgnoreCase); last = m.Success ? m.Value : ""; sent++;
+                }
+                catch (Exception ex) { bad++; Refused.Add(q.Id); if (first == null) first = ex.Message; }   // 1.13 : un contact refusé n arrête pas l envoi, il sera marqué No
             }
-            return Tr.T("eQSL : ") + sent + " envoyé(s)" + (last.Length > 0 ? " (" + last + ")" : "") + ".";
+            if (sent == 0 && bad > 0) throw new Exception(first);
+            return Tr.T("eQSL : ") + sent + " envoyé(s)" + (last.Length > 0 ? " (" + last + ")" : "") + (bad > 0 ? ", " + bad + Tr.T(" refusé(s) (1er : ") + first + ")" : "") + ".";
         }
 
         // Lance TQSL en lisant sa sortie AU FIL DE L'EAU (sinon, sur un gros fichier, le tuyau se remplit et TQSL reste bloqué) ; code = -1 si délai dépassé

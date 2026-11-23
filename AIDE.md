@@ -205,3 +205,8 @@ Quand « Couper le haut-parleur du poste » est actif, le **bouton de volume AF 
 ## 4 septdecies. Nouveautés de la 1.12
 
 **Import ADIF** : les fichiers dont la fréquence est en kHz ou en Hz (OPSLOG, par exemple) s'importent maintenant sans l'erreur « out of range value for column col_freq ». L'échelle (MHz, kHz, Hz) est choisie d'après la bande du contact ; une fréquence incompatible avec la bande, ou supérieure à 2,147 GHz, n'est pas enregistrée et sa valeur d'origine est ajoutée au commentaire (« [FREQ … ?] »).
+
+## 4 octodecies. Nouveautés de la 1.13
+
+**Exports tolérants** : si un contact pose problème lors d'un export ADIF (fichier ou sauvegarde), il est ignoré et l'export continue ; un message indique combien de contacts ont été ignorés. Même principe pour les envois en ligne vers QRZ.com, HRDLog.net, HamQTH et eQSL : un contact refusé n'arrête plus l'envoi. Les contacts refusés sont marqués **No** dans la colonne « envoyé » du service concerné (et seront réessayés à l'envoi suivant).
+

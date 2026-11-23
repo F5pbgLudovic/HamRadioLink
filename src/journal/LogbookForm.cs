@@ -786,7 +786,7 @@ namespace HamRadioLink.Journal
                     Cursor = Cursors.WaitCursor; List<Qso> list = new List<Qso>(); List<Qso> sel = all ? new List<Qso>() : Selected();
                     if (sel.Count > 1 || (onlySel && sel.Count == 1)) list = sel; else for (int off = 0; ; off += 2000) { List<Qso> p = App.Log.Fetch(all ? "" : where, "COL_TIME_ON ASC", off, 2000); list.AddRange(p); if (p.Count < 2000) break; }
                     File.WriteAllText(sd.FileName, Adif.Export(list), new UTF8Encoding(false)); Cursor = Cursors.Default;
-                    MessageBox.Show(this, list.Count + " QSO exportés.", Tr.T("Export ADIF"));
+                    MessageBox.Show(this, (list.Count - Adif.Skipped) + " QSO exportés." + (Adif.Skipped > 0 ? "\r\n" + Adif.Skipped + Tr.T(" contact(s) défectueux ignoré(s).") : ""), Tr.T("Export ADIF"));
                 }
                 catch (Exception ex) { Cursor = Cursors.Default; Ui.Err(this, ex); }
             }
@@ -926,7 +926,14 @@ namespace HamRadioLink.Journal
         internal void MarkSentTo(SendSvc s, List<Qso> part)
         {
             if (s.Mark == null || part.Count == 0 || App.Log == null) return;
-            List<int> ids = new List<int>(); foreach (Qso q in part) ids.Add(q.Id);
+            List<int> ids = new List<int>(), no = new List<int>(); foreach (Qso q in part) { if (Online.Refused.Contains(q.Id)) no.Add(q.Id); else ids.Add(q.Id); }
+            Online.Refused.Clear();
+            if (no.Count > 0)   // 1.13 : envois refusés par le service = colonne « envoyé » à No
+            {
+                if (s.Mark == "eqsl" || s.Mark == "lotw") { List<string> nid = new List<string>(); foreach (int i in no) nid.Add(i.ToString()); App.Db.Exec("UPDATE " + App.Log.TableRef() + " SET " + (s.Mark == "eqsl" ? "COL_EQSL_QSL_SENT" : "COL_LOTW_QSL_SENT") + "='N' WHERE COL_PRIMARY_KEY IN (" + string.Join(",", nid.ToArray()) + ")"); }
+                else SentState.Unmark(s.Mark, no);
+            }
+            if (ids.Count == 0) return;
             if (s.Mark == "clublog") { ClubLogState.Mark(ids); return; }
             if (s.Mark == "qrz") { QrzState.Mark(ids); return; }
             if (s.Mark == "hrdlog" || s.Mark == "qrzcq" || s.Mark == "hamqth" || s.Mark == "wrl") { SentState.Mark(s.Mark, ids); return; }

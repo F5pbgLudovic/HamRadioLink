@@ -190,3 +190,8 @@ When "mute the radio speaker" is on, the **AF volume knob sets the volume of the
 ## 4 septdecies. What's new in 1.12
 
 **ADIF import**: files whose frequency is in kHz or Hz (OPSLOG, for example) now import without the "out of range value for column col_freq" error. The scale (MHz, kHz, Hz) is chosen from the QSO's band; a frequency that does not fit the band, or above 2.147 GHz, is not stored and its original value is appended to the comment ("[FREQ … ?]").
+
+## 4 octodecies. What's new in 1.13
+
+**Tolerant exports**: if a QSO causes a problem during an ADIF export (file or backup), it is skipped and the export carries on; a message tells how many QSOs were skipped. Same for online uploads to QRZ.com, HRDLog.net, HamQTH and eQSL: a refused QSO no longer stops the upload. Refused QSOs are marked **No** in that service's "sent" column (and will be retried on the next upload).
+

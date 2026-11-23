@@ -24,7 +24,19 @@ namespace HamRadioLink.Journal
         {
             StringBuilder sb = new StringBuilder();
             sb.Append(Tr.T("HamRadioLink ADIF export\r\n")).Append(Field("ADIF_VER", "3.1.4")).Append(Field("PROGRAMID", "HamRadioLink")).Append("\r\n<EOH>\r\n\r\n");
+            Skipped = 0;
             foreach (Qso q in qsos)
+            {
+                int mark = sb.Length;
+                try { OneQso(sb, q); }
+                catch { sb.Length = mark; Skipped++; }   // 1.13 : un contact défectueux est ignoré, l'export continue
+            }
+            return sb.ToString();
+        }
+        public static int Skipped;   // contacts ignorés lors du dernier export
+
+        static void OneQso(StringBuilder sb, Qso q)
+        {
             {
                 DateTime on, off;
                 if (DateTime.TryParse(q.S("COL_TIME_ON"), CultureInfo.InvariantCulture, DateTimeStyles.None, out on))
@@ -44,7 +56,6 @@ namespace HamRadioLink.Journal
                 }
                 sb.Append("<EOR>\r\n");
             }
-            return sb.ToString();
         }
 
         // Lit un fichier ADIF : renvoie une liste de dictionnaires {NOM_ADIF -> valeur}
