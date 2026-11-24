@@ -232,3 +232,7 @@ Quand « Couper le haut-parleur du poste » est actif, le **bouton de volume AF 
 4. On garde le contact le plus renseigné, on lui reporte les champs manquants de l'autre, puis l'autre est supprimé. Le rapport est aussi enregistré dans `data\doublons-….txt`.
 
 La suppression est définitive : faites d'abord une sauvegarde ADIF (Configuration > Sauvegarde).
+
+## 4 unvicies. Nouveautés de la 1.16
+
+**Journal : colonne Commentaire sur plusieurs lignes.** Un commentaire long passe à la ligne à la largeur de la colonne, entre deux mots (jamais au milieu d'un mot) ; la ligne du contact s'agrandit. Réduisez la colonne : le texte revient à la ligne. Le bouton **↔** limite cette colonne à environ 70 caractères. Les autres colonnes sont inchangées.

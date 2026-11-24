@@ -46,6 +46,7 @@
 - **Égaliseur audio 10 bandes (1.9, noise gate 1.10, 50 Hz à 10 kHz 1.11)** : sur le PC, en émission (avec noise gate, compresseur / limiteur, clic droit sur PTT) et en réception (clic droit sur le volume AF), courbe en direct et préréglages.
 - **Thèmes, azimut, rotor (1.14)** : 115 thèmes classés du plus clair au plus sombre, création / export / import de thèmes, azimut dans la fenêtre Add, menu **Rotor** (plus de 40 modèles Yaesu, WiMo…, GS-232 / Hy-Gain / SPID / Easycomm / réseau, étalonnage), heure de fin qui suit le PC, FT-2000 : menus relus en continu + bouton EXT-GND PA.
 - **Doublons (1.15)** : Outils > **Vérifier les doublons** du journal : rapport cliquable (une ligne par doublon, ±120 s, même indicatif et bande), suppression seulement après accord, champs manquants reportés sur le contact gardé.
+- **Commentaire sur plusieurs lignes (1.16)** : la colonne Commentaire du journal passe à la ligne (jamais au milieu d'un mot), la ligne s'agrandit ; ↔ limite à ~70 caractères.
 - **Moniteur CAT** et **journal des commandes** (un fichier par jour, purgé, envoyable pour diagnostiquer).
 - **IC-7760** : fenêtre complète reprise d'[IC7760Link](https://github.com/F5pbgLudovic/IC7760Link).
 
@@ -117,6 +118,7 @@ Utilise le compilateur .NET Framework 4 fourni avec Windows (C# 5) : rien à ins
 - **10-band audio equalizer (1.9, noise gate 1.10, 50 Hz à 10 kHz 1.11)**: on the PC, for transmit (with noise gate, compressor / limiter, right-click PTT) and receive (right-click the AF volume), live curve and presets.
 - **Themes, azimuth, rotor (1.14)**: 115 themes sorted brightest to darkest, create / export / import themes, azimuth in the Add window, **Rotor** menu (40+ Yaesu, WiMo… models, GS-232 / Hy-Gain / SPID / Easycomm / network, calibration), end time following the PC clock, FT-2000: menus re-read continuously + EXT-GND PA button.
 - **Duplicates (1.15)**: logbook Tools > **Check duplicates**: clickable report (one line per duplicate, ±120 s, same callsign and band), deletion only after your approval, missing fields copied onto the kept contact.
+- **Multi-line comments (1.16)**: the logbook Comment column wraps (never inside a word) and the row grows; ↔ limits it to ~70 characters.
 - **CAT monitor** and a **command log** (one file per day, purged, can be sent to diagnose a problem).
 - **IC-7760**: full window taken from [IC7760Link](https://github.com/F5pbgLudovic/IC7760Link).
 

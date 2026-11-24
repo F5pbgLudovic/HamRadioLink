@@ -126,7 +126,7 @@ namespace HamRadioLink.Journal
             };
             grid.KeyDown += (s, e) => { if (e.Control && e.KeyCode == Keys.Z) { DoUndo(true); e.Handled = true; } else if (e.Control && e.KeyCode == Keys.Y) { DoUndo(false); e.Handled = true; } };
             grid.CellDoubleClick += (s, e) => { if (e.RowIndex >= 0) EditSelected(); };
-            grid.ColumnWidthChanged += (s, e) => { ColDef c = e.Column.Tag as ColDef; if (c != null) c.Width = e.Column.Width; };
+            grid.ColumnWidthChanged += (s, e) => { ColDef c = e.Column.Tag as ColDef; if (c != null) { c.Width = e.Column.Width; if (c.Sql == "COL_COMMENT") RefreshHeights(); } };
             grid.KeyDown += (s, e) =>
             {
                 if (e.KeyCode == Keys.Enter) { EditSelected(); e.Handled = true; }
@@ -413,7 +413,7 @@ namespace HamRadioLink.Journal
                 grid.RowCount = 0; grid.RowCount = rc;
                 try { if (first < rc) grid.FirstDisplayedScrollingRowIndex = first; if (sel >= 0 && sel < rc && col >= 0) grid.CurrentCell = grid[col, sel]; } catch { }
             }
-            zoomApplied = zp; StretchLast(); grid.Invalidate();
+            zoomApplied = zp; StretchLast(); RefreshHeights(); grid.Invalidate();
         }
         // Couleurs du Logbook (View > Colors) : fond, liste, en-tetes, cluster, carte de bande.
         void ApplyTheme()
@@ -463,14 +463,45 @@ namespace HamRadioLink.Journal
             foreach (DataGridViewColumn c in grid.Columns) if (c.Visible && c != last) sum += c.Width;
             int vs = 0; foreach (Control k in grid.Controls) { VScrollBar v = k as VScrollBar; if (v != null && v.Visible) vs = v.Width; }
             ColDef cd = last.Tag as ColDef; int own = cd != null ? (int)Math.Round(cd.Width * LogZoom.Factor("main")) : 24;
-            int want = Math.Max(Math.Max(24, own), grid.ClientSize.Width - vs - sum - 1);
+            int rest = grid.ClientSize.Width - vs - sum - 1; if (cd != null && cd.Sql == "COL_COMMENT") rest = Math.Min(rest, CommentCap());
+            int want = Math.Max(Math.Max(24, own), rest);
             if (last.Width != want) { stretching = true; try { last.Width = want; } finally { stretching = false; } }
         }
+        // ---------- colonne Commentaire : retour à la ligne (jamais au milieu d'un mot), la ligne du contact s'agrandit ----------
+        const int CommentChars = 70;
+        readonly HashSet<int> tallRows = new HashSet<int>(); readonly List<int> heightPages = new List<int>(); Timer hTimer;
+        DataGridViewColumn CommentCol() { foreach (DataGridViewColumn c in grid.Columns) { ColDef cd = c.Tag as ColDef; if (cd != null && cd.Sql == "COL_COMMENT") return c; } return null; }
+        int CommentCap() { Font f = grid.DefaultCellStyle.Font ?? grid.Font; return TextRenderer.MeasureText(new string('0', CommentChars), f, new Size(int.MaxValue, 100), TextFormatFlags.NoPadding).Width + 14; }
+        void QueueHeights(int page) { if (!heightPages.Contains(page)) heightPages.Add(page); StartHeightTimer(); }
+        void StartHeightTimer() { if (hTimer == null) { hTimer = new Timer { Interval = 80 }; hTimer.Tick += (s, e) => { hTimer.Stop(); ApplyHeights(); }; } hTimer.Stop(); hTimer.Start(); }
+        void RefreshHeights() { heightPages.Clear(); foreach (int p in pageOrder) heightPages.Add(p); StartHeightTimer(); }
+        void ApplyHeights()
+        {
+            DataGridViewColumn cc = CommentCol(); if (cc == null || grid.RowCount == 0) { heightPages.Clear(); return; }
+            Font f = grid.DefaultCellStyle.Font ?? grid.Font; int tpl = grid.RowTemplate.Height, w = Math.Max(20, cc.Width - 10);
+            List<int> todo = new List<int>(heightPages); heightPages.Clear();
+            foreach (int p in todo)
+            {
+                List<Qso> page; if (!pages.TryGetValue(p, out page)) continue;
+                for (int i = 0; i < page.Count; i++)
+                {
+                    int idx = p * PageSize + i; if (idx >= grid.RowCount) break;
+                    string t = page[i].S("COL_COMMENT"); int need = tpl;
+                    if (t.Length > 0) { int h = TextRenderer.MeasureText(t, f, new Size(w, int.MaxValue), TextFormatFlags.WordBreak | TextFormatFlags.NoPadding).Height + 6; if (h > need) need = h; }
+                    if (need > tpl) { grid.Rows[idx].Height = need; tallRows.Add(idx); }
+                    else if (tallRows.Remove(idx)) grid.Rows[idx].Height = tpl;
+                }
+            }
+            grid.Invalidate();
+        }
+
         // Bouton ↔ : chaque colonne prend la largeur de son contenu affiché et de son titre, pour que tout soit lisible
         void FitColumns()
         {
             grid.AutoResizeColumns(DataGridViewAutoSizeColumnsMode.DisplayedCells);
-            foreach (DataGridViewColumn c in grid.Columns) c.Width += 12; StretchLast();
+            foreach (DataGridViewColumn c in grid.Columns) c.Width += 12;
+            DataGridViewColumn cm = CommentCol(); if (cm != null) cm.Width = Math.Min(cm.Width, CommentCap());
+            StretchLast(); RefreshHeights();
         }
         bool buildingCols;
         // Les colonnes se déplacent à la souris (maintenir le clic sur l'en-tête puis glisser) : le nouvel ordre est gardé dans la liste des colonnes, donc enregistré et retrouvé au prochain démarrage. Aucune donnée n'est modifiée.
@@ -490,6 +521,7 @@ namespace HamRadioLink.Journal
                 if (!c.Visible) continue;
                 DataGridViewTextBoxColumn col = new DataGridViewTextBoxColumn { HeaderText = c.Title, Width = (int)Math.Round(c.Width * LogZoom.Factor("main")), MinimumWidth = 24, Resizable = DataGridViewTriState.True, SortMode = DataGridViewColumnSortMode.Programmatic, Tag = c };
                 if (c.Right) col.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
+                if (c.Sql == "COL_COMMENT") col.DefaultCellStyle.WrapMode = DataGridViewTriState.True;
                 grid.Columns.Add(col);
             }
             }
@@ -519,7 +551,7 @@ namespace HamRadioLink.Journal
             if (App.Log == null) return;
             try
             {
-                pages.Clear(); pageOrder.Clear();
+                pages.Clear(); pageOrder.Clear(); tallRows.Clear(); heightPages.Clear();
                 order = sortCol + (sortDesc ? " DESC" : " ASC") + Tr.T(", COL_PRIMARY_KEY ") + (sortDesc ? "DESC" : "ASC");
                 total = App.Log.Count(where);
                 grid.RowCount = 0; grid.RowCount = (int)Math.Min(total, int.MaxValue);
@@ -636,7 +668,7 @@ namespace HamRadioLink.Journal
             if (!pages.TryGetValue(p, out page))
             {
                 try { page = App.Log.Fetch(where, order, p * PageSize, PageSize); } catch (Exception ex) { Ui.Err(this, ex); page = new List<Qso>(); }
-                pages[p] = page; pageOrder.Add(p);
+                pages[p] = page; pageOrder.Add(p); QueueHeights(p);
                 if (pageOrder.Count > 40) { pages.Remove(pageOrder[0]); pageOrder.RemoveAt(0); }
             }
             int i = row - p * PageSize; return i < page.Count ? page[i] : null;

@@ -1,6 +1,13 @@
 # Historique des versions
 
 
+## 1.16 — 2026-11-24
+
+**Journal — colonne Commentaire**
+- Les commentaires longs passent à la ligne (entre deux mots, jamais au milieu) à la largeur de la colonne ; la ligne du contact s'agrandit selon le nombre de lignes (`ApplyHeights`, hauteurs calculées par page chargée, minuteur 80 ms).
+- Réduire ou élargir la colonne, changer le zoom ou cliquer sur **↔** recalcule les hauteurs. Avec ↔ la colonne Commentaire est limitée à environ 70 caractères de large (`CommentCap`) ; en dernière colonne elle ne s'étire plus au-delà.
+- Les autres colonnes ne changent pas.
+
 ## 1.15 — 2026-11-24
 
 **Journal — Outils > Vérifier les doublons** (dernière ligne du menu, après un séparateur)

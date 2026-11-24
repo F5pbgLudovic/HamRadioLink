@@ -217,3 +217,7 @@ When "mute the radio speaker" is on, the **AF volume knob sets the volume of the
 4. The most complete contact is kept, missing fields from the other are copied onto it, then the other is deleted. The report is also saved in `data\doublons-….txt`.
 
 Deletion is permanent: make an ADIF backup first (Configuration > Backup).
+
+## 4 unvicies. What's new in 1.16
+
+**Logbook: multi-line Comment column.** A long comment wraps at the column width, between words (never inside a word); the contact's row grows. Shrink the column and the text wraps again. The **↔** button limits this column to about 70 characters. Other columns are unchanged.
