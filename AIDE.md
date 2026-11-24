@@ -222,3 +222,13 @@ Quand « Couper le haut-parleur du poste » est actif, le **bouton de volume AF 
 **Mise à jour** : seule la version précédente est gardée (`HamRadioLink-x.y.exe`) ; les plus anciennes sont supprimées au démarrage.
 
 **FT-2000** : la fenêtre des menus relit les menus visibles à l'ouverture, au défilement et toutes les 5 s (« Lecture en cours… »). Nouveau bouton **EXT-GND PA** sous KEYER (menu 146).
+
+## 4 vicies. Nouveautés de la 1.15
+
+**Journal > Outils > Vérifier les doublons** (en bas du menu).
+1. Le programme cherche les contacts de même indicatif et de même bande dont l'heure de début diffère de 120 secondes au plus.
+2. Une fenêtre affiche le rapport (une ligne par doublon, avec ascenseurs). **Cliquez sur une ligne** : le journal se place sur le contact gardé ; cliquez à droite du mot « supprimé » pour voir le contact supprimé. Si un filtre est actif, retirez-le.
+3. Rien n'est supprimé tant que vous n'avez pas cliqué sur le bouton rouge **Supprimer les doublons** (puis confirmé). **Fermer sans supprimer** abandonne.
+4. On garde le contact le plus renseigné, on lui reporte les champs manquants de l'autre, puis l'autre est supprimé. Le rapport est aussi enregistré dans `data\doublons-….txt`.
+
+La suppression est définitive : faites d'abord une sauvegarde ADIF (Configuration > Sauvegarde).

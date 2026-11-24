@@ -73,7 +73,7 @@ namespace HamRadioLink.Journal
             ToolStripMenuItem tools = M("Tools", M(Tr.T("Vérifier les distances"), (s, e) => CheckDistances()), M("Online services...", (s, e) => { if (onlineFrm != null && !onlineFrm.IsDisposed) { onlineFrm.Activate(); return; } onlineFrm = new OnlineForm(); onlineFrm.Show(this); }), M(Tr.T("Envoi automatique..."), (s, e) => AutoSend.ShowDialog(this)), M(Tr.T("Envoyer à tous les logs en ligne..."), (s, e) => SendAllOnline()), M(Tr.T("Exporter pour LoTW (fichier à importer à la main)..."), (s, e) => ExportLotw()),
                 new ToolStripSeparator(), M("Upload selection to QRZ.com Logbook", (s, e) => SendAllOnline("qrz")),
                 M("Upload selection to Club Log", (s, e) => SendAllOnline("clublog")), M("Upload selection to eQSL.cc", (s, e) => SendAllOnline("eqsl")), M("Upload selection to LoTW (TQSL)", (s, e) => SendAllOnline("lotw")), M("Upload selection to HRDLog.net", (s, e) => SendAllOnline("hrdlog")), M("Upload selection to QRZCQ.com", (s, e) => SendAllOnline("qrzcq")), M("Upload selection to HamQTH", (s, e) => SendAllOnline("hamqth")), M("Upload selection to World Radio League", (s, e) => SendAllOnline("wrl")),
-                new ToolStripSeparator());
+                new ToolStripSeparator(), M(Tr.T("Vérifier les doublons"), (s, e) => CheckDuplicates()));
             ToolStripMenuItem conf = M(Tr.T("Configuration"), M("Langue / Language...", (s, e) => Ui.ShowFree(new LangForm(), this)), M(Tr.T("Station..."), (s, e) => Ui.ShowFree(new StationForm(), this)), M(Tr.T("DX Cluster..."), (s, e) => Ui.ShowFree(new ClusterForm(), this)), M(Tr.T("Importer / partager..."), (s, e) => OpenSetup()), M(Tr.T("Sauvegarde (ADIF)..."), (s, e) => ExportAdif(true)), M(Tr.T("Base..."), (s, e) => OpenDb()), M(Tr.T("Ports..."), (s, e) => { using (PortsForm f = new PortsForm()) f.ShowDialog(this); }));
             ToolStripMenuItem themes = M(Tr.T("Thèmes")); BuildThemeMenu(themes);
             ToolStripMenuItem rotor = M(Tr.T("Rotor")); rotor.Click += (s, e) => { if (rotorWin == null || rotorWin.IsDisposed) { rotorWin = new RotorForm(() => { List<Qso> sl = Selected(); return sl.Count > 0 ? sl[0] : null; }); rotorWin.Show(this); } else { rotorWin.RefreshSel(); rotorWin.Activate(); } };
@@ -181,6 +181,119 @@ namespace HamRadioLink.Journal
                     say(done + " distance(s) ajoutée(s)…", -1); System.Threading.Thread.Sleep(10);
                 }
                 return done + " distance(s) ajoutée(s)" + (cancelled() ? " (annulé)" : "") + ".";
+            }, () => ReloadKeep());
+        }
+
+        // Outils > Vérifier les doublons : même indicatif, même bande, heures à ± 2 minutes. On garde le contact le plus renseigné,
+        // on y reporte les champs qui lui manquent, on supprime l'autre.
+        static bool Filled(string v) { return !string.IsNullOrEmpty(v) && v != "0" && !v.StartsWith("0000-00-00") && v != "0.0"; }
+        static int InfoCount(Qso q) { int n = 0; foreach (KeyValuePair<string, string> kv in q) if (kv.Key != "COL_PRIMARY_KEY" && Filled(kv.Value)) n++; return n; }
+        static string Desc(Qso q, Qso mark)
+        {
+            List<string> l = new List<string>();
+            foreach (KeyValuePair<string, string> kv in q) if (kv.Key != "COL_PRIMARY_KEY" && Filled(kv.Value)) l.Add(kv.Key.Replace("COL_", "") + "=" + kv.Value + ((mark != null && mark.ContainsKey(kv.Key)) ? " (repris)" : ""));
+            return string.Join("; ", l.ToArray());
+        }
+        class DupAct { public int Win, Lo; public Qso Fill; }
+        List<DupAct> dupPlan = new List<DupAct>(); string dupReport = "";
+        // Étape 1 : analyse seule (rien n'est modifié) + rapport ; étape 2 : suppression après confirmation.
+        void CheckDuplicates()
+        {
+            if (App.Log == null) return;
+            dupPlan = new List<DupAct>(); dupReport = "";
+            List<DupAct> plan = dupPlan; System.Text.StringBuilder rep = new System.Text.StringBuilder();
+            Bg.Run(this, Tr.T("Vérifier les doublons"), (log, db, say, cancelled) =>
+            {
+                List<Qso> all = new List<Qso>(); int off = 0;
+                while (!cancelled())
+                {
+                    List<Qso> l = log.Fetch("", "COL_CALL ASC, COL_TIME_ON ASC, COL_PRIMARY_KEY ASC", off, 2000);
+                    if (l.Count == 0) break; all.AddRange(l); off += l.Count; say(all.Count + " contact(s) lus…", -1);
+                }
+                if (cancelled()) { plan.Clear(); return "Annulé."; }
+                int merged = 0; List<Qso> kept = new List<Qso>(); string curCall = null; List<DateTime> keptT = new List<DateTime>();
+                foreach (Qso q in all)
+                {
+                    string call = q.S("COL_CALL").Trim().ToUpperInvariant(); DateTime t;
+                    if (call.Length == 0 || !DateTime.TryParse(q.S("COL_TIME_ON"), System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out t)) continue;
+                    if (call != curCall) { kept.Clear(); keptT.Clear(); curCall = call; }
+                    int hit = -1;
+                    for (int k = 0; k < kept.Count; k++)
+                    {
+                        if (Math.Abs((t - keptT[k]).TotalSeconds) > 120) continue;
+                        string b1 = kept[k].S("COL_BAND").Trim().ToLowerInvariant(), b2 = q.S("COL_BAND").Trim().ToLowerInvariant();
+                        if (b1.Length > 0 && b2.Length > 0 && b1 != b2) continue;
+                        hit = k; break;
+                    }
+                    if (hit < 0) { kept.Add(q); keptT.Add(t); continue; }
+                    Qso a = kept[hit], w = a, lo = q;
+                    if (InfoCount(q) > InfoCount(a)) { w = q; lo = a; }
+                    Qso fill = new Qso();
+                    foreach (KeyValuePair<string, string> kv in lo)
+                        if (kv.Key != "COL_PRIMARY_KEY" && Filled(kv.Value) && !Filled(w.S(kv.Key))) fill[kv.Key] = kv.Value;
+                    foreach (KeyValuePair<string, string> kv in fill) w[kv.Key] = kv.Value;
+                    if (fill.Count > 0) merged++;
+                    plan.Add(new DupAct { Win = w.Id, Lo = lo.Id, Fill = fill });
+                    List<string> fk = new List<string>(); foreach (string k2 in fill.Keys) fk.Add(k2.Replace("COL_", ""));
+                    rep.AppendLine(plan.Count + "  " + call + "  " + q.S("COL_TIME_ON") + "  " + q.S("COL_BAND") + "  | gardé id " + w.Id + " (" + InfoCount(w) + " champs) | supprimé id " + lo.Id + " (" + InfoCount(lo) + ")" + (fk.Count > 0 ? " | reporté : " + string.Join(",", fk.ToArray()) : ""));
+                    kept[hit] = w; keptT[hit] = t;
+                }
+                dupReport = "Rapport « Vérifier les doublons » du " + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " — AUCUNE modification faite à ce stade.\r\n" + plan.Count + " doublon(s) trouvé(s), " + merged + " contact(s) à compléter.\r\nCritère : même indicatif, même bande, heures à ± 2 minutes.\r\n\r\n" + rep.ToString();
+                return plan.Count + " doublon(s) trouvé(s) sur " + all.Count + " contacts. Rien n'est encore supprimé.";
+            }, () => ConfirmDuplicates());
+        }
+        Form dupWin;
+        void ConfirmDuplicates()
+        {
+            if (dupPlan.Count == 0) { MessageBox.Show(this, Tr.T("Aucun doublon trouvé."), Tr.T("Vérifier les doublons")); return; }
+            string path = System.IO.Path.Combine(App.DataDir, "doublons-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".txt");
+            try { System.IO.File.WriteAllText(path, dupReport, new System.Text.UTF8Encoding(true)); } catch { }
+            if (dupWin != null && !dupWin.IsDisposed) dupWin.Close();
+            List<DupAct> plan = dupPlan; string[] lines = dupReport.Replace("\r", "").Split('\n');
+            Form f = new Form(); dupWin = f;
+            f.Text = Tr.T("Vérifier les doublons") + " — " + plan.Count; f.Font = Ui.Normal; f.Icon = Ui.AppIcon; f.StartPosition = FormStartPosition.Manual; f.Size = new Size(1000, 620); f.MinimizeBox = false;
+            f.Location = new Point(Math.Max(0, Left + Width - 1000), Math.Max(0, Top + Height - 620));
+            TextBox tb = new TextBox { Multiline = true, ReadOnly = true, ScrollBars = ScrollBars.Both, WordWrap = false, Font = new Font("Consolas", 9f), Dock = DockStyle.Fill, Text = dupReport, BackColor = SystemColors.Window };
+            Panel bar = new Panel { Dock = DockStyle.Top, Height = 78 };
+            Label info = new Label { Left = 12, Top = 44, Width = 960, Height = 30, Text = Tr.T("Cliquez sur une ligne : le journal se place sur le contact gardé (clic à droite de « supprimé » : sur le contact supprimé). Rien n'est supprimé tant que vous n'avez pas cliqué sur le bouton rouge. Rapport :") + " " + path };
+            Button ok = Ui.Btn(bar, Tr.T("Supprimer les doublons"), 12, 8, 240, 32, (s, e) =>
+            {
+                if (MessageBox.Show(f, plan.Count + Tr.T(" doublon(s) seront supprimés. Continuer ?"), Tr.T("Vérifier les doublons"), MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2) != DialogResult.Yes) return;
+                f.Close(); ApplyDuplicates(plan, path);
+            });
+            ok.BackColor = Color.Firebrick; ok.ForeColor = Color.White; ok.FlatStyle = FlatStyle.Flat;
+            Button no = Ui.Btn(bar, Tr.T("Fermer sans supprimer"), 264, 8, 190, 32, (s, e) => f.Close());
+            bar.Controls.Add(info);
+            f.Controls.Add(tb); f.Controls.Add(bar); tb.Select(0, 0); f.CancelButton = no;
+            tb.MouseUp += (s, e) =>
+            {
+                try
+                {
+                    int ci = tb.SelectionStart, ln = tb.GetLineFromCharIndex(ci); if (ln < 0 || ln >= lines.Length) return;
+                    string L = lines[ln]; System.Text.RegularExpressions.Match m = System.Text.RegularExpressions.Regex.Match(L, @"^(\d+)\s");
+                    if (!m.Success) return; int n = int.Parse(m.Groups[1].Value) - 1; if (n < 0 || n >= plan.Count) return;
+                    int col = ci - tb.GetFirstCharIndexFromLine(ln), sp = L.IndexOf("| supprimé");
+                    int id = (sp >= 0 && col >= sp) ? plan[n].Lo : plan[n].Win;
+                    tb.Select(tb.GetFirstCharIndexFromLine(ln), L.Length);
+                    GotoId(id, "");
+                }
+                catch { }
+            };
+            f.Show(this);
+        }
+        void ApplyDuplicates(List<DupAct> plan, string path)
+        {
+            Bg.Run(this, Tr.T("Supprimer les doublons"), (log, db, say, cancelled) =>
+            {
+                int n = 0;
+                foreach (DupAct d in plan)
+                {
+                    if (cancelled()) return n + " doublon(s) supprimé(s) (annulé). Rapport : " + path;
+                    if (d.Fill.Count > 0) log.Update(d.Win, d.Fill);
+                    log.Delete(new int[] { d.Lo }); n++;
+                    if (n % 50 == 0) say(n + " / " + plan.Count + " supprimé(s)…", n * 100 / plan.Count);
+                }
+                return n + " doublon(s) supprimé(s). Rapport : " + path;
             }, () => ReloadKeep());
         }
 

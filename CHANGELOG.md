@@ -1,5 +1,15 @@
 # Historique des versions
 
+
+## 1.15 — 2026-11-24
+
+**Journal — Outils > Vérifier les doublons** (dernière ligne du menu, après un séparateur)
+- Doublon = même indicatif, même bande (ou bande vide d'un côté), heures de début à ± 120 s. Le mode, la fréquence et le RST ne comptent pas.
+- On garde le contact le plus renseigné ; les champs qui lui manquent sont repris de l'autre (en cas de valeurs différentes, celle du gardé reste) ; l'autre est supprimé.
+- **Rien n'est supprimé avant votre accord** : une fenêtre de rapport (ascenseurs, une ligne par doublon : indicatif, heure, bande, id gardé, id supprimé, champs reportés) s'ouvre ; un clic sur une ligne place le journal sur le contact gardé (à droite de « supprimé » : sur le supprimé). Bouton rouge **Supprimer les doublons** (+ confirmation), ou **Fermer sans supprimer**. Rapport aussi enregistré dans `data\doublons-AAAAMMJJ-HHMMSS.txt`.
+- La suppression est définitive : faire une sauvegarde ADIF avant.
+
+**Publication** : la release doit contenir `HamRadioLink.exe` (nom exigé par la mise à jour automatique) en plus du zip.
 ## 1.14 — 2026-11-24
 
 **Thèmes du journal**

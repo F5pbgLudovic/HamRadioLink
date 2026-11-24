@@ -207,3 +207,13 @@ When "mute the radio speaker" is on, the **AF volume knob sets the volume of the
 **Update**: only the previous version is kept (`HamRadioLink-x.y.exe`); older ones are deleted at startup.
 
 **FT-2000**: the menu window re-reads the visible menus on opening, on scrolling and every 5 s ("Reading…"). New **EXT-GND PA** button under KEYER (menu 146).
+
+## 4 vicies. What's new in 1.15
+
+**Logbook > Tools > Check duplicates** (bottom of the menu).
+1. The program looks for contacts with the same callsign and band whose start times differ by at most 120 seconds.
+2. A window shows the report (one line per duplicate, scrollable). **Click a line**: the logbook jumps to the kept contact; click to the right of the word "supprimé" to see the deleted one. If a filter is active, remove it.
+3. Nothing is deleted until you click the red **Supprimer les doublons** button (then confirm). **Fermer sans supprimer** cancels.
+4. The most complete contact is kept, missing fields from the other are copied onto it, then the other is deleted. The report is also saved in `data\doublons-….txt`.
+
+Deletion is permanent: make an ADIF backup first (Configuration > Backup).
