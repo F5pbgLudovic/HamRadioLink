@@ -210,3 +210,15 @@ Quand « Couper le haut-parleur du poste » est actif, le **bouton de volume AF 
 
 **Exports tolérants** : si un contact pose problème lors d'un export ADIF (fichier ou sauvegarde), il est ignoré et l'export continue ; un message indique combien de contacts ont été ignorés. Même principe pour les envois en ligne vers QRZ.com, HRDLog.net, HamQTH et eQSL : un contact refusé n'arrête plus l'envoi. Les contacts refusés sont marqués **No** dans la colonne « envoyé » du service concerné (et seront réessayés à l'envoi suivant).
 
+
+## 4 novodecies. Nouveautés de la 1.14
+
+**Thèmes** : 115 thèmes classés du plus clair (n°1, pour le jour) au plus sombre (nuit). Dans la fenêtre des couleurs : « Créer un nouveau thème… », « Exporter ce thème… » (fichier `.hrltheme`), « Supprimer ce thème ». Dans la fenêtre des thèmes : « Importer un thème… ». Vos thèmes sont dans `data\themes`.
+
+**Fenêtre Add** : l'**azimut** s'affiche à droite de la distance (locator du contact, sinon centre de son pays). L'heure de fin suit l'horloge du PC tant que « now » est cochée (défaut pour un nouveau contact) ; à la réouverture d'un contact elle est décochée, la recocher relance l'horloge. Le bouton **Rotor** n'apparaît que si un rotor est réellement présent et l'oriente vers le correspondant.
+
+**Menu Rotor** (à droite de Thèmes) : choix du modèle (Yaesu, WiMo… plus de 40 ; protocoles GS-232, DCU / Hy-Gain, SPID, Easycomm, serveur réseau), port ou adresse, aller à un azimut, chemin long, STOP, suivi automatique du contact. Le bouton rouge **Étalonnage** ouvre une fenêtre séparée (confirmation avec « Annuler » : risque de dérégler le calage) : valeur réelle saisie directement, ou réglage guidé par + / −. Rien n'est bloquant. Hy-Gain, SPID et Easycomm n'ont pas été essayés sur matériel.
+
+**Mise à jour** : seule la version précédente est gardée (`HamRadioLink-x.y.exe`) ; les plus anciennes sont supprimées au démarrage.
+
+**FT-2000** : la fenêtre des menus relit les menus visibles à l'ouverture, au défilement et toutes les 5 s (« Lecture en cours… »). Nouveau bouton **EXT-GND PA** sous KEYER (menu 146).

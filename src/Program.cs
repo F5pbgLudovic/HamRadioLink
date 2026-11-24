@@ -11,7 +11,7 @@ namespace HamRadioLink
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Cfg.Load(); MigrateFt991(); Theme.Load(); HW.WheelPct = Math.Max(1, Math.Min(10, Cfg.GetInt("wheelpct", 1)));
+            Cfg.Load(); Updater.CleanOld(); MigrateFt991(); Theme.Load(); HW.WheelPct = Math.Max(1, Math.Min(10, Cfg.GetInt("wheelpct", 1)));
             Application.ThreadException += delegate(object s, System.Threading.ThreadExceptionEventArgs e) { Log(e.Exception); };
             AppDomain.CurrentDomain.UnhandledException += delegate(object s, UnhandledExceptionEventArgs e) { Log(e.ExceptionObject as Exception); };
             foreach (string a in args) if (a.StartsWith("--dump=") || a.StartsWith("--selftest=")) Journal.WsjtListener.Disabled = true;

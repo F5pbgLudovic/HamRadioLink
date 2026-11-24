@@ -89,6 +89,16 @@ namespace HamRadioLink.Journal
         }
     }
 
+    public static class ThemeIO
+    {
+        // Importe un fichier .hrltheme : le thème est copié dans data\themes, ajouté à la liste et appliqué.
+        public static void Import(IWin32Window owner)
+        {
+            using (OpenFileDialog d = new OpenFileDialog { Title = Tr.T("Importer un thème"), Filter = Tr.T("Thème HamRadioLink") + " (*.hrltheme)|*.hrltheme|*.*|*.*" })
+                if (d.ShowDialog(owner) == DialogResult.OK) { try { Theme.ImportFile(d.FileName); } catch (Exception ex) { MessageBox.Show(owner, ex.Message, "Thèmes"); } }
+        }
+    }
+
     // Menu Thèmes > Personnaliser : chaque couleur du thème en cours, changement en direct, mémorisé pour chaque thème.
     public class ColorsForm : Form
     {
@@ -107,13 +117,31 @@ namespace HamRadioLink.Journal
             }
             Ui.Btn(this, Tr.T("Rétablir les couleurs d'origine de ce thème"), 12, 524, 300, 28, (s, e) => { if (MessageBox.Show(this, Tr.T("Rétablir toutes les couleurs d'origine du thème « ") + Theme.Cur.Name + " » ?", "Thèmes", MessageBoxButtons.YesNo) == DialogResult.Yes) { Theme.ResetTheme(Theme.Index); Fill(); } });
             Ui.Btn(this, Tr.T("Fermer"), 458, 524, 90, 28, (s, e) => Close());
+            ClientSize = new Size(560, 600);
+            Ui.Btn(this, Tr.T("Créer un nouveau thème..."), 12, 560, 200, 28, (s, e) =>
+            {
+                string n = Ui.Prompt(this, Tr.T("Nom du nouveau thème (il reprend les couleurs actuelles ; le thème de départ retrouve ses couleurs d'origine) :"), Theme.Cur.Name + " - perso");
+                if (n == null || n.Trim().Length == 0) return;
+                try { Theme.CreateFromCurrent(n); Fill(); } catch (Exception ex) { MessageBox.Show(this, ex.Message, "Thèmes"); }
+            });
+            Ui.Btn(this, Tr.T("Exporter ce thème..."), 220, 560, 170, 28, (s, e) =>
+            {
+                using (SaveFileDialog d = new SaveFileDialog { Title = Tr.T("Exporter ce thème"), Filter = Tr.T("Thème HamRadioLink") + " (*.hrltheme)|*.hrltheme", DefaultExt = "hrltheme", FileName = Theme.Cur.Name.Replace(':', ' ').Replace('/', ' ').Replace('\\', ' ') })
+                    if (d.ShowDialog(this) == DialogResult.OK) { try { Theme.Export(d.FileName); } catch (Exception ex) { MessageBox.Show(this, ex.Message, "Thèmes"); } }
+            });
+            Button del = Ui.Btn(this, Tr.T("Supprimer ce thème"), 398, 560, 150, 28, (s, e) =>
+            {
+                if (Theme.Cur.Custom && MessageBox.Show(this, Tr.T("Supprimer le thème « ") + Theme.Cur.Name + " » ?", "Thèmes", MessageBoxButtons.YesNo) == DialogResult.Yes) { Theme.DeleteCurrent(); Fill(); }
+            }); delBtn = del;
             Theme.Changed += Fill; Disposed += delegate { Theme.Changed -= Fill; }; Fill();
         }
+        Button delBtn;
         ThemeDef Def() { ThemeDef t = Theme.Cur; return scope.SelectedIndex == 1 && t.Dlg != null ? t.Dlg : t; }
         bool Dlg() { return scope.SelectedIndex == 1 && Theme.Cur.Dlg != null; }
         void Fill()
         {
             title.Text = Theme.Cur.Name + " : cliquez sur une couleur pour la changer";
+            if (delBtn != null) delBtn.Enabled = Theme.Cur.Custom;
             scope.Enabled = Theme.Cur.Dlg != null; if (Theme.Cur.Dlg == null && scope.SelectedIndex != 0) scope.SelectedIndex = 0;
             ThemeDef d = Def();
             for (int i = 0; i < 16; i++) { Color c = Theme.C(d[i]); sw[i].Col = c; sw[i].Invalidate(); hx[i].Text = "#" + d[i].ToString("X6") + (d[i] != d.Orig[i] ? "  *" : ""); }

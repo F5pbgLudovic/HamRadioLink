@@ -1,5 +1,26 @@
 # Historique des versions
 
+## 1.14 — 2026-11-24
+
+**Thèmes du journal**
+- 115 thèmes (20 divers, 20 à police à chasse fixe de type éditeur de code, 20 à dominante bleue, 2 rouges), **classés du plus clair (n°1, jour) au plus sombre (nuit)** et renumérotés ; le choix mémorisé suit le thème (identifiant stable `Id`).
+- Boutons de la barre du journal : couleur de texte corrigée, contraste minimal 4,5 (`Legible`), bouton rouge `Tag="red"`.
+- Fenêtre des couleurs : **Créer un nouveau thème…**, **Exporter ce thème…** (`.hrltheme`), **Supprimer ce thème** ; fenêtre des thèmes : **Importer un thème…**. Thèmes personnels dans `data\themes\*.hrltheme`.
+
+**Fenêtre Add du journal**
+- **Azimut** à droite de la distance (locator du contact, sinon centre du pays, depuis votre locator).
+- Heure de fin : suit l'horloge du PC tant que « now » est cochée (par défaut pour un nouveau contact) ; décochée à la réouverture d'un contact, recocher relance l'horloge.
+- Bouton **Rotor** (visible seulement si un rotor est réellement présent) : oriente l'antenne vers le correspondant.
+
+**Menu Rotor du journal** (à droite de Thèmes) : GS-232 (Yaesu), DCU / Hy-Gain, SPID, Easycomm, serveur réseau (rotctld), plus de 40 modèles (Yaesu, WiMo, etc.) ; aller à un azimut, chemin long, STOP, suivi automatique du contact, fenêtre d'**étalonnage** séparée (bouton rouge, confirmation OK / Annuler, réglage direct ou guidé). Protocoles Hy-Gain / SPID / Easycomm non essayés sur matériel. Aucune fenêtre bloquante.
+
+**Mise à jour** : seule la version précédente est conservée (`HamRadioLink-x.y.exe`), les plus anciennes sont supprimées au démarrage.
+
+**FT-2000**
+- Fenêtre des menus : relecture automatique des menus visibles à l'ouverture, au défilement et toutes les 5 s (« Lecture en cours… »), sans bloquer.
+- Nouveau bouton **EXT-GND PA** sous KEYER (menu 146, lu toutes les 6 s).
+
+
 ## 1.13 — 2026-11-23
 
 **Exports : un contact défectueux n'arrête plus rien**

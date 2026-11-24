@@ -195,3 +195,15 @@ When "mute the radio speaker" is on, the **AF volume knob sets the volume of the
 
 **Tolerant exports**: if a QSO causes a problem during an ADIF export (file or backup), it is skipped and the export carries on; a message tells how many QSOs were skipped. Same for online uploads to QRZ.com, HRDLog.net, HamQTH and eQSL: a refused QSO no longer stops the upload. Refused QSOs are marked **No** in that service's "sent" column (and will be retried on the next upload).
 
+
+## 4 novodecies. What's new in 1.14
+
+**Themes**: 115 themes sorted from brightest (no. 1, for daytime) to darkest (night). In the colours window: "Create a new theme…", "Export this theme…" (`.hrltheme` file), "Delete this theme". In the themes window: "Import a theme…". Your themes are in `data\themes`.
+
+**Add window**: the **azimuth** is shown right of the distance (contact's locator, else its country centre). The end time follows the PC clock while "now" is ticked (default for a new QSO); a reopened QSO has it unticked, ticking it again restarts the clock. The **Rotor** button only appears if a rotor is really present and points it at the correspondent.
+
+**Rotor menu** (right of Themes): model choice (Yaesu, WiMo… over 40; GS-232, DCU / Hy-Gain, SPID, Easycomm, network server protocols), port or address, go to an azimuth, long path, STOP, automatic follow of the QSO. The red **Calibration** button opens a separate window (confirmation with "Cancel": risk of upsetting the antenna alignment): type the real value directly, or adjust guided by + / −. Nothing is blocking. Hy-Gain, SPID and Easycomm are untested on hardware.
+
+**Update**: only the previous version is kept (`HamRadioLink-x.y.exe`); older ones are deleted at startup.
+
+**FT-2000**: the menu window re-reads the visible menus on opening, on scrolling and every 5 s ("Reading…"). New **EXT-GND PA** button under KEYER (menu 146).

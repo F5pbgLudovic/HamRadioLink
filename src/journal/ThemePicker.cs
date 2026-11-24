@@ -15,8 +15,10 @@ namespace HamRadioLink.Journal
             foreach (ThemeDef t in Theme.All) list.Items.Add(t.Name);
             custom = new Button { Dock = DockStyle.Bottom, Height = 30, Text = Tr.T("Personnaliser les couleurs du thème actuel..."), FlatStyle = FlatStyle.Flat, TabStop = false };
             custom.Click += delegate { Close(); openColors(); };
-            Controls.Add(list); Controls.Add(custom);
-            int wmax = 0; foreach (ThemeDef t in Theme.All) wmax = Math.Max(wmax, TextRenderer.MeasureText("✔ " + t.Name, Font).Width); ClientSize = new Size(wmax + SystemInformation.VerticalScrollBarWidth + 24, 24 * 22 + (forAdd ? 0 : 30)); Padding = new Padding(1);
+            Button imp = new Button { Dock = DockStyle.Bottom, Height = 30, Text = Tr.T("Importer un thème..."), FlatStyle = FlatStyle.Flat, TabStop = false };
+            imp.Click += delegate { Form o = Owner; Close(); ThemeIO.Import(o); };
+            Controls.Add(list); Controls.Add(custom); Controls.Add(imp);
+            int wmax = 0; foreach (ThemeDef t in Theme.All) wmax = Math.Max(wmax, TextRenderer.MeasureText("✔ " + t.Name, Font).Width); ClientSize = new Size(wmax + SystemInformation.VerticalScrollBarWidth + 24, 24 * 22 + (forAdd ? 0 : 60)); Padding = new Padding(1);
             list.DrawItem += (s, e) =>
             {
                 if (e.Index < 0) return; bool sel = e.Index == Sel; Color bg = sel ? Theme.Get("lb.accent") : Theme.Get("lb.grid.back"), fg = sel ? Theme.Get("lb.accent.text") : Theme.Get("lb.grid.text");
@@ -25,9 +27,9 @@ namespace HamRadioLink.Journal
                 TextRenderer.DrawText(e.Graphics, (sel ? "✔ " : "   ") + list.Items[e.Index], Font, e.Bounds, fg, TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.NoPadding);
             };
             list.SelectedIndexChanged += delegate { if (!init && list.SelectedIndex >= 0 && list.SelectedIndex != Sel) { if (forAdd) Theme.SetAdd(list.SelectedIndex); else Theme.Set(list.SelectedIndex); } };
-            Action recolor = delegate { BackColor = Theme.Get("lb.line"); custom.BackColor = Theme.Get("lb.btn.back"); custom.ForeColor = Theme.Get("lb.btn.text"); list.BackColor = Theme.Get("lb.grid.back"); list.Invalidate(); };
+            Action recolor = delegate { BackColor = Theme.Get("lb.line"); custom.BackColor = Theme.Get("lb.btn.back"); custom.ForeColor = Theme.Get("lb.btn.text"); imp.BackColor = custom.BackColor; imp.ForeColor = custom.ForeColor; list.BackColor = Theme.Get("lb.grid.back"); list.Invalidate(); };
             Theme.Changed += recolor; Disposed += delegate { Theme.Changed -= recolor; }; recolor();
-            list.SelectedIndex = Sel; init = false; if (forAdd) custom.Visible = false;
+            list.SelectedIndex = Sel; init = false; if (forAdd) { custom.Visible = false; imp.Visible = false; }
             KeyDown += (s, e) => { if (e.KeyCode == Keys.Escape) Close(); };
             Deactivate += delegate { if (!IsDisposed) Close(); };
             Shown += delegate { list.Focus(); };

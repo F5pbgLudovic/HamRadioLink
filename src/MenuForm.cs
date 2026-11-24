@@ -163,13 +163,49 @@ namespace HamRadioLink
             };
             grid.CellEndEdit += delegate(object s, DataGridViewCellEventArgs e) { if (!editing) return; editing = false; if (e.ColumnIndex == 2) ApplyEdit(e.RowIndex, Convert.ToString(grid[2, e.RowIndex].Value)); };
             grid.CellMouseDown += delegate(object s, DataGridViewCellMouseEventArgs e) { if (e.Button == MouseButtons.Right && e.RowIndex >= 0) { grid.ClearSelection(); grid.Rows[e.RowIndex].Selected = true; grid.CurrentCell = grid[Math.Max(e.ColumnIndex, 0), e.RowIndex]; RowMenu(e.RowIndex, Cursor.Position); } };
+            // lecture régulière des lignes affichées (comme le FTdx10) : à l'ouverture, au défilement, puis toutes les 5 s ; la main reste libre
+            poll = new System.Windows.Forms.Timer { Interval = 5000 }; poll.Tick += delegate { ReadVisible(false); };
+            scrollTm = new System.Windows.Forms.Timer { Interval = 400 }; scrollTm.Tick += delegate { scrollTm.Stop(); ReadVisible(true); };
+            grid.Scroll += delegate { scrollTm.Stop(); scrollTm.Start(); };
+            Resize += delegate { scrollTm.Stop(); scrollTm.Start(); };
+            FormClosed += delegate { poll.Stop(); poll.Dispose(); scrollTm.Stop(); scrollTm.Dispose(); };
             Shown += delegate
             {
+                poll.Start(); ReadVisible(true);
                 if (vals.Count == 0) Say("Aucune valeur mémorisée : cliquez sur « Télécharger les valeurs du poste » (première connexion).");
                 else Say(vals.Count + " valeurs mémorisées. Clic droit sur une ligne : renommer, définir les valeurs possibles. Double-clic sur une valeur : la modifier.");
                 if (vals.Count == 0 && rig.Link != null && MessageBox.Show(this, "C'est la première fois : lire maintenant les " + RigMenu.Count + " menus du poste ?\n(1 à 2 minutes ; vous pouvez arrêter à tout moment)", "Menu du poste", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes) Download();
             };
             FormClosing += delegate(object s, FormClosingEventArgs e) { if (busy) { stop = true; } };
+        }
+        System.Windows.Forms.Timer poll, scrollTm; volatile bool reading; DateTime lastEditAt = DateTime.MinValue;
+        // Relit dans le poste les menus visibles à l'écran (en arrière-plan, sans bloquer la fenêtre) ; ne touche pas à la cellule en cours de saisie
+        void ReadVisible(bool announce)
+        {
+            if (busy || reading || editing || rig.Link == null || IsDisposed || (DateTime.Now - lastEditAt).TotalSeconds < 4 || grid.IsCurrentCellInEditMode) return;
+            int a = Math.Max(0, grid.FirstDisplayedScrollingRowIndex), want = Math.Max(1, grid.DisplayedRowCount(true)) + 1; List<int> list = new List<int>();
+            for (int i = a; i < grid.Rows.Count && list.Count < want; i++) if (grid.Rows[i].Visible) list.Add(i + 1);
+            if (list.Count == 0) return;
+            reading = true; if (announce) Say("Lecture en cours…");
+            Thread th = new Thread(delegate()
+            {
+                int got = 0;
+                try
+                {
+                    foreach (int n in list)
+                    {
+                        if (IsDisposed || busy) break;
+                        string v = RigMenu.Read(rig, n); if (v == null) continue; got++;
+                        int nn = n; string vv = v;
+                        try { BeginInvoke(new Action(delegate { if (IsDisposed || editing || grid.IsCurrentCellInEditMode && grid.CurrentCell != null && grid.CurrentCell.RowIndex == nn - 1) return; string o; vals.TryGetValue(nn, out o); if (o != vv) { lock (vals) vals[nn] = vv; RefreshRow(nn - 1); } })); } catch { return; }
+                    }
+                }
+                finally
+                {
+                    reading = false;
+                    try { BeginInvoke(new Action(delegate { if (IsDisposed) return; lock (vals) RigMenu.SaveVals(vals); if (announce || got > 0) Say(got + " menus lus à " + DateTime.Now.ToString("HH:mm:ss") + " (relecture toutes les 5 s). Double-clic sur une valeur : la modifier ; clic droit : noms et valeurs possibles."); })); } catch { }
+                }
+            }); th.IsBackground = true; th.Start();
         }
         public int RowsShown { get { return grid.Rows.Count; } }
         public string TestValue(int n) { return Convert.ToString(grid[2, n - 1].Value); }
@@ -229,7 +265,7 @@ namespace HamRadioLink
         // ---- modification d'une valeur : mise au format du poste, confirmation si critique, envoi puis relecture
         void ApplyEdit(int i, string input)
         {
-            int n = i + 1; string old; vals.TryGetValue(n, out old);
+            lastEditAt = DateTime.Now; int n = i + 1; string old; vals.TryGetValue(n, out old);
             if (old == null) { old = rig.Link != null ? RigMenu.Read(rig, n) : null; if (old == null) { Say("Valeur actuelle inconnue : téléchargez d'abord les valeurs."); RefreshRow(i); return; } vals[n] = old; }
             string nv = RigMenu.Format(old, input);
             if (nv == null) { Say("Valeur refusée : " + n.ToString("000") + " attend " + old.Length + " caractère(s) (" + old + "). Saisie : « " + input + " »."); RefreshRow(i); return; }

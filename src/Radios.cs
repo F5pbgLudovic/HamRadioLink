@@ -377,6 +377,7 @@ namespace HamRadioLink
             b.Act("pb4", "VOIX 4", rx + 228, 388, 70, 36, "PB04;"); b.Act("pb5", "VOIX 5", rx + 304, 388, 70, 36, "PB05;"); b.Act("pb0", "STOP", rx + 380, 388, 70, 36, "PB00;");
             b.Tog("kr", "KEYER", rx, 432, bw, 40, "KR{v};", "KR;", @"^KR(?<v>[01]);$");
             b.Tog("bi", "BK-IN", rx + 116, 432, bw, 40, "BI{v};", "BI;", @"^BI(?<v>[01]);$");
+            if (!x5) { c = b.Tog("extgnd", "EXT-GND PA", rx, 476, bw, 40, "EX146{v};", "EX146;", @"^EX146(?<v>[01]);$"); c.Period = 6000; c.Hint = "FT-2000 : menu 146 (EXT-GND, TX-GND JACK du manuel CAT). 1 = ENABLE (allumé), 0 = DISABLE. Lu toutes les 6 s."; }
             b.Knob("ks", "SPEED", rx + 236, 428, 70, 80, 4, 60, "KS{v:3};", "KS;", @"^KS(?<v>\d{3});$", "wpm");
             b.Knob("kp", "PITCH", rx + 312, 428, 70, 80, 0, 15, "KP{v:2};", "KP;", @"^KP(?<v>\d{2});$", "pitch50");
 

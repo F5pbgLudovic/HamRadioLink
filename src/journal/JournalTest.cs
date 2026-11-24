@@ -86,6 +86,32 @@ namespace HamRadioLink.Journal
                     using (ColorPicker cp = new ColorPicker("Fond des fenêtres", Theme.C(0x20C997))) { cp.StartPosition = FormStartPosition.Manual; cp.Location = new Point(-3000, 0); cp.Show(); Skin.ApplyAll(); Pump(400); Snap(cp, Path.Combine(dir, "selecteur.png")); cp.Close(); }
                     Theme.ResetTheme(1); check(saved && Theme.All[1].Back == orig && App.Cfg.Get(Theme.Key(1, false, 0), "") == "", "Couleurs du thème : personnalisée, mémorisée par thème, puis rétablie");
                     Theme.Set(0); Skin.ApplyAll(); check(Theme.All.Count >= 40, "Thèmes : " + Theme.All.Count + " thèmes disponibles, appliqués aux fenêtres sans erreur");
+                {   // Thèmes 1.14 : tri par luminosité, création, export, import, suppression
+                    bool sorted = true; for (int ti = 1; ti < Theme.All.Count; ti++) if (Theme.All[ti].Custom == false && Theme.All[ti - 1].Custom == false && (0.299 * ((Theme.All[ti].Back >> 16) & 255) + 0.587 * ((Theme.All[ti].Back >> 8) & 255) + 0.114 * (Theme.All[ti].Back & 255)) - 0.001 > (0.299 * ((Theme.All[ti - 1].Back >> 16) & 255) + 0.587 * ((Theme.All[ti - 1].Back >> 8) & 255) + 0.114 * (Theme.All[ti - 1].Back & 255))) sorted = false;
+                    int n0 = Theme.All.Count; Theme.Set(Theme.IdxOf(1)); int tsrc = Theme.Index; int o1 = Theme.Cur.Back; Theme.SetColor(tsrc, false, 0, 0x123456);
+                    int tnew = Theme.CreateFromCurrent("Essai thème 1.14"); bool created = Theme.All.Count == n0 + 1 && Theme.Cur.Custom && Theme.Cur.Back == 0x123456 && Theme.All[tsrc].Back == o1 && File.Exists(Theme.Cur.File);
+                    string texp = Path.Combine(dir, "essai.hrltheme"); Theme.Export(texp); string oldFile = Theme.Cur.File; Theme.DeleteCurrent(); bool deleted = Theme.All.Count == n0 && !File.Exists(oldFile);
+                    int ni = Theme.ImportFile(texp); bool imported = Theme.All.Count == n0 + 1 && Theme.All[ni].Back == 0x123456 && Theme.All[ni].Name == "essai"; Theme.DeleteCurrent();
+                    check(sorted && created && deleted && imported && Theme.All.Count == n0 && Theme.All.Count >= 115, "Thèmes : triés par luminosité, créer / exporter / importer / supprimer un thème perso (" + Theme.All.Count + " thèmes)");
+                    Theme.Set(Theme.IdxOf(0));
+                }
+                {   // Rotor 1.14 : décodage des réponses, trame SPID, dialogue avec un faux serveur de rotor réseau
+                    double ra; bool pd = Rotor.ParseDigits("+0123\r", out ra) && ra == 123 && Rotor.ParseDigits("AZ=045", out ra) && ra == 45 && !Rotor.ParseDigits("+0999", out ra);
+                    byte[] sf = Rotor.SpidFrame(90); bool spf = sf.Length == 13 && sf[0] == 0x57 && sf[1] == (byte)'0' && sf[2] == (byte)'4' && sf[3] == (byte)'5' && sf[4] == (byte)'0' && sf[11] == 0x2F && sf[12] == 0x20;
+                    byte[] sr = { 0x58, 0, 4, 5, 0, 1, 0, 3, 6, 0, 1, 0x20 }; bool spd = Rotor.SpidDecode(sr, out ra) && Math.Abs(ra - 90) < 0.01;
+                    System.Net.Sockets.TcpListener tl = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 0); tl.Start(); int tp = ((System.Net.IPEndPoint)tl.LocalEndpoint).Port; string got = "0";
+                    System.Threading.Thread th = new System.Threading.Thread(() =>
+                    {
+                        try { using (System.Net.Sockets.TcpClient c = tl.AcceptTcpClient()) using (StreamReader rd = new StreamReader(c.GetStream())) using (StreamWriter wr = new StreamWriter(c.GetStream()) { AutoFlush = true, NewLine = "\n" })
+                            { string ln; while ((ln = rd.ReadLine()) != null) { if (ln.StartsWith("P ")) { got = ln.Split(' ')[1]; wr.WriteLine("RPRT 0"); } else if (ln == "p") { wr.WriteLine(got); wr.WriteLine("0.0"); } } } } catch { }
+                    }); th.IsBackground = true; th.Start();
+                    App.Cfg.Set("rotor.model", "Réseau Serveur de rotor (TCP)"); App.Cfg.Set("rotor.host", "127.0.0.1"); App.Cfg.Set("rotor.tport", tp.ToString());
+                    double rb = -1; bool net = false; try { Rotor.GotoSync(123.4); net = Rotor.ReadSync(out rb) && Math.Abs(rb - 123.4) < 0.01; } catch { }
+                    bool offOk = false; try { Rotor.SetOffset(10); Rotor.GotoSync(100); double r2; offOk = Rotor.ReadSync(out r2) && Math.Abs(r2 - 100) < 0.01 && got == "90.0"; } catch { } Rotor.SetOffset(0); net = net && offOk; Rotor.Disconnect(); tl.Stop(); App.Cfg.Set("rotor.model", "");
+                    check(pd && spf && spd && net && Rotor.Models.Count >= 40, "Rotor : réponses décodées, trame SPID, commande, lecture et étalonnage par un faux serveur réseau (" + Rotor.Models.Count + " modèles)");
+                    using (RotorForm rf = new RotorForm(null)) { rf.StartPosition = FormStartPosition.Manual; rf.Location = new Point(-3000, 0); rf.Show(); Skin.ApplyAll(); Pump(300); Snap(rf, Path.Combine(dir, "rotor.png")); rf.Close(); }
+                    using (CalibForm cf2 = new CalibForm()) { cf2.StartPosition = FormStartPosition.Manual; cf2.Location = new Point(-3000, 0); cf2.Show(); Skin.ApplyAll(); Pump(300); Snap(cf2, Path.Combine(dir, "etalonnage.png")); cf2.Close(); }
+                }
                 {   // Langues du journal : chaque langue traduit, le français reste le texte d'origine
                     int ok = 0; string frT = "Fichiers ADIF à importer"; foreach (string lc in Tr.Codes) { Tr.Code = lc; string t = Tr.T(frT); if (lc == "fr" ? t == frT : (t != frT && t.Length > 3 && Tr.T("  Annuler ") .Trim().Length > 0)) ok++; }
                     Tr.Code = "fr"; check(ok == Tr.Codes.Length && Tr.T(frT) == frT, "Langues du journal : " + ok + " / " + Tr.Codes.Length + " langues traduisent, le français reste par défaut");

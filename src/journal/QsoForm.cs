@@ -13,7 +13,7 @@ namespace HamRadioLink.Journal
         readonly bool isNew;
         public Qso Result; PeerLog log = App.Log; MySqlClient extraDb; ComboBox cLog; List<LogRef> logChoices = new List<LogRef>();   // le journal ouvert quand la fenetre a ete creee (un changement d onglet ne deroute pas l enregistrement)
         DateTimePicker dDate; DateTimePicker dStart, dEnd;
-        TextBox tCall, tName, tComment, tIota, tLoc, tState, tQth, tWpx, tFreq, tCountry, tCont, tDxcc, tCq, tItu, tDist, tVia, tQslMsg, tContest, tSrx, tStx, tNotes, tSub;
+        TextBox tAz, tCall, tName, tComment, tIota, tLoc, tState, tQth, tWpx, tFreq, tCountry, tCont, tDxcc, tCq, tItu, tDist, tVia, tQslMsg, tContest, tSrx, tStx, tNotes, tSub;
         ComboBox cBand, cMode, cSub, tRstS, tRstR;   // RST envoyé / reçu : liste déroulante selon le mode (modifiable à la main)
         ComboBox cQslS, cQslR, cLotwS, cLotwR, cEqslS, cEqslR;
         CheckBox kBand, kMode, kSwl, kEndNow;
@@ -55,7 +55,7 @@ namespace HamRadioLink.Journal
             }
             else Load(q);
             bool firstAdd = true; foreach (Form of in Application.OpenForms) if (of is QsoForm && of != this) firstAdd = false;
-            if (firstAdd) { int sv; Theme.AddIndex = int.TryParse(App.Cfg.Get("theme.add", ""), out sv) && sv >= 0 && sv < Theme.All.Count ? sv : Theme.Index; Theme.AddChanged = false; }   // la fenêtre garde son thème : un changement du thème principal ne la touche plus
+            if (firstAdd) { int sv; Theme.AddIndex = int.TryParse(App.Cfg.Get("theme.add", ""), out sv) && Theme.IdxOf(sv) >= 0 ? Theme.IdxOf(sv) : Theme.Index; Theme.AddChanged = false; }   // la fenêtre garde son thème : un changement du thème principal ne la touche plus
             FormClosed += (s, e) => { foreach (Form of in Application.OpenForms) if (of is QsoForm && of != this && !of.IsDisposed) return; Theme.AddIndex = -1; Theme.AddChanged = false; Theme.Fire(); };   // le thème de « Add » reste propre à cette fenêtre (mémorisé), la fenêtre principale ne change pas
             Shown += (s, e) => tCall.Focus();
             FormClosed += (s, e) => { if (extraDb != null) { try { extraDb.Dispose(); } catch { } } };
@@ -82,7 +82,10 @@ namespace HamRadioLink.Journal
             Ui.Lbl(top, "Date:", 8, 12); dDate = new DateTimePicker { Left = 86, Top = 10, Width = 140, Format = DateTimePickerFormat.Short }; top.Controls.Add(dDate);
             Ui.Lbl(top, Tr.T("(F2) Start:"), 8, 40); dStart = TimePick(top, 86, 38);
             Ui.Lbl(top, Tr.T("(F3) End:"), 8, 66); dEnd = TimePick(top, 86, 64);
-            kEndNow = Ui.Chk(top, "now", 208, 66); kEndNow.Checked = true;
+            kEndNow = Ui.Chk(top, "now", 208, 66); kEndNow.Checked = isNew;   // nouveau contact : « now » cochée, l'heure de fin suit l'heure du PC (UTC) ; contact rouvert : décochée, l'opérateur peut la recocher
+            Timer endTimer = new Timer { Interval = 500 }; endTimer.Tick += (s, e) => { if (kEndNow.Checked) dEnd.Value = DateTime.UtcNow; }; endTimer.Start(); FormClosed += (s, e) => { endTimer.Stop(); endTimer.Dispose(); };
+            kEndNow.CheckedChanged += (s, e) => { if (kEndNow.Checked) dEnd.Value = DateTime.UtcNow; };
+            dEnd.MouseDown += (s, e) => kEndNow.Checked = false; dEnd.KeyDown += (s, e) => { if (e.KeyCode != Keys.Tab) kEndNow.Checked = false; };   // modifier l'heure à la main décoche « now »
             Ui.Lbl(top, Tr.T("(F5) Call:"), 8, 100); tCall = Ui.Txt(top, 86, 98, 140); tCall.BackColor = Color.FromArgb(255, 255, 200); tCall.CharacterCasing = CharacterCasing.Upper;
             tCall.Leave += (s, e) => { callTimer.Stop(); OnCallLeft(); };
             // Dès qu'on modifie l'indicatif : on efface les infos de l'ancien ; les nouvelles s'affichent 0,5 s après la fin de la frappe.
@@ -121,6 +124,9 @@ namespace HamRadioLink.Journal
             Ui.Lbl(top, "QTH:", 430, 216); tQth = Ui.Txt(top, 510, 214, 140);
             Ui.Lbl(top, "WPX:", 430, 244); tWpx = Ui.Txt(top, 510, 242, 60);
             Ui.Lbl(top, Tr.T("Distance:"), 430, 272); tDist = Ui.Txt(top, 510, 270, 70);
+            Ui.Lbl(top, Tr.T("Azimut:"), 590, 272); tAz = Ui.Txt(top, 650, 270, 50); tAz.ReadOnly = true;
+            Button bRotor = Ui.Btn(top, Tr.T("Rotor"), 706, 268, 64, 26, (s, e) => { double a; if (double.TryParse(tAz.Text.Replace("°", ""), out a)) Rotor.GoAsync(a, err => { if (err != null && !IsDisposed) BeginInvoke(new Action(() => new ToolTip { IsBalloon = true, ToolTipTitle = Tr.T("Rotor") }.Show(err, this, 710, 260, 6000))); }); }); tLoc.TextChanged += delegate { if (isNew) UpdateDistance(Countries.Find(tCall.Text.Trim())); };
+            bRotor.Visible = Rotor.Present; Activated += delegate { bRotor.Visible = Rotor.Present; };   // le bouton n'apparaît que si un rotor est réglé et son port présent
             kSwl = Ui.Chk(top, Tr.T("SWL report"), 520, 300);
 
             TabControl tabs = new TabControl { Left = 8, Top = 350, Width = 1040, Height = 340 };
@@ -222,7 +228,7 @@ namespace HamRadioLink.Journal
 
         void ResetFields()
         {
-            foreach (TextBox t in new[] { tCall, tName, tComment, tCountry, tCont, tDxcc, tCq, tItu, tIota, tLoc, tState, tQth, tWpx, tDist, tVia, tQslMsg, tContest, tSrx, tStx, tNotes }) t.Text = "";
+            foreach (TextBox t in new[] { tCall, tName, tComment, tCountry, tCont, tDxcc, tCq, tItu, tIota, tLoc, tState, tQth, tWpx, tDist, tAz, tVia, tQslMsg, tContest, tSrx, tStx, tNotes }) t.Text = "";
             SetDefaultRst(); prev.Rows.Clear(); DeepOff(); lastCall = ""; tCall.Focus();
         }
 
@@ -230,7 +236,7 @@ namespace HamRadioLink.Journal
         string lastCall = ""; readonly System.Windows.Forms.Timer callTimer = new System.Windows.Forms.Timer { Interval = 50 };
         void ClearCallInfo()
         {
-            foreach (TextBox t in new[] { tName, tComment, tCountry, tCont, tDxcc, tCq, tItu, tIota, tLoc, tState, tQth, tWpx, tDist, tVia, tQslMsg }) t.Text = "";
+            foreach (TextBox t in new[] { tName, tComment, tCountry, tCont, tDxcc, tCq, tItu, tIota, tLoc, tState, tQth, tWpx, tDist, tAz, tVia, tQslMsg }) t.Text = "";
             SetDefaultRst(); prev.Rows.Clear(); prevQsos = new List<Qso>();
         }
         void OnCallLeft()
@@ -274,7 +280,7 @@ namespace HamRadioLink.Journal
             double la1, lo1, la2, lo2;
             if (!Geo.MyPos(out la1, out lo1)) return;
             if (Geo.GridToLatLon(tLoc.Text, out la2, out lo2) || (c != null && ((la2 = c.Lat) != 0 || (lo2 = c.Lon) != 0)))
-                tDist.Text = ((int)Geo.Distance(la1, lo1, la2, lo2)).ToString();
+            { tDist.Text = ((int)Geo.Distance(la1, lo1, la2, lo2)).ToString(); int az = (int)Math.Round(Geo.Bearing(la1, lo1, la2, lo2)) % 360; tAz.Text = az + "°"; if (isNew) Rotor.AutoFollow(az); }
         }
 
         void DoLookup()

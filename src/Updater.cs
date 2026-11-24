@@ -110,6 +110,26 @@ namespace HamRadioLink
             return b;
         }
 
+        // Au démarrage : ne garde que la version précédente parmi les anciens programmes laissés par les mises à jour (HamRadioLink-1.12.exe, HamRadioLink-1.12-153012.exe...) ; jamais le programme en cours
+        public static void CleanOld()
+        {
+            try
+            {
+                string dir = AppDomain.CurrentDomain.BaseDirectory, me = Path.GetFileName(Application.ExecutablePath);
+                List<KeyValuePair<Version, string>> old = new List<KeyValuePair<Version, string>>();
+                foreach (string f in Directory.GetFiles(dir, "HamRadioLink-*.exe"))
+                {
+                    string n = Path.GetFileName(f); if (string.Equals(n, me, StringComparison.OrdinalIgnoreCase)) continue;
+                    System.Text.RegularExpressions.Match m = System.Text.RegularExpressions.Regex.Match(n, @"^HamRadioLink-(\d+(?:\.\d+)+)(?:-(\d{6}))?\.exe$", System.Text.RegularExpressions.RegexOptions.IgnoreCase); Version v;
+                    if (m.Success && Version.TryParse(m.Groups[1].Value, out v)) old.Add(new KeyValuePair<Version, string>(v, f));
+                }
+                // on garde seulement la version précédente (la plus récente de celles qui restent, copie la plus récente si plusieurs) comme second exemplaire
+                old.Sort((a, b) => { int c = b.Key.CompareTo(a.Key); return c != 0 ? c : File.GetLastWriteTimeUtc(b.Value).CompareTo(File.GetLastWriteTimeUtc(a.Value)); });
+                for (int i = 1; i < old.Count; i++) try { File.Delete(old[i].Value); } catch { }
+            }
+            catch { }
+        }
+
         public static string BuildScript(int pid, string exe, List<string> toDelete)
         {
             StringBuilder sb = new StringBuilder(); sb.AppendLine("@echo off"); sb.AppendLine("chcp 65001 >nul");
@@ -201,7 +221,7 @@ namespace HamRadioLink
             Text = "Mise à jour disponible"; FormBorderStyle = FormBorderStyle.FixedDialog; MaximizeBox = false; MinimizeBox = false; ShowInTaskbar = false; StartPosition = FormStartPosition.CenterParent; BackColor = T.Panel; ForeColor = T.Text; Font = new Font("Segoe UI", 9f); ClientSize = new Size(560, 430);
             Label h = new Label(); h.Text = "Version " + i.Version + " disponible (vous avez la " + MainForm.Version + ")"; h.Font = new Font("Segoe UI Semibold", 11f); h.ForeColor = T.Amber; h.SetBounds(12, 10, 536, 24); Controls.Add(h);
             TextBox n = new TextBox(); n.Multiline = true; n.ReadOnly = true; n.ScrollBars = ScrollBars.Vertical; n.Text = i.Notes.Length > 0 ? i.Notes.Replace("\n", "\r\n") : "(pas de notes de version)"; n.SetBounds(12, 40, 536, 120); n.BackColor = T.Bg; n.ForeColor = T.Text; Controls.Add(n);
-            Label w = new Label(); w.SetBounds(12, 170, 536, 74); w.Text = "Seul le programme est remplacé. Vos réglages, dispositions, commandes et le journal de trafic (dossier data) restent en place ; l'ancien programme est gardé sous le nom HamRadioLink-" + MainForm.Version + ".exe. Le logiciel redémarre tout seul."; Controls.Add(w);
+            Label w = new Label(); w.SetBounds(12, 170, 536, 74); w.Text = "Seul le programme est remplacé. Vos réglages, dispositions, commandes et le journal de trafic (dossier data) restent en place ; l'ancien programme est gardé sous le nom HamRadioLink-" + MainForm.Version + ".exe (seule la version précédente est conservée, les plus anciennes sont supprimées au démarrage). Le logiciel redémarre tout seul."; Controls.Add(w);
             cbBackup.Text = "Faire une copie de sécurité de mes réglages avant (dossier data\\sauvegarde-avant-MAJ-…) — toujours faite"; cbBackup.Checked = true; cbBackup.Enabled = false; cbBackup.SetBounds(16, 250, 530, 24); Controls.Add(cbBackup);
             cbSet.Text = "Conserver les réglages du logiciel (couleurs, ports, TUNE, ROS…)"; cbSet.Checked = true; cbSet.SetBounds(16, 280, 530, 24); Controls.Add(cbSet);
             cbPost.Text = "Conserver les dispositions et commandes personnalisées de mes postes"; cbPost.Checked = true; cbPost.SetBounds(16, 308, 530, 24); Controls.Add(cbPost);

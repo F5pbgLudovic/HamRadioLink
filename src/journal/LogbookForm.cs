@@ -76,8 +76,9 @@ namespace HamRadioLink.Journal
                 new ToolStripSeparator());
             ToolStripMenuItem conf = M(Tr.T("Configuration"), M("Langue / Language...", (s, e) => Ui.ShowFree(new LangForm(), this)), M(Tr.T("Station..."), (s, e) => Ui.ShowFree(new StationForm(), this)), M(Tr.T("DX Cluster..."), (s, e) => Ui.ShowFree(new ClusterForm(), this)), M(Tr.T("Importer / partager..."), (s, e) => OpenSetup()), M(Tr.T("Sauvegarde (ADIF)..."), (s, e) => ExportAdif(true)), M(Tr.T("Base..."), (s, e) => OpenDb()), M(Tr.T("Ports..."), (s, e) => { using (PortsForm f = new PortsForm()) f.ShowDialog(this); }));
             ToolStripMenuItem themes = M(Tr.T("Thèmes")); BuildThemeMenu(themes);
+            ToolStripMenuItem rotor = M(Tr.T("Rotor")); rotor.Click += (s, e) => { if (rotorWin == null || rotorWin.IsDisposed) { rotorWin = new RotorForm(() => { List<Qso> sl = Selected(); return sl.Count > 0 ? sl[0] : null; }); rotorWin.Show(this); } else { rotorWin.RefreshSel(); rotorWin.Activate(); } };
             ToolStripMenuItem help = M("Help", M("About", (s, e) => MessageBox.Show(this, Tr.T("HamRadioLink ") + App.Version + "\r\nJournal MariaDB.", "About")));
-            ms.Items.AddRange(new ToolStripItem[] { file, edit, view, logb, tools, conf, themes, help });
+            ms.Items.AddRange(new ToolStripItem[] { file, edit, view, logb, tools, conf, themes, rotor, help });
             MainMenuStrip = ms; menuStrip = ms;
 
             ToolStrip ts = new ClickToolStrip { GripStyle = ToolStripGripStyle.Hidden, ImageScalingSize = new Size(1, 1) };
@@ -314,7 +315,7 @@ namespace HamRadioLink.Journal
             grid.Invalidate(); Invalidate(true); if (gridBase != 0 && IsHandleCreated) BeginInvoke(new Action(ApplyZoomMain));
         }
         // Menu Thèmes : un clic applique le thème à toutes les fenêtres du journal (et le mémorise)
-        ColorsForm colorsWin;
+        ColorsForm colorsWin; RotorForm rotorWin;
         void BuildThemeMenu(ToolStripMenuItem m)
         {
             // « Thèmes » ouvre une petite fenêtre : liste défilante (ascenseur + molette), un clic applique le thème sans la refermer, ligne « Personnaliser » toujours visible en bas ;

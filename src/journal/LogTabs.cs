@@ -40,17 +40,17 @@ items.Clear(); box = null;   // la zone de recherche n'est plus affichée (elle 
         void Draw(PaintEventArgs e)
         {
             Graphics g = e.Graphics; Color back = Theme.Get("lb.back"); g.Clear(back); Looks.Dark = Theme.IsDark(back); rects.Clear();
-            int x = 6; Color tt = Theme.Get("lb.tool.text");
+            int x = 6; Color tt = Theme.Get("lb.tool.text"), bt = Theme.Get("lb.btn.text");
             using (Font f = new Font(Tr.T("Segoe UI"), 9.5f, FontStyle.Bold))
             {
                 for (int i = 0; i < App.Logs.Count; i++)
                 {
                     LogRef l = App.Logs[i]; string t = l.Name; int w = TextRenderer.MeasureText(t, f).Width + 30; Rectangle r = new Rectangle(x, 3, w, Height - 6); rects.Add(r);
-                    bool active = l == App.CurrentLog; Color text = Looks.DrawButton(g, r, active ? (Color?)Theme.Get("lb.accent") : null, tt, hot == i || active, active, true, back);
+                    bool active = l == App.CurrentLog; Color text = Looks.DrawButton(g, r, active ? (Color?)Theme.Get("lb.accent") : null, bt, hot == i || active, active, true, back);
                     TextRenderer.DrawText(g, t, f, r, active ? Theme.Get("lb.accent.text") : text, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
                     x += w + 4;
                 }
-                plus = new Rectangle(x, 3, 30, Height - 6); Color tp = Looks.DrawButton(g, plus, null, tt, hot == -1, false, true, back);
+                plus = new Rectangle(x, 3, 30, Height - 6); Color tp = Looks.DrawButton(g, plus, null, bt, hot == -1, false, true, back);
                 TextRenderer.DrawText(g, "+", f, plus, tp, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
                 x = plus.Right + 16;
                 for (int i = 0; i < items.Count; i++)
@@ -62,7 +62,7 @@ items.Clear(); box = null;   // la zone de recherche n'est plus affichée (elle 
                     else
                     {
                         bool lp = it.Src is LoupeButton; int w = (it.Text == "▲" || it.Text == "↶" || it.Text == "↷" || lp) ? Height - 6 : it.Text == "↔" ? 36 : TextRenderer.MeasureText(it.Text, f).Width + 16; it.R = new Rectangle(x, 3, w, Height - 6);
-                        Color tc = Looks.DrawButton(g, it.R, null, tt, hotItem == i, false, true, back);
+                        Color tc = Looks.DrawButton(g, it.R, null, bt, hotItem == i, false, true, back);
                         if (lp) LoupeButton.Draw(g, it.R, tc); else if (it.Text == "↔") FitIcon(g, it.R, tc); else TextRenderer.DrawText(g, it.Text, f, it.R, tc, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding); x += w + 4;
                     }
                 }
