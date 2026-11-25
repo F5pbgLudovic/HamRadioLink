@@ -237,6 +237,12 @@ La suppression est définitive : faites d'abord une sauvegarde ADIF (Configurati
 
 **Journal : colonne Commentaire sur plusieurs lignes.** Un commentaire long passe à la ligne à la largeur de la colonne, entre deux mots (jamais au milieu d'un mot) ; la ligne du contact s'agrandit. Réduisez la colonne : le texte revient à la ligne. Le bouton **↔** limite cette colonne à environ 70 caractères. Les autres colonnes sont inchangées.
 
+## 6 duovicies. Nouveautés de la 1.19
+
+**Nettoyer « Incoming » (QRZ.com)** : Outils, tout en bas. Choisissez le nombre de jours, cliquez « Ouvrir QRZ dans Edge » (connectez-vous si besoin), puis « Nettoyer la liste Incoming » : les demandes dont le QSO est plus ancien sont rejetées après confirmation (irréversible).
+
+**Loupe** : case « Mot entier » ; recherche de texte dans les cellules affichées, de gauche à droite et en descendant, jusqu'à la première trouvée (colonnes « xxx sent » comprises). **Marquage envoyé / non envoyé** d'une grosse sélection : barre de progression. **Fenêtres** ouvertes sur l'écran du journal. **Envoi à tous** : case « sélectionnés » cochée d'office.
+
 ## 5 duovicies. Nouveautés de la 1.18
 
 **World Radio League.** L'envoi se fait maintenant QSO par QSO (service `POST /v1/contacts`, 60 par minute, 5 000 par jour) au lieu d'un import ADIF par lot, limité à 20 par jour par le service. Les doublons sont comptés « déjà présents » et marqués envoyés ; un QSO refusé est marqué No sans arrêter l'envoi ; pause automatique si la limite par minute est atteinte. Les autres envois en ligne ne changent pas.

@@ -50,7 +50,7 @@ namespace HamRadioLink
 
     public class MainForm : Form
     {
-        public const string Version = "1.18";
+        public const string Version = "1.19";
         const int DesignW = 1860, DesignH = 944; const double Ratio = DesignW / (double)DesignH;
         readonly List<RadioDef> radios = Radios.All(); RadioDef cur; Rig rig = new Rig();      // cur / rig / widgets = poste ACTIF (plusieurs postes peuvent être connectés en même temps)
         readonly Panel stage = new Panel(); readonly ToolTip tip = new ToolTip();

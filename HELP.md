@@ -222,6 +222,12 @@ Deletion is permanent: make an ADIF backup first (Configuration > Backup).
 
 **Logbook: multi-line Comment column.** A long comment wraps at the column width, between words (never inside a word); the contact's row grows. Shrink the column and the text wraps again. The **↔** button limits this column to about 70 characters. Other columns are unchanged.
 
+## 6 duovicies. What's new in 1.19
+
+**Clean "Incoming" (QRZ.com)**: Tools menu, at the very bottom. Choose the number of days, click "Open QRZ in Edge" (log in if needed), then "Clean the Incoming list": requests whose QSO is older are rejected after confirmation (irreversible).
+
+**Search (magnifier)**: "Whole word" box; text search in the displayed cells, left to right and downwards, up to the first match (including the "xxx sent" columns). **Mark sent / not sent** on a large selection: progress bar. **Windows** open on the logbook's screen. **Send to all**: "selected QSOs" box ticked automatically.
+
 ## 5 duovicies. What's new in 1.18
 
 **World Radio League.** Upload now goes one QSO at a time (`POST /v1/contacts`, 60 per minute, 5,000 per day) instead of a batch ADIF import, which the service limits to 20 per day. Duplicates count as "already present" and are marked sent; a refused QSO is marked No without stopping the upload; automatic pause when the per-minute limit is reached. The other online uploads are unchanged.

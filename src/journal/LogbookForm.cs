@@ -70,13 +70,14 @@ namespace HamRadioLink.Journal
             ToolStripMenuItem edit = M("Edit", M("Add\tCtrl+N", (s, e) => AddQso()), M("View / Edit\tEnter", (s, e) => EditSelected()), M("Delete\tDel", (s, e) => DeleteSelected()), new ToolStripSeparator(), M("Edit selections...", (s, e) => EditSelections()), M("Copy	Ctrl+C", (s, e) => CopyRows()), M("Cut	Ctrl+X", (s, e) => CutRows()), M("Paste	Ctrl+V", (s, e) => PasteRows()));
             ToolStripMenuItem view = M("View", M("Refresh\tF5", (s, e) => Reload()), M("Show all", (s, e) => { where = ""; search.Text = ""; Reload(); }), M("Columns (Layout)...", (s, e) => ChooseColumns()));
             ToolStripMenuItem logb = M("Logbook", M("Awards tracking...", (s, e) => ShowAwards(0)), M("Statistics...", (s, e) => Stats()), M("Find duplicates...", (s, e) => FindDupes()), M(Tr.T("QSL à envoyer (filtre)"), (s, e) => SetFilter("COL_QSL_SENT='Y' AND COL_QSL_RCVD<>'Y'")), M("Backup (ADIF)...", (s, e) => ExportAdif(true)), M("Update countries from QRZ/HamQTH data", (s, e) => UpdateFromCountries()));
-            ToolStripMenuItem tools = M("Tools", M(Tr.T("Vérifier les distances"), (s, e) => CheckDistances()), M("Online services...", (s, e) => { if (onlineFrm != null && !onlineFrm.IsDisposed) { onlineFrm.Activate(); return; } onlineFrm = new OnlineForm(); onlineFrm.Show(this); }), M(Tr.T("Envoi automatique..."), (s, e) => AutoSend.ShowDialog(this)), M(Tr.T("Envoyer à tous les logs en ligne..."), (s, e) => SendAllOnline()), M(Tr.T("Exporter pour LoTW (fichier à importer à la main)..."), (s, e) => ExportLotw()),
+            ToolStripMenuItem tools = M("Tools", M(Tr.T("Vérifier les distances"), (s, e) => CheckDistances()), M("Online services...", (s, e) => { if (onlineFrm != null && !onlineFrm.IsDisposed) { onlineFrm.Activate(); return; } onlineFrm = new OnlineForm(); Ui.CenterOn(onlineFrm, this); onlineFrm.Show(this); }), M(Tr.T("Envoi automatique..."), (s, e) => AutoSend.ShowDialog(this)), M(Tr.T("Envoyer à tous les logs en ligne..."), (s, e) => SendAllOnline()), M(Tr.T("Exporter pour LoTW (fichier à importer à la main)..."), (s, e) => ExportLotw()),
                 new ToolStripSeparator(), M("Upload selection to QRZ.com Logbook", (s, e) => SendAllOnline("qrz")),
                 M("Upload selection to Club Log", (s, e) => SendAllOnline("clublog")), M("Upload selection to eQSL.cc", (s, e) => SendAllOnline("eqsl")), M("Upload selection to LoTW (TQSL)", (s, e) => SendAllOnline("lotw")), M("Upload selection to HRDLog.net", (s, e) => SendAllOnline("hrdlog")), M("Upload selection to QRZCQ.com", (s, e) => SendAllOnline("qrzcq")), M("Upload selection to HamQTH", (s, e) => SendAllOnline("hamqth")), M("Upload selection to World Radio League", (s, e) => SendAllOnline("wrl")),
-                new ToolStripSeparator(), M(Tr.T("Vérifier les doublons"), (s, e) => CheckDuplicates()));
+                new ToolStripSeparator(), M(Tr.T("Vérifier les doublons"), (s, e) => CheckDuplicates()),
+                new ToolStripSeparator(), M(Tr.T("Nettoyer « Incoming » (QRZ.com)..."), (s, e) => Ui.ShowFree(new QrzCleanForm(), this)));
             ToolStripMenuItem conf = M(Tr.T("Configuration"), M("Langue / Language...", (s, e) => Ui.ShowFree(new LangForm(), this)), M(Tr.T("Station..."), (s, e) => Ui.ShowFree(new StationForm(), this)), M(Tr.T("DX Cluster..."), (s, e) => Ui.ShowFree(new ClusterForm(), this)), M(Tr.T("Importer / partager..."), (s, e) => OpenSetup()), M(Tr.T("Sauvegarde (ADIF)..."), (s, e) => ExportAdif(true)), M(Tr.T("Base..."), (s, e) => OpenDb()), M(Tr.T("Ports..."), (s, e) => { using (PortsForm f = new PortsForm()) f.ShowDialog(this); }));
             ToolStripMenuItem themes = M(Tr.T("Thèmes")); BuildThemeMenu(themes);
-            ToolStripMenuItem rotor = M(Tr.T("Rotor")); rotor.Click += (s, e) => { if (rotorWin == null || rotorWin.IsDisposed) { rotorWin = new RotorForm(() => { List<Qso> sl = Selected(); return sl.Count > 0 ? sl[0] : null; }); rotorWin.Show(this); } else { rotorWin.RefreshSel(); rotorWin.Activate(); } };
+            ToolStripMenuItem rotor = M(Tr.T("Rotor")); rotor.Click += (s, e) => { if (rotorWin == null || rotorWin.IsDisposed) { rotorWin = new RotorForm(() => { List<Qso> sl = Selected(); return sl.Count > 0 ? sl[0] : null; }); Ui.CenterOn(rotorWin, this); rotorWin.Show(this); } else { rotorWin.RefreshSel(); rotorWin.Activate(); } };
             ToolStripMenuItem help = M("Help", M("About", (s, e) => MessageBox.Show(this, Tr.T("HamRadioLink ") + App.Version + "\r\nJournal MariaDB.", "About")));
             ms.Items.AddRange(new ToolStripItem[] { file, edit, view, logb, tools, conf, themes, rotor, help });
             MainMenuStrip = ms; menuStrip = ms;
@@ -279,7 +280,7 @@ namespace HamRadioLink.Journal
                 }
                 catch { }
             };
-            f.Show(this);
+            Ui.CenterOn(f, this); f.Show(this);
         }
         void ApplyDuplicates(List<DupAct> plan, string path)
         {
@@ -391,7 +392,12 @@ namespace HamRadioLink.Journal
             int n = qsoWins.Count; Rectangle wa = Screen.FromControl(this).WorkingArea;
             int x = Left + 70 + 30 * (n % 12), y = Top + 90 + 30 * (n % 12);
             x = Math.Max(wa.Left, Math.Min(x, wa.Right - f.Width)); y = Math.Max(wa.Top, Math.Min(y, wa.Bottom - f.Height));
-            f.StartPosition = FormStartPosition.Manual; f.Location = new Point(x, y); if (f.Text.StartsWith("Add")) f.Text += "  (" + (n + 1) + ")";
+            f.StartPosition = FormStartPosition.Manual; f.Load += (s0, e0) =>   // après la restauration de la taille : la fenêtre s'ouvre toujours entièrement sur l'écran du journal
+            {
+                Rectangle wa2 = Screen.FromControl(this).WorkingArea; int x2 = Left + 70 + 30 * (n % 12), y2 = Top + 90 + 30 * (n % 12);
+                x2 = Math.Max(wa2.Left, Math.Min(x2, wa2.Right - f.Width)); y2 = Math.Max(wa2.Top, Math.Min(y2, wa2.Bottom - f.Height)); f.Location = new Point(x2, y2);
+            };
+            f.Location = new Point(x, y); if (f.Text.StartsWith("Add")) f.Text += "  (" + (n + 1) + ")";
             qsoWins.Add(f);
             f.FormClosed += (s, e) => { qsoWins.Remove(f); bool ok = f.DialogResult == DialogResult.OK; f.Dispose(); if (ok && !IsDisposed) { if (onSaved != null) onSaved(); else Reload(); } };
             f.Show(this);
@@ -589,8 +595,14 @@ namespace HamRadioLink.Journal
             if (after != sortDesc) return "(" + c + ">" + rc + " OR (" + rc + " IS NULL AND " + c + " IS NOT NULL) OR (" + c + "<=>" + rc + " AND " + pk + ">" + id + "))";
             return "(" + c + "<" + rc + " OR (" + c + " IS NULL AND " + rc + " IS NOT NULL) OR (" + c + "<=>" + rc + " AND " + pk + "<" + id + "))";
         }
-        static string MatchSql(int field, string text)
+        static string MatchSql(int field, string text, bool whole = false)
         {
+            if (whole && field != 0)   // mot entier : valeur exacte (indicatif) ou mot isolé, rien devant ni derrière (texte)
+            {
+                if (field == 1) return "COL_CALL=" + MySqlClient.Quote(text);
+                string rx = MySqlClient.Quote("(^|[^[:alnum:]])" + System.Text.RegularExpressions.Regex.Replace(text, @"([\\.^$|?*+()\[\]{}])", "\\$1") + "($|[^[:alnum:]])"), eq = MySqlClient.Quote(text);
+                return "(COL_NAME=" + eq + " OR COL_QTH=" + eq + " OR COL_COUNTRY=" + eq + " OR COL_COMMENT=" + eq + " OR COL_NAME REGEXP " + rx + " OR COL_QTH REGEXP " + rx + " OR COL_COUNTRY REGEXP " + rx + " OR COL_COMMENT REGEXP " + rx + ")";
+            }
             if (field == 0)
             {
                 DateTime d; System.Text.RegularExpressions.Match m = System.Text.RegularExpressions.Regex.Match(text, @"^(\d{4})(?:-(\d{1,2}))?$");
@@ -625,14 +637,43 @@ namespace HamRadioLink.Journal
             if (grid.RowCount == 0) return Tr.T("Le journal est vide.");
             int ci = -1; foreach (DataGridViewColumn c in grid.Columns) if (c.Visible && (ci < 0 || c.DisplayIndex < grid.Columns[ci].DisplayIndex)) ci = c.Index;
             if (ci < 0) return "";
-            grid.FirstDisplayedScrollingRowIndex = 0; grid.CurrentCell = grid[ci, 0]; grid.ClearSelection(); grid.Rows[0].Selected = true;
+            searchFromTop = true; grid.FirstDisplayedScrollingRowIndex = 0; grid.CurrentCell = grid[ci, 0]; grid.ClearSelection(); grid.Rows[0].Selected = true;
             return Tr.T("Début du tableau.");
         }
-        internal string FindNext(int field, string text, bool fwd)
+        bool searchFromTop;
+        // Recherche de texte dans les cellules AFFICHÉES : ligne par ligne, de gauche à droite, en descendant ; s'arrête à la première cellule qui correspond
+        string FindCells(string text, bool fwd, bool whole)
+        {
+            List<DataGridViewColumn> cols = new List<DataGridViewColumn>(); foreach (DataGridViewColumn c in grid.Columns) if (c.Visible) cols.Add(c);
+            cols.Sort((a, b) => a.DisplayIndex.CompareTo(b.DisplayIndex)); int nc = cols.Count, nr = grid.RowCount; if (nc == 0 || nr == 0) return Tr.T("Le journal est vide.");
+            long total = (long)nr * nc, s; bool top = searchFromTop; searchFromTop = false;
+            if (grid.CurrentCell != null) { long cur = (long)grid.CurrentCell.RowIndex * nc + Math.Max(0, cols.IndexOf(grid.Columns[grid.CurrentCell.ColumnIndex])); s = top ? cur : (fwd ? cur + 1 : cur - 1); } else s = fwd ? 0 : total - 1;
+            System.Text.RegularExpressions.Regex rx = whole ? new System.Text.RegularExpressions.Regex(@"(^|[^\p{L}\p{N}])" + System.Text.RegularExpressions.Regex.Escape(text) + @"($|[^\p{L}\p{N}])", System.Text.RegularExpressions.RegexOptions.IgnoreCase) : null;
+            Cursor old = Cursor; Cursor = Cursors.WaitCursor;
+            try
+            {
+                for (long k = 0; k < total; k++)
+                {
+                    long raw = fwd ? s + k : s - k, idx = ((raw % total) + total) % total; int r = (int)(idx / nc), c = (int)(idx % nc);
+                    string v = Convert.ToString(grid[cols[c].Index, r].Value) ?? "";
+                    if (whole ? rx.IsMatch(v) : v.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        int vis = Math.Max(1, grid.DisplayedRowCount(false)), first = grid.FirstDisplayedScrollingRowIndex;
+                        if (r < first || r >= first + vis) grid.FirstDisplayedScrollingRowIndex = Math.Max(0, r - vis / 2);
+                        grid.CurrentCell = grid[cols[c].Index, r]; grid.ClearSelection(); grid.Rows[r].Selected = true;
+                        return ((raw < 0 || raw >= total) ? Tr.T("Fin du tableau passée, retour de l'autre côté. ") : "") + Tr.T("Trouvé : ligne ") + (r + 1).ToString("N0") + " / " + nr.ToString("N0") + Tr.T(", colonne ") + cols[c].HeaderText + " (" + v + ").";
+                    }
+                }
+            }
+            finally { Cursor = old; }
+            return Tr.T("Aucun QSO trouvé.");
+        }
+        internal string FindNext(int field, string text, bool fwd, bool whole = false)
         {
             if (App.Log == null || grid.RowCount == 0) return Tr.T("Le journal est vide.");
             text = text.Trim(); if (text.Length == 0) return Tr.T("Saisissez ce qu'il faut chercher.");
-            string m = MatchSql(field, text), T = App.Log.TableRef(), wh = where.Length > 0 ? "(" + where + ") AND " : "", ord = fwd ? order : RevOrder();
+            if (field == 2) return FindCells(text, fwd, whole);
+            string m = MatchSql(field, text, whole), T = App.Log.TableRef(), wh = where.Length > 0 ? "(" + where + ") AND " : "", ord = fwd ? order : RevOrder();
             int cur = grid.CurrentCell != null ? grid.CurrentCell.RowIndex : -1; Qso cq = cur >= 0 ? RowQso(cur) : null; string note = "";
             string id = cq != null ? App.Db.Scalar("SELECT COL_PRIMARY_KEY FROM " + T + " WHERE " + wh + "(" + m + ") AND " + CondRel(cq.Id, fwd) + " ORDER BY " + ord + " LIMIT 1") : null;
             if (string.IsNullOrEmpty(id))
@@ -978,7 +1019,6 @@ namespace HamRadioLink.Journal
             }
         }
 
-        // Clic droit > Marquer la sélection comme envoyée / non envoyée à un service (corriger l'état à la main)
         // Mise à jour des champs « envoyé » (eQSL / LoTW) par petits paquets, avec une courte pause entre deux : le journal reste utilisable et les verrous sont brefs
         static void MarkDb(MySqlClient db, PeerLog lg, List<string> keys, List<int> ids, bool sent, Func<bool> cancelled, Action<string, int> say)
         {
@@ -1009,10 +1049,24 @@ namespace HamRadioLink.Journal
             return n;
         }
 
+        // Sélection d'un très grand nombre de lignes : lecture des QSO avec une fenêtre de progression (annulable)
+        List<Qso> SelectedProgress(string title)
+        {
+            int n = grid.SelectedRows.Count; if (n <= 300) return Selected();
+            List<int> rows = new List<int>(); foreach (DataGridViewRow r in grid.SelectedRows) rows.Add(r.Index); rows.Sort();
+            List<Qso> l = new List<Qso>(); BgTaskForm f = new BgTaskForm(title); Ui.CenterOn(f, this); f.Show(this); f.Status(Tr.T("Lecture de la sélection…"), 0); Application.DoEvents();
+            for (int i = 0; i < rows.Count; i++)
+            {
+                Qso q = RowQso(rows[i]); if (q != null) l.Add(q);
+                if (i % 100 == 99 || i == rows.Count - 1) { f.Status(Tr.T("Lecture de la sélection : ") + (i + 1) + " / " + rows.Count + " QSO", (i + 1) * 100 / rows.Count); Application.DoEvents(); if (f.Cancelled) { f.Finish(Tr.T("Annulé.")); f.Close(); return new List<Qso>(); } }
+            }
+            f.Finish(""); f.Close(); return l;
+        }
+
         // Clic droit > Marquer la sélection comme envoyée / non envoyée à un service (corriger l'état à la main)
         void MarkSent(string svc, bool sent)
         {
-            List<Qso> sel = Selected(); if (sel.Count == 0 || App.Log == null) return;
+            List<Qso> sel = SelectedProgress(Tr.T("Marquage des QSO")); if (sel.Count == 0 || App.Log == null) return;
             try
             {
                 List<int> ids = new List<int>(); foreach (Qso q in sel) ids.Add(q.Id); List<string> dbk = new List<string>();
@@ -1044,7 +1098,7 @@ namespace HamRadioLink.Journal
                 l.Text = Tr.T("QRZ.com n'a pas accepté l'envoi automatique :\r\n") + err + Tr.T("\r\n\r\nUn fichier ADI de ") + rest.Count + Tr.T(" QSO a été créé :\r\n") + file + Tr.T("\r\n\r\nLa page de votre journal QRZ.com s'est ouverte dans votre navigateur :\r\n1. Si vous n'êtes pas connecté à QRZ.com, connectez-vous.\r\n2. Cliquez sur « Import » (Upload / Import ADIF), puis sur le choix du fichier.\r\n3. Dans la fenêtre de choix du fichier, faites Ctrl+V (le chemin du fichier est déjà copié) puis Entrée.\r\n4. Validez l'import sur la page QRZ.com.\r\n\r\nCette fenêtre reste ouverte sans bloquer le programme.");
                 h.Controls.Add(l); Button hb = new Button(); hb.Text = "OK"; hb.SetBounds(432, 272, 80, 28); hb.Click += (s2, e2) => h.Close(); h.Controls.Add(hb);
                 Button ex2 = new Button(); ex2.Text = Tr.T("Voir le fichier"); ex2.SetBounds(300, 272, 120, 28); ex2.Click += (s2, e2) => { try { Process.Start("explorer.exe", "/select,\"" + file + "\""); } catch { } }; h.Controls.Add(ex2);
-                h.ClientSize = new Size(524, 312); h.Show(this);
+                h.ClientSize = new Size(524, 312); Ui.CenterOn(h, this); h.Show(this);
             }
             catch (Exception ex) { Ui.Err(this, ex); }
         }
@@ -1130,7 +1184,7 @@ namespace HamRadioLink.Journal
             SendAllForm f = new SendAllForm(sv, list);
             f.BatchDone = delegate(SendSvc s, List<Qso> part) { try { MarkSentTo(s, part); } catch (Exception ex) { Ui.Err(this, ex); } };
             f.Finished = delegate(List<SendSvc> done) { try { ReloadKeep(); } catch { } };
-            f.Show(this); f.Start();
+            Ui.CenterOn(f, this); f.Show(this); f.Start();
         }
 
         void SendAllOnline(string only = null)
@@ -1167,7 +1221,7 @@ namespace HamRadioLink.Journal
             {
                 try { MarkSentTo(s, part); } catch (Exception ex) { Ui.Err(this, ex); }
             };
-            f.Finished = delegate(List<SendSvc> done) { try { ReloadKeep(); } catch { } };            f.Show(this); f.Start();
+            f.Finished = delegate(List<SendSvc> done) { try { ReloadKeep(); } catch { } };            Ui.CenterOn(f, this); f.Show(this); f.Start();
         }
         void FindDupes()
         {
@@ -1199,7 +1253,7 @@ namespace HamRadioLink.Journal
             }, () => ReloadKeep());
         }
 
-        void ShowAwards(int tab) { AwardsForm f = new AwardsForm(); f.Show(this); }
+        void ShowAwards(int tab) { AwardsForm f = new AwardsForm(); Ui.CenterOn(f, this); f.Show(this); }
 
         void Stats()
         {

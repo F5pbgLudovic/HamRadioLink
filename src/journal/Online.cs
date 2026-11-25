@@ -481,7 +481,7 @@ namespace HamRadioLink.Journal
             Form h = new Form(); helpFrm = h; h.Text = Tr.T("Club Log"); h.FormBorderStyle = FormBorderStyle.FixedToolWindow; h.StartPosition = FormStartPosition.CenterParent; h.Font = Ui.Normal; h.ShowInTaskbar = false;
             Label l = new Label(); l.Text = txt; l.AutoSize = false; l.SetBounds(12, 12, 480, 270); h.Controls.Add(l);
             Button b = new Button(); b.Text = "OK"; b.SetBounds(412, 290, 80, 28); b.Click += (s, e) => h.Close(); h.Controls.Add(b);
-            h.ClientSize = new Size(504, 330); h.Show(this);
+            h.ClientSize = new Size(504, 330); Ui.CenterOn(h, this); h.Show(this);
         }
         void Row(string label, string key, ref int y, bool pw)
         {

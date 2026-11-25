@@ -1,6 +1,15 @@
 # Historique des versions
 
 
+## 1.19 — 2026-11-25
+
+**Journal**
+- **Outils > Nettoyer « Incoming » (QRZ.com)** (tout à la fin du menu) : fonction de QRZLogExport sans ses autres onglets. Ouvre QRZ dans Edge (même profil que QRZLogExport, connexion conservée) et rejette, après confirmation, les demandes de la liste « Incoming » dont le QSO a plus de N jours (motif « Not in my logbook »). Barre de progression, bouton Arrêter, arrêt après 3 échecs de suite.
+- **Loupe** : case « Mot entier (rien devant, rien derrière) ». Pour le champ « Texte », la recherche parcourt maintenant les cellules affichées, ligne par ligne, de gauche à droite en descendant, et s'arrête à la première trouvée (après « ▲ Début », elle commence par la première cellule) ; les colonnes « xxx sent » (Yes/No) sont donc trouvées.
+- **Marquer envoyé / non envoyé** sur une très grande sélection : fenêtre de progression (annulable) pendant la lecture de la sélection.
+- **Fenêtres** : la loupe, la fenêtre d'envoi, les alertes, les clusters, Online services, le rotor, les diplômes, la fenêtre d'un QSO et les fenêtres de progression s'ouvrent sur l'écran du journal.
+- **Envoi à tous les logs** : la case « Seulement les xxx QSO sélectionnés » est cochée d'office quand des lignes sont sélectionnées ; si tout est déjà marqué envoyé, la fenêtre l'indique (« rien à envoyer, tous déjà marqués envoyés ») et une ligne donne le nombre de QSO ignorés avec un exemple.
+
 ## 1.18 — 2026-11-25
 
 **World Radio League** : envoi QSO par QSO (`POST /v1/contacts`, 60 écritures/min, 5 000/jour) au lieu d'un import ADIF par lot (limité à 20 par jour). Doublons comptés comme déjà présents, pause automatique si la limite par minute est atteinte. Les autres envois en ligne ne changent pas.

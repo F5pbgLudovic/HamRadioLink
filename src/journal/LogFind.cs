@@ -28,23 +28,23 @@ namespace HamRadioLink.Journal
     // Fenêtre de recherche : NON bloquante (on peut naviguer et modifier le journal pendant qu'elle est ouverte) ; « Suivant » / « Précédent » montent et descendent dans le tableau.
     public class SearchForm : Form
     {
-        readonly LogbookForm owner; readonly ComboBox cf; readonly TextBox tb; readonly Label st;
+        readonly LogbookForm owner; readonly ComboBox cf; readonly TextBox tb; readonly Label st; readonly CheckBox cw;
         public static readonly string[] Fields = { "Date du QSO", "Indicatif", "Texte (nom, QTH, commentaire…)" };
         public SearchForm(LogbookForm o)
         {
-            owner = o; AutoScaleMode = AutoScaleMode.None; Text = Tr.T("Rechercher"); FormBorderStyle = FormBorderStyle.FixedToolWindow; StartPosition = FormStartPosition.CenterParent; Font = Ui.Normal; ClientSize = new Size(470, 150); ShowInTaskbar = false;
+            owner = o; AutoScaleMode = AutoScaleMode.None; Text = Tr.T("Rechercher"); FormBorderStyle = FormBorderStyle.FixedToolWindow; StartPosition = FormStartPosition.CenterParent; Font = Ui.Normal; ClientSize = new Size(470, 176); ShowInTaskbar = false;
             Ui.Lbl(this, Tr.T("Chercher dans :"), 12, 12, 110); cf = Ui.Combo(this, 130, 10, 328, new string[] { Tr.T(Fields[0]), Tr.T(Fields[1]), Tr.T(Fields[2]) }); cf.DropDownStyle = ComboBoxStyle.DropDownList; cf.SelectedIndex = Math.Max(0, Math.Min(2, App.Cfg.GetInt("find.field", 1)));
             Ui.Lbl(this, Tr.T("Valeur :"), 12, 46, 110); tb = Ui.Txt(this, 130, 44, 328); tb.Text = App.Cfg.Get("find.text", "");
-            Label hint = Ui.Lbl(this, Tr.T("Date : 22/11/2026, 2026-11-22, 2026-11 ou 2026. Indicatif : une partie suffit."), 12, 74, 446); hint.ForeColor = SystemColors.GrayText;
-            Ui.Btn(this, Tr.T("▲ Début"), 12, 100, 90, 28, (s, e) => { try { st.Text = owner.GoTop(); } catch (Exception ex) { st.Text = ex.Message; } }); Ui.Btn(this, Tr.T("◀ Précédent"), 110, 100, 105, 28, (s, e) => Go(false)); Button nx = Ui.Btn(this, Tr.T("Suivant ▶"), 223, 100, 105, 28, (s, e) => Go(true)); Ui.Btn(this, Tr.T("Fermer"), 366, 100, 92, 28, (s, e) => Close());
-            st = Ui.Lbl(this, "", 12, 130, 446); st.ForeColor = SystemColors.GrayText; AcceptButton = nx;
+            cw = new CheckBox { Text = Tr.T("Mot entier (rien devant, rien derrière)"), Left = 12, Top = 72, Width = 446, Checked = App.Cfg.GetBool("find.word", false) }; Controls.Add(cw); Label hint = Ui.Lbl(this, Tr.T("Date : 22/11/2026, 2026-11-22, 2026-11 ou 2026. Indicatif : une partie suffit."), 12, 98, 446); hint.ForeColor = SystemColors.GrayText;
+            Ui.Btn(this, Tr.T("▲ Début"), 12, 124, 90, 28, (s, e) => { try { st.Text = owner.GoTop(); } catch (Exception ex) { st.Text = ex.Message; } }); Ui.Btn(this, Tr.T("◀ Précédent"), 110, 124, 105, 28, (s, e) => Go(false)); Button nx = Ui.Btn(this, Tr.T("Suivant ▶"), 223, 124, 105, 28, (s, e) => Go(true)); Ui.Btn(this, Tr.T("Fermer"), 366, 124, 92, 28, (s, e) => Close());
+            st = Ui.Lbl(this, "", 12, 154, 446); st.ForeColor = SystemColors.GrayText; AcceptButton = nx;
             tb.KeyDown += (s, e) => { if (e.KeyCode == Keys.Enter) { Go(!e.Shift); e.SuppressKeyPress = true; } };
-            FormClosing += (s, e) => { App.Cfg.Set("find.field", cf.SelectedIndex.ToString()); App.Cfg.Set("find.text", tb.Text); App.Cfg.Save(); };
+            FormClosing += (s, e) => { App.Cfg.Set("find.field", cf.SelectedIndex.ToString()); App.Cfg.Set("find.text", tb.Text); App.Cfg.Set("find.word", cw.Checked ? "1" : "0"); App.Cfg.Save(); };
             Shown += (s, e) => { tb.Focus(); tb.SelectAll(); };
         }
         void Go(bool fwd)
         {
-            try { st.Text = owner.FindNext(cf.SelectedIndex, tb.Text, fwd); } catch (Exception ex) { st.Text = ex.Message; }
+            try { st.Text = owner.FindNext(cf.SelectedIndex, tb.Text, fwd, cw.Checked); } catch (Exception ex) { st.Text = ex.Message; }
         }
     }
 }

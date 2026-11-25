@@ -32,7 +32,7 @@ namespace HamRadioLink.Journal
             LogRef r = App.CurrentLog; string host, user, pass, schema; int port;
             if (r != null) { App.ServerOf(r, out host, out port, out user, out pass); schema = r.Schema; }
             else { host = App.Cfg.Get("db.host", "127.0.0.1"); port = App.Cfg.GetInt("db.port", 3306); user = App.Cfg.Get("db.user", "root"); pass = App.Cfg.Get("db.pass", ""); schema = App.Cfg.Get("db.schema", "mysql"); }
-            BgTaskForm f = new BgTaskForm(title); f.Show(owner); SynchronizationContext ui = SynchronizationContext.Current;
+            BgTaskForm f = new BgTaskForm(title); Ui.CenterOn(f, owner); f.Show(owner); SynchronizationContext ui = SynchronizationContext.Current;
             Thread th = new Thread(delegate()
             {
                 string msg; MySqlClient db = null;

@@ -10,11 +10,26 @@ namespace HamRadioLink.Journal
     {
         // Fenêtre secondaire NON bloquante : le journal reste utilisable ; une seule fenêtre de chaque sorte à la fois (une deuxième demande ramène la première devant).
         static readonly Dictionary<Type, Form> freeWins = new Dictionary<Type, Form>();
+        // Place la fenêtre au centre de la fenêtre « owner », sur SON écran, sans sortir de cet écran (à appeler avant Show)
+        public static void CenterOn(Form f, Control oc)
+        {
+            if (oc == null || f.StartPosition == FormStartPosition.Manual) return;
+            Rectangle ob = oc.Bounds, wa = Screen.FromControl(oc).WorkingArea; if (oc.Parent != null) ob = oc.RectangleToScreen(oc.ClientRectangle);
+            int x = ob.Left + (ob.Width - f.Width) / 2, y = ob.Top + (ob.Height - f.Height) / 2;
+            f.StartPosition = FormStartPosition.Manual; f.Location = new Point(Math.Max(wa.Left, Math.Min(x, wa.Right - f.Width)), Math.Max(wa.Top, Math.Min(y, wa.Bottom - f.Height)));
+        }
         public static void ShowFree(Form f, IWin32Window owner)
         {
             Type ty = f.GetType(); Form ex;
             if (freeWins.TryGetValue(ty, out ex) && ex != null && !ex.IsDisposed) { try { ex.Activate(); } catch { } f.Dispose(); return; }
             freeWins[ty] = f; f.ShowInTaskbar = false; f.FormClosed += (s, e) => { Form cur; if (freeWins.TryGetValue(ty, out cur) && cur == f) freeWins.Remove(ty); };
+            Control oc = owner as Control;   // la fenêtre s'ouvre toujours centrée sur l'écran de la fenêtre qui l'ouvre (et jamais à moitié hors de cet écran)
+            if (oc != null && f.StartPosition != FormStartPosition.Manual)
+            {
+                Rectangle ob = oc.Bounds, wa = Screen.FromControl(oc).WorkingArea; if (oc.Parent != null) ob = oc.RectangleToScreen(oc.ClientRectangle);
+                int x = ob.Left + (ob.Width - f.Width) / 2, y = ob.Top + (ob.Height - f.Height) / 2;
+                f.StartPosition = FormStartPosition.Manual; f.Location = new Point(Math.Max(wa.Left, Math.Min(x, wa.Right - f.Width)), Math.Max(wa.Top, Math.Min(y, wa.Bottom - f.Height)));
+            }
             f.Show(owner);
         }
 
