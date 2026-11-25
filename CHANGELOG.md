@@ -1,6 +1,26 @@
 # Historique des versions
 
 
+## 1.17 — 2026-11-25
+
+**Port COM virtuel (SDRLink, WSJT-X…) — plus de pertes de liaison**
+- `ShareLink` : l'écriture vers le port virtuel se fait dans un fil à part (`Writer`, file `outQ`, `WriteTimeout` 500 ms). Si le logiciel de l'autre côté ne lit plus, les données sont abandonnées (événement « ne lit plus » au journal CAT) et la lecture du poste n'est plus jamais bloquée.
+
+**Grand S-mètre à aiguille**
+- Ligne sous l'aiguille, en jaune : `Po:  47W   SWR:  1.5   S9+10dB` — « Po: », « SWR: » et « S » restent fixes, seules les valeurs changent (Po / SWR « — » en réception). Couleur : Paramètres > Couleurs > « Valeurs du S-mètre à aiguille (jaune) » (`T.SVal`, thème n° 18).
+- Case **SUB (VFO-B)** : rapport S du récepteur secondaire en jaune après le titre + mini-barregraphe de la hauteur du texte, arrêté avant le « Hz ». Seulement quand l'aiguille est affichée et que le poste lit un S secondaire (`sm1`) : FT-2000, FTdx5000, **FTdx101D/MP, FTdx9000** (`SM1;` 000-255), **TS-2000 / TS-B2000** (`SM1;` 0-15) — `SubS()` dans `YaesuFam.cs` / `KenwoodFam.cs`, élément caché (visible en vue config).
+- **Échelle Po** : l'image `doc\smeter\PO0.png` (échelle des watts effacée) reçoit une graduation 0 → puissance max du poste (Paramètres > Réglage S-mètre puissance), loi en racine carrée comme l'image d'origine (`PoImg`) ; l'aiguille indique les watts réels (étalonnage `MeterCal.Watts`). 100 W : 0 10 25 50 100 ; 200 W : 0 20 50 100 200.
+- **Vdd** : puissance max ≥ 200 W → image `VDD50.png` (« 50 » au lieu de « 13.8 ») et aiguille sur le repère à 50 V.
+- En émission, le **S MAIN** retombe à zéro (comme le S sub) pour les postes qui ont un vumètre Po séparé ; la ligne affiche « S0 ».
+
+**FT-2000 (famille `Dual`)** : la réponse `TX3;` (émission radio + CAT) est reconnue comme émission (PTT et voyant TX) ; avant, Po et le S-mètre restaient figés.
+
+**Journal des commandes CAT** : au plafond de 25 Mo il est réinitialisé (l'ancien reste en `.prev`) au lieu de s'arrêter d'écrire ; jamais plus de **24 h** d'archives (purge au démarrage, au changement de jour, toutes les 10 min) ; le réglage « Conserver (jours) » est retiré.
+
+**Fenêtres** : télécommande et journal s'ouvrent en plein écran au tout premier démarrage, puis à la taille/position de la dernière fermeture (`win.x/y/w/h/max`).
+
+**Journal — RST téléphonie** : 59+5, 59+10, 59+15 … 59+55, 59+60 (pas de 5 dB).
+
 ## 1.16 — 2026-11-24
 
 **Journal — colonne Commentaire**

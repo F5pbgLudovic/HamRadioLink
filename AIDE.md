@@ -236,3 +236,18 @@ La suppression est définitive : faites d'abord une sauvegarde ADIF (Configurati
 ## 4 unvicies. Nouveautés de la 1.16
 
 **Journal : colonne Commentaire sur plusieurs lignes.** Un commentaire long passe à la ligne à la largeur de la colonne, entre deux mots (jamais au milieu d'un mot) ; la ligne du contact s'agrandit. Réduisez la colonne : le texte revient à la ligne. Le bouton **↔** limite cette colonne à environ 70 caractères. Les autres colonnes sont inchangées.
+
+## 4 duovicies. Nouveautés de la 1.17
+
+**Liaison avec SDRLink (port COM virtuel).** HamRadioLink n'est plus bloqué quand le logiciel branché sur le port virtuel arrête de lire : les données sont abandonnées après 500 ms et la lecture du poste continue. Fin des pertes de liaison cycliques.
+
+**Grand S-mètre à aiguille.** Sous l'aiguille, une ligne jaune `Po: … SWR: … S…` (les mots restent fixes, les valeurs bougent). Dans la case SUB (VFO-B), le rapport S du récepteur secondaire en jaune et un petit barregraphe (FT-2000, FTdx5000, FTdx101, FTdx9000, TS-2000). La couleur jaune se règle dans Paramètres > Couleurs. L'échelle Po va de 0 à la puissance max du poste (Paramètres > Réglage S-mètre puissance) et l'aiguille indique les watts réels ; à 200 W ou plus, la position Vdd affiche 50 V. En émission, le S MAIN retombe à zéro.
+
+**FT-2000** : l'état d'émission `TX3` est reconnu (Po et S-mètre ne se figent plus quand le PTT du poste et du CAT sont actifs ensemble).
+
+**Journal des commandes** : réinitialisé à 25 Mo (ancien en `.prev`), 24 h d'archives au plus.
+
+**Fenêtres** : plein écran au premier démarrage, puis taille et position de la dernière fermeture (télécommande et journal).
+
+**Journal : rapports** : 59+5, 59+10, 59+15 … 59+55, 59+60.
+

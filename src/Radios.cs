@@ -303,7 +303,7 @@ namespace HamRadioLink
             b.Act("tunego", "TUNE START", 24, 252, 182, 36, "AC002;");
             b.Tog("vox", "VOX", 24, 298, 86, 44, "VX{v};", "VX;", @"^VX(?<v>[01]);$");
             b.Tog("mox", "MOX", 120, 298, 86, 44, "MX{v};", "MX;", @"^MX(?<v>[01]);$").Accent = "red";
-            c = b.Tog("ptt", "ÉMISSION (PTT)", 24, 350, 182, 54, "TX{v};", "TX;", @"^TX(?<v>[0-2]);$", "1|2", "0"); c.Accent = "red"; c.Period = 250;
+            c = b.Tog("ptt", "ÉMISSION (PTT)", 24, 350, 182, 54, "TX{v};", "TX;", @"^TX(?<v>[0-3]);$", "1|2|3", "0"); c.Accent = "red"; c.Period = 250;
             b.Tog("moni", "MONI", 24, 412, 86, 40, "ML0{v};", "ML0;", @"^ML0(?<v>\d{3});$", "001", "000");
             b.Tog("proc", "PROC", 120, 412, 86, 40, "PR{v};", "PR;", @"^PR(?<v>[01]);$");
             if (x5)
@@ -334,7 +334,7 @@ namespace HamRadioLink
             b.Gauge("bigmeter", "S-MÈTRE", 244, 310, 480, 148).Hint = "Grand S-mètre à aiguille (clic droit sur un vumètre de gauche pour l'afficher ; clic gauche dessus = fonction suivante PO / SWR / ALC...).";
             c = b.LedRd("l_busy", "BUSY A", 244, 462, 100, 22, "BY;", @"^BY(?<v>[01])(?<busyb>[01]);$", "green"); c.Hint = "BY : silencieux ouvert main (P1) et sub (P2).";
             b.Led("l_busyb", "BUSY B", 352, 462, 100, 22, "busyb", "1", "green");
-            b.Led("l_tx", "TX", 460, 462, 90, 22, "ptt", "1|2", "red");
+            b.Led("l_tx", "TX", 460, 462, 90, 22, "ptt", "1|2|3", "red");
             b.Led("l_mem", "MEM", 558, 462, 90, 22, "vm", "1|2|3|4", "amber");
             b.Led("l_split", "SPLIT", 656, 462, 90, 22, "split", "1", "cyan");
             if (x5) b.Led("l_rxant", "ANT RX", 754, 462, 90, 22, "rxant", "1", "amber");

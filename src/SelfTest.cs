@@ -151,7 +151,7 @@ namespace HamRadioLink
             for (int i = 0; i < top.Count; i++) for (int j = i + 1; j < top.Count; j++)
                 {
                     Ctl a = top[i], b = top[j]; bool ov = a.X < b.X + b.W && b.X < a.X + a.W && a.Y < b.Y + b.H && b.Y < a.Y + a.H;
-                    Check(!ov || a.Id == "bigmeter" || b.Id == "bigmeter" || ((a.Id == "ft8" || b.Id == "ft8") && (a.Id == "md0" || b.Id == "md0")) || (d.Key == "ft2000" && Ft2000UserOverlap(a.Id, b.Id)) || (d.Key == "ft991a-df5dp" && Df5dpOverlap(a.Id, b.Id)), d.Key + " : " + a.Id + " et " + b.Id + " se chevauchent");
+                    Check(!ov || a.Id == "bigmeter" || b.Id == "bigmeter" || (a.Id == "sm1" && a.Hidden) || (b.Id == "sm1" && b.Hidden) || ((a.Id == "ft8" || b.Id == "ft8") && (a.Id == "md0" || b.Id == "md0")) || (d.Key == "ft2000" && Ft2000UserOverlap(a.Id, b.Id)) || (d.Key == "ft991a-df5dp" && Df5dpOverlap(a.Id, b.Id)), d.Key + " : " + a.Id + " et " + b.Id + " se chevauchent");
                 }
             Info(d.Name + " : " + d.C.Count + " éléments, " + nCat + " avec commande CAT");
         }
@@ -946,7 +946,7 @@ namespace HamRadioLink
         static void CatLogTest()
         {
             string dir = Path.Combine(Cfg.Dir, "logtest"); Directory.CreateDirectory(dir); DateTime now = DateTime.Now;
-            foreach (int back in new int[] { 1, 5, 12 }) File.WriteAllText(Path.Combine(dir, "hamradiolink-" + now.AddDays(-back).ToString("yyyy-MM-dd") + ".log"), "x");
+            foreach (int back in new int[] { 1, 5, 12 }) { string pf = Path.Combine(dir, "hamradiolink-" + now.AddDays(-back).ToString("yyyy-MM-dd") + ".log"); File.WriteAllText(pf, "x"); File.SetLastWriteTime(pf, now.AddDays(-back).AddHours(back == 1 ? 1 : 0)); }   // 24 h d archives au plus : « hier » écrit il y a moins de 24 h est gardé
             Cfg.SetInt("log.days", 3); Cfg.SetBool("log.on", true); Cfg.SetBool("log.detail", false); CatLog.Init(dir);
             CatLog.Tx("ftdx10", "FA;", true); CatLog.Tx("ftdx10", "MD01;", false); for (int i = 0; i < 3; i++) CatLog.Rx("ftdx10", "FA014074000;"); CatLog.Rx("ftdx10", "?;"); CatLog.Rx("ftdx10", "?;"); CatLog.Rx("ftdx10", "FA007074000;");
             for (int i = 0; i < 3; i++) CatLog.Server("srv", "[1] get frequency", "7074000"); CatLog.Server("srv", "[1] set frequency-hz 1", "OK"); CatLog.Server("srv", "[1] set frequency-hz 1", "OK"); CatLog.Server("srv", "get radio", "ERROR"); CatLog.Server("srv", "get radio", "ERROR"); CatLog.Close();

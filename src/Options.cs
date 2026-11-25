@@ -10,16 +10,16 @@ namespace HamRadioLink
     // Couleurs de l'interface (reprise du principe d'IC7760Link) : modifiables, mémorisées, appliquées tout de suite
     public static class Theme
     {
-        public static readonly string[] Names = { "Arrière-plan général", "Panneaux", "Boutons et champs", "Bordures", "Texte (avant-plan)", "Texte atténué", "Accent (titres, voyants)", "Cyan (infos)", "Rouge (émission, alertes)", "Vert (connexion, OK)", "Bleu", "Verrouillage (cadre rouge)", "(réservé)", "Touche Lock verrouillée", "Voile d'un organe verrouillé", "Touche active (fond)", "Bouton de connexion : connecté (OK)", "Bouton de connexion : perdue / absente" };
+        public static readonly string[] Names = { "Arrière-plan général", "Panneaux", "Boutons et champs", "Bordures", "Texte (avant-plan)", "Texte atténué", "Accent (titres, voyants)", "Cyan (infos)", "Rouge (émission, alertes)", "Vert (connexion, OK)", "Bleu", "Verrouillage (cadre rouge)", "(réservé)", "Touche Lock verrouillée", "Voile d'un organe verrouillé", "Touche active (fond)", "Bouton de connexion : connecté (OK)", "Bouton de connexion : perdue / absente", "Valeurs du S-mètre à aiguille (jaune)" };
         static readonly Color[] def; static Theme() { def = Snapshot(); }
         public static Color Get(int i)
         {
-            switch (i) { case 0: return T.Bg; case 1: return T.Panel; case 2: return T.Panel2; case 3: return T.Edge; case 4: return T.Text; case 5: return T.Dim; case 6: return T.Amber; case 7: return T.Cyan; case 8: return T.Red; case 9: return T.Green; case 10: return T.Blue; case 11: return T.Lock; case 12: return T.PttBg; case 13: return T.LockBtn; case 14: return T.Veil; case 15: return T.OnBg; case 16: return T.ConnOk; default: return T.ConnKo; }
+            switch (i) { case 0: return T.Bg; case 1: return T.Panel; case 2: return T.Panel2; case 3: return T.Edge; case 4: return T.Text; case 5: return T.Dim; case 6: return T.Amber; case 7: return T.Cyan; case 8: return T.Red; case 9: return T.Green; case 10: return T.Blue; case 11: return T.Lock; case 12: return T.PttBg; case 13: return T.LockBtn; case 14: return T.Veil; case 15: return T.OnBg; case 16: return T.ConnOk; case 17: return T.ConnKo; default: return T.SVal; }
         }
         public static void Set(int i, Color c)
         {
             c = Color.FromArgb(255, c);
-            switch (i) { case 0: T.Bg = c; break; case 1: T.Panel = c; break; case 2: T.Panel2 = c; break; case 3: T.Edge = c; break; case 4: T.Text = c; break; case 5: T.Dim = c; break; case 6: T.Amber = c; break; case 7: T.Cyan = c; break; case 8: T.Red = c; break; case 9: T.Green = c; break; case 10: T.Blue = c; break; case 11: T.Lock = c; break; case 12: T.PttBg = c; break; case 13: T.LockBtn = c; break; case 14: T.Veil = c; break; case 15: T.OnBg = c; break; case 16: T.ConnOk = c; break; default: T.ConnKo = c; break; }
+            switch (i) { case 0: T.Bg = c; break; case 1: T.Panel = c; break; case 2: T.Panel2 = c; break; case 3: T.Edge = c; break; case 4: T.Text = c; break; case 5: T.Dim = c; break; case 6: T.Amber = c; break; case 7: T.Cyan = c; break; case 8: T.Red = c; break; case 9: T.Green = c; break; case 10: T.Blue = c; break; case 11: T.Lock = c; break; case 12: T.PttBg = c; break; case 13: T.LockBtn = c; break; case 14: T.Veil = c; break; case 15: T.OnBg = c; break; case 16: T.ConnOk = c; break; case 17: T.ConnKo = c; break; default: T.SVal = c; break; }
         }
         public static Color Default(int i) { return def[i]; }
         public static Color[] Snapshot() { Color[] a = new Color[Names.Length]; for (int i = 0; i < a.Length; i++) a[i] = Get(i); return a; }
@@ -275,8 +275,8 @@ namespace HamRadioLink
             page.Controls.Clear(); Head("Journal des commandes", "Enregistre les commandes envoyées, les réponses du poste, les erreurs et les événements (connexion, partage, paires com0com, serveur) dans UN fichier par jour (dossier « logs » à côté du programme). Les fichiers plus vieux que la durée choisie sont supprimés.");
             CheckBox on = new CheckBox(); on.Text = "Écrire le journal"; on.SetBounds(6, 100, 400, 24); on.ForeColor = T.Text; on.Checked = Cfg.GetBool("log.on", true); page.Controls.Add(on);
             CheckBox det = new CheckBox(); det.Text = "Journal détaillé (toutes les relectures périodiques : fichier beaucoup plus gros)"; det.SetBounds(6, 130, 580, 24); det.ForeColor = T.Text; det.Checked = Cfg.GetBool("log.detail", false); page.Controls.Add(det);
-            Label ld = new Label(); ld.Text = "Conserver (jours)"; ld.SetBounds(6, 166, 130, 24); page.Controls.Add(ld);
-            NumericUpDown nd = new NumericUpDown(); nd.Minimum = 1; nd.Maximum = 60; nd.Value = Math.Max(1, Math.Min(60, Cfg.GetInt("log.days", 7))); nd.SetBounds(140, 163, 70, 24); nd.BackColor = T.Panel2; nd.ForeColor = T.Text; page.Controls.Add(nd);
+            Label ld = new Label(); ld.Text = "Archives : 24 h au plus (réinitialisé à 25 Mo)"; ld.SetBounds(6, 166, 400, 24); page.Controls.Add(ld);
+            NumericUpDown nd = new NumericUpDown(); nd.Minimum = 1; nd.Maximum = 60; nd.Value = Math.Max(1, Math.Min(60, Cfg.GetInt("log.days", 7))); nd.SetBounds(140, 163, 70, 24); nd.Visible = false; nd.BackColor = T.Panel2; nd.ForeColor = T.Text; page.Controls.Add(nd);
             Label info = new Label(); info.SetBounds(6, 204, 584, 60); info.ForeColor = T.Cyan; page.Controls.Add(info);
             Action upd = delegate { string f = CatLog.TodayFile; info.Text = "Fichier du jour : " + f + (System.IO.File.Exists(f) ? "  (" + (new System.IO.FileInfo(f).Length / 1024) + " Ko)" : "  (pas encore créé)"); };
             Action save = delegate { Cfg.SetBool("log.on", on.Checked); Cfg.SetBool("log.detail", det.Checked); Cfg.SetInt("log.days", (int)nd.Value); Cfg.Save(); CatLog.Reload(); upd(); };

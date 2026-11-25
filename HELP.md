@@ -221,3 +221,18 @@ Deletion is permanent: make an ADIF backup first (Configuration > Backup).
 ## 4 unvicies. What's new in 1.16
 
 **Logbook: multi-line Comment column.** A long comment wraps at the column width, between words (never inside a word); the contact's row grows. Shrink the column and the text wraps again. The **↔** button limits this column to about 70 characters. Other columns are unchanged.
+
+## 4 duovicies. What's new in 1.17
+
+**SDRLink link (virtual COM port).** HamRadioLink is no longer blocked when the program on the virtual port stops reading: data is dropped after 500 ms and the radio keeps being read. No more cyclic link losses.
+
+**Large needle S-meter.** Under the needle, a yellow line `Po: … SWR: … S…` (the words stay fixed, the values move). In the SUB (VFO-B) box, the sub receiver S reading in yellow plus a small bargraph (FT-2000, FTdx5000, FTdx101, FTdx9000, TS-2000). The yellow is set in Settings > Colors. The Po scale runs from 0 to the radio's maximum power (Settings > Power S-meter calibration) and the needle shows real watts; at 200 W or more, the Vdd position shows 50 V. While transmitting, the MAIN S-meter drops to zero.
+
+**FT-2000**: the `TX3` transmit state is recognised (Po and the S-meter no longer freeze when radio PTT and CAT PTT are active together).
+
+**Command log**: reset at 25 MB (old one kept as `.prev`), 24 h of archives at most.
+
+**Windows**: full screen on the very first start, then the size and position of the last close (remote and logbook).
+
+**Logbook: reports**: 59+5, 59+10, 59+15 … 59+55, 59+60.
+

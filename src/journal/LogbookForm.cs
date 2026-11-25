@@ -48,7 +48,7 @@ namespace HamRadioLink.Journal
         public LogbookForm()
         {
             Text = Tr.T("HamRadioLink ") + App.Version + " Logbook - [" + App.Cfg.Get("db.name", "F5PBG") + "]";
-            Size = new Size(1300, 860); Font = Ui.Normal; StartPosition = FormStartPosition.CenterScreen; Icon = Ui.AppIcon; Ui.RememberWindow(this, "lb");
+            Size = new Size(1300, 860); Font = Ui.Normal; StartPosition = FormStartPosition.CenterScreen; Icon = Ui.AppIcon; Ui.RememberWindow(this, "lb"); if (App.Cfg.Get("win.lb", "") == "" && !App.OffScreen) Load += (s, e) => { WindowState = FormWindowState.Maximized; };   /* tout premier démarrage : plein écran ; ensuite la taille de la dernière fermeture (RememberWindow) */
             cols = AllCols();
             string vis = App.Cfg.Get("lb.cols", "");
             if (vis.Length > 0) { List<string> v = new List<string>(vis.Split(',')); foreach (ColDef c in cols) c.Visible = v.Contains(c.Title); if (App.Cfg.Get("lb.clcol", "") != "1") { foreach (ColDef c in cols) if (c.Title == "Club Log sent") c.Visible = true; App.Cfg.Set("lb.clcol", "1"); }

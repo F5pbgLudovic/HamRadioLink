@@ -22,7 +22,7 @@ namespace HamRadioLink
         }
         public static Color Bg = Color.FromArgb(12, 15, 21), Panel = Color.FromArgb(22, 27, 36), Panel2 = Color.FromArgb(30, 37, 49), Edge = Color.FromArgb(56, 68, 86);
         public static Color Text = Color.FromArgb(222, 230, 238), Dim = Color.FromArgb(128, 145, 163), Amber = Color.FromArgb(255, 178, 20), Cyan = Color.FromArgb(40, 205, 235);
-        public static Color Red = Color.FromArgb(255, 66, 58), Green = Color.FromArgb(70, 224, 112), Blue = Color.FromArgb(70, 150, 255), Lock = Color.FromArgb(235, 30, 30), PttBg = Color.FromArgb(150, 64, 6), LockBtn = Color.FromArgb(225, 35, 35), Veil = Color.FromArgb(120, 18, 18), OnBg = Color.FromArgb(14, 36, 92), ConnOk = Color.FromArgb(28, 134, 50), ConnKo = Color.FromArgb(176, 34, 30);
+        public static Color Red = Color.FromArgb(255, 66, 58), Green = Color.FromArgb(70, 224, 112), Blue = Color.FromArgb(70, 150, 255), Lock = Color.FromArgb(235, 30, 30), PttBg = Color.FromArgb(150, 64, 6), LockBtn = Color.FromArgb(225, 35, 35), Veil = Color.FromArgb(120, 18, 18), OnBg = Color.FromArgb(14, 36, 92), ConnOk = Color.FromArgb(28, 134, 50), ConnKo = Color.FromArgb(176, 34, 30), SVal = Color.FromArgb(255, 220, 40);
         public static Color Acc(string n, Color def)
         {
             switch (n) { case "amber": return Amber; case "cyan": return Cyan; case "red": return Red; case "green": return Green; case "blue": return Blue; default: return def; }
@@ -466,7 +466,7 @@ namespace HamRadioLink
         static readonly string[] sT = { "1", "3", "5", "7", "9", "+20", "+40", "+60" }; static readonly double[] sP = { 0.07, 0.19, 0.31, 0.43, 0.5, 0.67, 0.83, 1.0 };
         public override void Sync()
         {
-            if (!Ready) return; string s = St(Def.Id); int v = 0; if (s != null) int.TryParse(s, out v); if (Def.TxOnly && !Rig.Tx) v = 0;
+            if (!Ready) return; string s = St(Def.Id); int v = 0; if (s != null) int.TryParse(s, out v); if (Def.TxOnly && !Rig.Tx) v = 0; if (Def.Id == "sm" && Def.Fmt == "s" && Rig.Tx && Rig.Def.Find("po") != null) v = 0;   // en émission le S-mètre principal ne reçoit plus : il retombe à zéro (comme le S sub)
             double nv = Math.Max(0, Math.Min(Def.Max, v)); int tick = Environment.TickCount;
             if (nv >= peak) { peak = nv; peakTick = tick; } else if (tick - peakTick > HoldMs) peak = Math.Max(nv, peak - Def.Max * 0.02);
             if (Math.Abs(nv - val) > 0.01 || peak != nv || v != shown || scVer != MeterCal.Ver) { scVer = MeterCal.Ver; sc = Rig != null ? MeterCal.Scale(Rig.Def, Def) : null; val = nv; shown = v; txt = Text2(peak > nv + 0.01 ? (int)Math.Round(peak) : v); Invalidate(); }
@@ -550,7 +550,7 @@ namespace HamRadioLink
     // ------------------------------------------------------------------ afficheur de fréquence
     public class HFreq : HW
     {
-        long freq; string mode = ""; bool sel, tx; int hover = -1; Font fd;
+        long freq; string mode = "", subS = ""; double subV; bool sel, tx; int hover = -1; Font fd;
         Rectangle[] cell = new Rectangle[9];
         int N { get { return Rig != null && Rig.Def != null && Rig.Def.MaxFreq >= 100000000 ? 9 : 8; } }          // 9 chiffres dès que le poste monte au-delà de 100 MHz (144 / 430 MHz)
         long PlaceAt(int i) { long p = 1; for (int q = 0; q < N - 1 - i; q++) p *= 10; return p; }
@@ -559,7 +559,7 @@ namespace HamRadioLink
             if (!Ready) return; string s = St(Def.Id); long f = 0; if (s != null) long.TryParse(s, out f);
             string m = ""; Ctl mc = Rig.Def.Find(Def.Ref); string mv = St(Def.Ref); if (mc != null && mv != null) foreach (Item it in mc.ItemList) if (it.Match(mv)) m = it.Label;
             string vs = St("vs"); bool sl = vs == (Def.Id == "fa" ? "0" : "1") || (vs == null && Def.Id == "fa"); bool t = Rig.Tx && sl;
-            if (f != freq || m != mode || sl != sel || t != tx) { freq = f; mode = m; sel = sl; tx = t; Invalidate(); }
+            double sv = 0; { string sx = Def.Id == "fb" ? St("sm1") : null; int svi; Ctl sc1 = Rig.Def.Find("sm1"); if (sx != null && sc1 != null && int.TryParse(sx, out svi)) sv = Math.Max(0, Math.Min(1, svi / (double)(sc1.Max > 0 ? sc1.Max : 255))); } string ss = Def.Id == "fb" && BigMeterCfg.On(Rig.Def) && Rig.Def.Find("sm1") != null ? BigMeterCfg.SText(Rig, "sm1") : ""; if (f != freq || m != mode || sl != sel || t != tx || ss != subS || Math.Abs(sv - subV) > 0.004) { freq = f; mode = m; sel = sl; tx = t; subS = ss; subV = sv; Invalidate(); }
         }
         void Calc()
         {
@@ -578,6 +578,17 @@ namespace HamRadioLink
                 using (Pen pen = new Pen(border, sel || tx ? 2f : 1f)) g.DrawPath(pen, p);
             }
             using (Brush b = new SolidBrush(sel ? acc : T.Dim)) g.DrawString(Def.Label, T.Fn("Segoe UI Semibold", 10f), b, 10 * k, 6 * k);
+            if (subS.Length > 0) { float lw0 = g.MeasureString(Def.Label, T.Fn("Segoe UI Semibold", 10f)).Width; using (Brush yb = new SolidBrush(T.SVal)) g.DrawString(subS, T.Fn("Segoe UI Semibold", 10f), yb, 10 * k + lw0 + 6 * k, 6 * k); }
+            if (subS.Length > 0)
+            {
+                Font sf0 = T.Fn("Segoe UI Semibold", 10f); float x1 = 10 * k + g.MeasureString(Def.Label, sf0).Width + 6 * k + g.MeasureString("S9+60dB", sf0).Width + 22 * k, x2 = Width - 26 * k - 40 * k; float bh = Math.Max(6f, sf0.Height - 6 * k);
+                if (x2 - x1 > 20 * k)
+                {
+                    RectangleF br = new RectangleF(x1, 9 * k, x2 - x1, bh); int seg = Math.Max(3, (int)(4 * k)), gp = Math.Max(1, (int)k), nn = Math.Max(1, (int)(br.Width / (seg + gp))), lit = (int)Math.Round(subV * nn);
+                    using (Brush bb = new SolidBrush(Color.FromArgb(8, 10, 14))) g.FillRectangle(bb, br);
+                    for (int q = 0; q < nn; q++) { double pp = (q + 0.5) / nn; Color cc = pp > 0.5 ? (pp > 0.84 ? T.Red : T.Amber) : T.Blue; if (q >= lit) cc = Color.FromArgb(34, cc); using (Brush bb = new SolidBrush(cc)) g.FillRectangle(bb, br.X + q * (seg + gp), br.Y + 1, seg, br.Height - 2); }
+                }
+            }
             using (Brush b = new SolidBrush(tx ? T.Red : T.Cyan)) g.DrawString(mode, T.Fn("Segoe UI Semibold", 11f), b, 10 * k, 28 * k);
             bool have = Ready && St(Def.Id) != null; string s = have ? freq.ToString().PadLeft(N) : new string(' ', N); bool lead = true;
             Color on = tx ? Color.FromArgb(255, 110, 100) : (sel ? Color.FromArgb(255, 226, 150) : Color.FromArgb(190, 205, 220)); if (oled && !tx) on = sel ? Color.FromArgb(255, 200, 80) : Color.FromArgb(200, 150, 60);

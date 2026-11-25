@@ -70,6 +70,22 @@ namespace HamRadioLink
         // ports COM virtuels que HamRadioLink lui-même tient ouverts pour un partage : port -> liaison du poste
         public static readonly Dictionary<string, string> Held = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         public static readonly HashSet<int> HeldTcp = new HashSet<int>();     // ports TCP de partage ouverts par HamRadioLink
+        // écriture vers le port COM virtuel dans un fil à part : si l'autre logiciel ne lit plus, la lecture du poste n'est jamais bloquée
+        readonly Queue<string> outQ = new Queue<string>(); readonly AutoResetEvent outEv = new AutoResetEvent(false); int dropped;
+        void Writer()
+        {
+            while (run)
+            {
+                outEv.WaitOne(500); if (!run) break;
+                while (run)
+                {
+                    string s; lock (outQ) { if (outQ.Count == 0) break; s = outQ.Dequeue(); }
+                    try { SerialPort p = sp; if (p != null && p.IsOpen) p.Write(s); }
+                    catch (TimeoutException) { try { sp.DiscardOutBuffer(); } catch { } lock (outQ) { dropped += outQ.Count + 1; outQ.Clear(); } CatLog.Event("partage", "le logiciel sur " + o.Com + " ne lit plus : données abandonnées (" + dropped + ")"); }
+                    catch { }
+                }
+            }
+        }
         public int ExtCommands, LocCommands;
         public int Clients { get { lock (conns) return conns.Count; } }
         public int TcpActual { get { return ls != null ? ((IPEndPoint)ls.LocalEndpoint).Port : 0; } }
@@ -86,9 +102,9 @@ namespace HamRadioLink
                 run = true;
                 if (o.Com.Length > 0)
                 {
-                    sp = new SerialPort(o.Com, o.Baud, Parity.None, 8, o.Stop == 2 ? StopBits.Two : StopBits.One); sp.Handshake = Handshake.None; sp.Encoding = Civ.L1;
+                    sp = new SerialPort(o.Com, o.Baud, Parity.None, 8, o.Stop == 2 ? StopBits.Two : StopBits.One); sp.Handshake = Handshake.None; sp.Encoding = Civ.L1; sp.WriteTimeout = 500;
                     sp.DataReceived += delegate { try { string t = sp.ReadExisting(); if (t.Length > 0) FromExt(extSerial, t); } catch { } };
-                    sp.Open(); sp.RtsEnable = true; sp.DtrEnable = true; lock (Held) Held[o.Com] = !string.IsNullOrEmpty(o.Owner) ? o.Owner : inner.Name; CatLog.Event("partage", "port COM virtuel " + o.Com + " ouvert pour " + (o.Owner.Length > 0 ? o.Owner : inner.Name));
+                    sp.Open(); Thread wt = new Thread(Writer); wt.IsBackground = true; wt.Start(); sp.RtsEnable = true; sp.DtrEnable = true; lock (Held) Held[o.Com] = !string.IsNullOrEmpty(o.Owner) ? o.Owner : inner.Name; CatLog.Event("partage", "port COM virtuel " + o.Com + " ouvert pour " + (o.Owner.Length > 0 ? o.Owner : inner.Name));
                 }
                 if (o.TcpPort > 0 || (o.TcpPort < 0))
                 {
@@ -101,7 +117,7 @@ namespace HamRadioLink
         }
         public void Close()
         {
-            run = false; inner.Data -= OnRaw; inner.Close();
+            run = false; outEv.Set(); inner.Data -= OnRaw; inner.Close();
             try { if (sp != null) { sp.Close(); sp.Dispose(); } } catch { } sp = null; if (o.Com != null && o.Com.Length > 0) lock (Held) Held.Remove(o.Com);
             try { if (ls != null) { lock (HeldTcp) HeldTcp.Remove(TcpActual); ls.Stop(); } } catch { } ls = null;
             lock (conns) { foreach (Conn c in conns) try { c.Ns.Close(); } catch { } conns.Clear(); }
@@ -217,7 +233,7 @@ namespace HamRadioLink
         }
         void ToExt(string s)
         {
-            try { SerialPort p = sp; if (p != null && p.IsOpen) p.Write(s); } catch { }
+            if (sp != null) { lock (outQ) { if (outQ.Count < 2000) outQ.Enqueue(s); else dropped++; } outEv.Set(); }
             List<Conn> l; lock (conns) l = new List<Conn>(conns);
             byte[] b = Civ.L1.GetBytes(s);
             foreach (Conn c in l) { try { c.Ns.Write(b, 0, b.Length); } catch { try { c.Ns.Close(); } catch { } lock (conns) conns.Remove(c); } }

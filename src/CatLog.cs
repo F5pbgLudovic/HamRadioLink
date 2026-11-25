@@ -9,7 +9,7 @@ namespace HamRadioLink
     // Journal des commandes et des réponses : UN fichier par jour (logs\hamradiolink-AAAA-MM-JJ.log), les plus anciens sont supprimés
     // (7 jours par défaut). Par défaut le journal est « compact » : les ordres envoyés, les réponses qui CHANGENT, les erreurs et les événements
     // (connexion, partage, paires com0com, serveur) ; les relectures périodiques identiques sont comptées, pas écrites. Le mode « détaillé » écrit tout.
-    // Un plafond de taille par jour évite qu'un fichier devienne énorme.
+    // Un plafond de taille évite qu'un fichier devienne énorme : à 25 Mo le journal est réinitialisé (l'ancien reste en .prev) ; il repart aussi à zéro chaque jour.
     public static class CatLog
     {
         public static bool On, Detail; public static int KeepDays = 7; public static long MaxBytes = 25L * 1024 * 1024;
@@ -21,16 +21,16 @@ namespace HamRadioLink
         public static void Init(string folder)
         {
             lock (lk) { Close(); dir = folder; }
-            On = Cfg.GetBool("log.on", true); Detail = Cfg.GetBool("log.detail", false); KeepDays = Math.Max(1, Math.Min(60, Cfg.GetInt("log.days", 7)));
+            On = Cfg.GetBool("log.on", true); Detail = Cfg.GetBool("log.detail", false); KeepDays = 1;
             if (On) { Purge(); Event("programme", "démarrage de HamRadioLink " + MainForm.Version); }
         }
-        public static void Reload() { On = Cfg.GetBool("log.on", true); Detail = Cfg.GetBool("log.detail", false); KeepDays = Math.Max(1, Math.Min(60, Cfg.GetInt("log.days", 7))); if (On) Purge(); }
+        public static void Reload() { On = Cfg.GetBool("log.on", true); Detail = Cfg.GetBool("log.detail", false); KeepDays = 1; if (On) Purge(); }
         public static void Purge()
         {
             try
             {
                 if (!Directory.Exists(Dir)) return; DateTime limit = DateTime.Now.Date.AddDays(-(KeepDays - 1));
-                foreach (string f in Directory.GetFiles(Dir, "hamradiolink-*.log")) { try { DateTime d; if (DateTime.TryParseExact(Path.GetFileNameWithoutExtension(f).Substring(13), "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out d) && d < limit) File.Delete(f); } catch { } }
+foreach (string f in Directory.GetFiles(Dir, "hamradiolink-*.log*")) { try { if (File.GetLastWriteTime(f) < DateTime.Now.AddHours(-24)) File.Delete(f); } catch { } }   // jamais plus de 24 h d'archives
             }
             catch { }
         }
@@ -41,7 +41,7 @@ namespace HamRadioLink
             if (w != null) { Summary(); try { w.Flush(); w.Dispose(); } catch { } w = null; Purge(); }
             Directory.CreateDirectory(Dir); string p = TodayFile; size = File.Exists(p) ? new FileInfo(p).Length : 0; capped = false;
             w = new StreamWriter(new FileStream(p, FileMode.Append, FileAccess.Write, FileShare.ReadWrite), new UTF8Encoding(false)); day = today;
-            if (flush == null) flush = new Timer(delegate { lock (lk) { try { if (w != null) w.Flush(); } catch { } } }, null, 1000, 1000);
+            if (flush == null) { int tk = 0; flush = new Timer(delegate { lock (lk) { try { if (w != null) w.Flush(); if (++tk % 600 == 0) Purge(); } catch { } } }, null, 1000, 1000); }
         }
         static void Summary()
         {
@@ -56,7 +56,14 @@ namespace HamRadioLink
                 {
                     Open(); if (capped) return;
                     string line = DateTime.Now.ToString("HH:mm:ss.fff") + "  " + (radio ?? "").PadRight(10) + " " + kind.PadRight(3) + "  " + text.Replace("\r", " ").Replace("\n", " ");
-                    if (size + line.Length > MaxBytes) { capped = true; w.WriteLine("# plafond de " + (MaxBytes / (1024 * 1024)) + " Mo atteint : le reste de la journée n'est pas écrit"); return; }
+                    if (size + line.Length > MaxBytes)
+                    {
+                        // plafond atteint : le journal est réinitialisé (l'ancien est gardé en .prev jusqu'à la purge) au lieu de s'arrêter d'écrire
+                        string p = TodayFile; try { w.Flush(); w.Dispose(); } catch { } w = null;
+                        try { if (File.Exists(p + ".prev")) File.Delete(p + ".prev"); File.Move(p, p + ".prev"); } catch { try { File.Delete(p); } catch { } }
+                        w = new StreamWriter(new FileStream(p, FileMode.Append, FileAccess.Write, FileShare.ReadWrite), new UTF8Encoding(false)); size = 0; day = DateTime.Now.ToString("yyyy-MM-dd");
+                        w.WriteLine("# journal réinitialisé : plafond de " + (MaxBytes / (1024 * 1024)) + " Mo atteint (le précédent est dans hamradiolink-" + day + ".log.prev)");
+                    }
                     w.WriteLine(line); size += line.Length + 2;
                 }
                 catch { }

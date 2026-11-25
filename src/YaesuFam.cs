@@ -101,6 +101,14 @@ namespace HamRadioLink
             c = b.Cho("ams", "C4FM TX (AMS)", 1620, 924, 200, 40, "AUTO (AMS)=0,MANUEL=1,DN voix+données=2,VW voix large=3,ANALOGIQUE=4", "EX090{v};", "EX090;", @"^EX090(?<v>[0-4]);$"); c.Hint = "Menu 090 AMS TX MODE : choix du mode d'émission C4FM. Le manuel CAT n'offre rien d'autre pour le C4FM (pas de GM, pas d'écran propre).";
         }
 
+        // S-mètre du récepteur secondaire (lu pour le rapport et le mini-vumètre de la case VFO-B quand le grand S-mètre à aiguille est affiché ; visible seulement en vue config)
+        static void SubS(RadioDef r, string read, string parse, int max)
+        {
+            Ctl s0 = r.Find("sm"); if (s0 == null || r.Find("sm1") != null) return;
+            Ctl c = new Ctl(); c.K = Kind.Meter; c.Id = "sm1"; c.Label = "S SUB"; c.X = c.DX = s0.X; c.Y = c.DY = s0.Y + s0.H + 4; c.W = c.DW = s0.W; c.H = c.DH = s0.H; c.Max = max; c.Read = read; c.Parse = parse; c.Fmt = "s"; c.Period = 130; c.Accent = "blue"; c.Hidden = true;
+            c.Hint = "Mesure lue pour le S du récepteur secondaire (visible seulement en vue config).";
+            r.C.Add(c);
+        }
         static RadioDef YaesuModel(string key, string name, string cat, string id, int digits, long maxHz, int baud, string modes)
         {
             RadioDef r = Ftdx10(); foreach (string xid in new[] { "clartxk", "clrclar", "menu", "bigmeter" }) { Ctl xc = r.Find(xid); if (xc != null) r.C.Remove(xc); } { Ctl cl0 = r.Find("clar"); if (cl0 != null) { cl0.Label = "CLAR"; cl0.DLabel = "CLAR"; } }   /* CLAR TX et CLEAR CLAR sont propres au FTdx10 */ r.Key = key; r.Name = name; r.Catalog = cat; r.IdAnswer = id; r.FreqDigits = digits; r.MaxFreq = maxHz; r.DefBaud = baud;
@@ -122,6 +130,7 @@ namespace HamRadioLink
             if (cl != null && !cs.Valid("CF001+0010;") && cs.Valid("RU0010;") && cs.Valid("RD0010;") && cs.Valid("RC;"))
             { cl.Set = "RC;{p:RU:4:;}{n:RD:4:;}"; cl.Min = -9999; cl.Max = 9999; cl.Hint = "Pas de commande CF sur ce poste : le décalage s'écrit avec RC; puis RU (plus) ou RD (moins), par pas de 10 Hz ; il est lu avec IF; qui met aussi à jour fréquence A, mode A, CLAR RX/TX."; }
             FixYaesu(r, cat, key);
+            if (cat == "ftdx101" || key == "ftdx9000") SubS(r, "SM1;", @"^SM1(?<v>\d{3});$", 255);   // manuels FTdx101 et FTdx9000 : SM P1 = 1 lit le S-mètre du récepteur secondaire (000 à 255)
             List<Ctl> keep = new List<Ctl>();
             foreach (Ctl c in r.C)
             {

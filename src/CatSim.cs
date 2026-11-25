@@ -129,6 +129,7 @@ namespace HamRadioLink
                 return "IF" + fa + "     " + "+0000" + "0" + "0" + "0" + "00" + (Tx ? "1" : "0") + md + "0" + "0" + "0" + "0" + "00" + " ;";
             }
             if (!t890 && cmd == "SM0") return "SM0" + (Wob(60, 40) * 30 / 255).ToString("0000") + ";";
+            if (!t890 && cmd == "SM1") return "SM1" + (Wob(60, 40) * 15 / 255).ToString("0000") + ";";
             if (t890 && cmd == "SM") return "SM" + (Wob(90, 40) * 70 / 255).ToString("0000") + ";";
             if (!t890 && cmd.Length == 3 && c2 == "RM") return cmd + (Tx ? Wob(120, 30) * 10 / 255 : 0).ToString("0000") + ";";
             if (cmd == "BY") return t890 ? "BY0;" : "BY00;";

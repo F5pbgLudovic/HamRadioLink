@@ -50,7 +50,7 @@ namespace HamRadioLink
 
     public class MainForm : Form
     {
-        public const string Version = "1.16";
+        public const string Version = "1.17";
         const int DesignW = 1860, DesignH = 944; const double Ratio = DesignW / (double)DesignH;
         readonly List<RadioDef> radios = Radios.All(); RadioDef cur; Rig rig = new Rig();      // cur / rig / widgets = poste ACTIF (plusieurs postes peuvent être connectés en même temps)
         readonly Panel stage = new Panel(); readonly ToolTip tip = new ToolTip();
@@ -81,6 +81,8 @@ namespace HamRadioLink
         {
             AutoScaleMode = AutoScaleMode.None; try { using (Graphics gd = CreateGraphics()) T.Dpi = gd.DpiX; } catch { }
             BackColor = T.Bg; ForeColor = T.Text; Font = new Font("Segoe UI", 9f); ClientSize = new Size(DesignW, DesignH); StartPosition = FormStartPosition.CenterScreen; DoubleBuffered = true; KeyPreview = true;
+            // taille de la fenêtre : plein écran au tout premier démarrage, ensuite celle de la dernière fermeture
+            { int wl = Cfg.GetInt("win.w", 0); if (wl >= 400) { Rectangle wr = new Rectangle(Cfg.GetInt("win.x", 0), Cfg.GetInt("win.y", 0), wl, Cfg.GetInt("win.h", 300)); bool vis = false; foreach (Screen sc in Screen.AllScreens) if (sc.WorkingArea.IntersectsWith(wr)) vis = true; if (vis) { StartPosition = FormStartPosition.Manual; Bounds = wr; } if (Cfg.GetBool("win.max", false)) WindowState = FormWindowState.Maximized; } else WindowState = FormWindowState.Maximized; }
             Text = "HamRadioLink " + Version + " @F5PBG 2026"; try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
             stage.BackColor = T.Bg; stage.Bounds = new Rectangle(0, 0, DesignW, DesignH); Controls.Add(stage);
             BuildHeader();
@@ -727,6 +729,7 @@ namespace HamRadioLink
         public void BringBack() { Journal.RigState.Enabled = true; Show(); wasConnected.Clear();   /* postes laissés déconnectés */ if (WindowState == FormWindowState.Minimized) WindowState = FormWindowState.Normal; Activate(); }
         void OnClosing(object s, FormClosingEventArgs e)
         {
+            try { Rectangle wb = WindowState == FormWindowState.Normal ? Bounds : RestoreBounds; if (wb.Width >= 400 && wb.Height >= 300) { Cfg.SetInt("win.x", wb.X); Cfg.SetInt("win.y", wb.Y); Cfg.SetInt("win.w", wb.Width); Cfg.SetInt("win.h", wb.Height); } Cfg.SetBool("win.max", WindowState == FormWindowState.Maximized); Cfg.Save(); } catch { }
             if (!(!quitting && e.CloseReason == CloseReason.UserClosing && Journal.Hub.IsOpen)) { try { List<Rig> rl0 = new List<Rig>(); foreach (Sess x in sess) rl0.Add(x.Rig); RxAudio.Shutdown(rl0); } catch { } }   // arrêt réel : volume du poste rétabli, écoutes arrêtées
             // Journal ouvert : fermer la télécommande la masque seulement ; le programme s'arrête à la fermeture du journal.
             if (!quitting && e.CloseReason == CloseReason.UserClosing && Journal.Hub.IsOpen)

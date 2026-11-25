@@ -31,6 +31,7 @@ namespace HamRadioLink
             {
                 Ctl dn2 = r.Find("dnl"); if (dn2 != null) r.C.Remove(dn2); Ctl rg2 = r.Find("rf"); if (rg2 != null) rg2.Max = 255; Ctl shh = r.Find("sh"); if (shh != null) shh.Max = 11;
             }
+            if (key == "ts2000" || key == "tsb2000") SubS(r, "SM1;", @"^SM1(?<v>\d{4});$", 15);   // manuel TS-2000 : SM1 lit le S-mètre du sous-récepteur (0000 à 0015)
             if (key == "ts990") r.Notes.Add("face avant du TS-890 inadaptée : le TS-990S a deux récepteurs (Main / Sub) et la plupart de ses commandes portent un chiffre de bande (AG0, RG0, SQ0, GC0, NB10…), sans FR / FT (split par TB) : à refaire d'après le manuel (_hors-github\audit2-kenwood-elecraft.md, rubrique 4)");
             if (baseKind == 1) { Ctl fn = r.Find("fine"); if (fn != null) fn.Parse = @"^FS(?<v>[01])[01]?;$"; }   // TS-890 : la réponse FS a deux chiffres (fine RX et TX)
             r.Notes.Add(note); new Bld(r).Fin(); return r;

@@ -168,7 +168,7 @@ namespace HamRadioLink.Journal
         }
 
         // ---- rapports RST proposés selon le mode : phonie 51 à 59 puis 59+10 à 59+60 ; CW, RTTY et modes à clavier 519 à 599 ; modes WSJT en dB ; SSTV / fax en RSV
-        static readonly string[] RstPhone = { "51", "52", "53", "54", "55", "56", "57", "58", "59", "59+10", "59+20", "59+30", "59+40", "59+50", "59+60" };
+        static readonly string[] RstPhone = { "51", "52", "53", "54", "55", "56", "57", "58", "59", "59+5", "59+10", "59+15", "59+20", "59+25", "59+30", "59+35", "59+40", "59+45", "59+50", "59+55", "59+60" };
         static readonly string[] RstCw = { "519", "529", "539", "549", "559", "569", "579", "589", "599" };
         static readonly string[] RstSstv = { "515", "525", "535", "545", "555", "565", "575", "585", "595" };
         static string[] RstDbList() { List<string> l = new List<string>(); for (int v = -30; v <= 30; v++) l.Add(v < 0 ? "-" + (-v).ToString("00") : "+" + v.ToString("00")); return l.ToArray(); }
