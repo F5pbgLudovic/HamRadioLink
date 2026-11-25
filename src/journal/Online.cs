@@ -283,7 +283,65 @@ namespace HamRadioLink.Journal
             throw new Exception(Tr.T("World Radio League : plusieurs journaux et aucun par défaut. Choisissez-en un dans Online services (bouton « Mes journaux »)."));
         }
         // World Radio League : clé API (Integrations > Developer API), envoi d'un fichier ADIF en 3 étapes (démarrer l'import, déposer le fichier, suivre le traitement).
+        static string WJ(string s) { return "\"" + s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", " ").Replace("\n", " ").Replace("\t", " ") + "\""; }
+        // 1.18 : envoi QSO par QSO (POST /v1/contacts, 60 écritures/min et 5000/jour) ; l'import ADIF n'est limité qu'à 20 par jour.
         public static string UploadWrl(List<Qso> qsos)
+        {
+            string key = App.Cfg.Get("wrl.key", "").Trim();
+            if (key.Length == 0) throw new Exception(Tr.T("World Radio League : clé API à renseigner (Outils > Online services)."));
+            string lb = WrlLogbook(key); bool nocom = App.Cfg.GetBool("online.nocomment", false); Refused.Clear(); int ok = 0, dup = 0, bad = 0; string lastErr = "";
+            foreach (Qso q in qsos)
+            {
+                Dictionary<string, string> f = new Dictionary<string, string>();
+                string a = Adif.Export(new List<Qso> { q }); int eoh = a.IndexOf("<EOH>", StringComparison.OrdinalIgnoreCase); if (eoh >= 0) a = a.Substring(eoh + 5);
+                foreach (Match m in Regex.Matches(a, @"<(\w+):(\d+)(?::\w+)?>", RegexOptions.Singleline))
+                {
+                    int n = int.Parse(m.Groups[2].Value), st = m.Index + m.Length; if (st + n <= a.Length) f[m.Groups[1].Value.ToUpperInvariant()] = a.Substring(st, n).Trim();
+                }
+                string d, t, fr, bd, md; f.TryGetValue("QSO_DATE", out d); f.TryGetValue("TIME_ON", out t); f.TryGetValue("FREQ", out fr); f.TryGetValue("BAND", out bd); f.TryGetValue("MODE", out md);
+                string sub; if (f.TryGetValue("SUBMODE", out sub) && sub.Length > 0) md = sub;
+                double mhz; string call; f.TryGetValue("CALL", out call);
+                if (string.IsNullOrEmpty(call) || string.IsNullOrEmpty(d) || string.IsNullOrEmpty(t) || string.IsNullOrEmpty(md) || !double.TryParse(fr ?? "", System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out mhz) || string.IsNullOrEmpty(bd))
+                { bad++; Refused.Add(q.Id); lastErr = Tr.T("champ obligatoire manquant (indicatif, date, heure, fréquence, bande ou mode)"); continue; }
+                StringBuilder sb = new StringBuilder("{\"programId\":\"HamRadioLink\"" + (lb.Length > 0 ? ",\"logbookId\":" + WJ(lb) : "") + ",\"call\":" + WJ(call) +
+                    ",\"timestamp\":{\"qsoDate\":" + WJ(d) + ",\"timeOn\":" + WJ(t.Length >= 6 ? t.Substring(0, 6) : t.Substring(0, Math.Min(4, t.Length))) + "}" +
+                    ",\"freq\":" + mhz.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture) + ",\"band\":" + WJ(bd.ToLowerInvariant()) + ",\"mode\":" + WJ(md));
+                string v;
+                if (f.TryGetValue("RST_SENT", out v) && v.Length > 0 && v.Length <= 10) sb.Append(",\"rstSent\":" + WJ(v));
+                if (f.TryGetValue("RST_RCVD", out v) && v.Length > 0 && v.Length <= 10) sb.Append(",\"rstRcvd\":" + WJ(v));
+                if (f.TryGetValue("TX_PWR", out v) && v.Length > 0 && v.Length <= 20) sb.Append(",\"txPwr\":" + WJ(v));
+                if (!nocom && f.TryGetValue("COMMENT", out v) && v.Length > 0) sb.Append(",\"notes\":" + WJ(v.Length > 2000 ? v.Substring(0, 2000) : v));
+                if (f.TryGetValue("NAME", out v) && v.Length > 0) sb.Append(",\"name\":" + WJ(v.Length > 255 ? v.Substring(0, 255) : v));
+                if (f.TryGetValue("QTH", out v) && v.Length > 0) sb.Append(",\"qth\":" + WJ(v.Length > 100 ? v.Substring(0, 100) : v));
+                if (f.TryGetValue("STATE", out v) && v.Length > 0) sb.Append(",\"state\":" + WJ(v.Length > 50 ? v.Substring(0, 50) : v));
+                string grid = @"^[A-Ra-r]{2}(?:[0-9]{2}(?:[A-Xa-x]{2}(?:[0-9]{2})?)?)?$";
+                if (f.TryGetValue("GRIDSQUARE", out v) && Regex.IsMatch(v, grid)) sb.Append(",\"gridsquare\":" + WJ(v));
+                if (f.TryGetValue("MY_GRIDSQUARE", out v) && Regex.IsMatch(v, grid)) sb.Append(",\"myGridsquare\":" + WJ(v));
+                if (f.TryGetValue("STATION_CALLSIGN", out v) && v.Length > 0) sb.Append(",\"stationCallsign\":" + WJ(v));
+                if (f.TryGetValue("OPERATOR", out v) && v.Length > 0 && v.Length <= 100) sb.Append(",\"operator\":" + WJ(v));
+                sb.Append("}"); string body = sb.ToString();
+                for (int tr = 0; ; tr++)
+                {
+                    int code; string r = HttpReq("POST", "https://api.worldradioleague.com/v1/contacts", body, "application/json", key, out code);
+                    if (code == 200 || code == 201) { ok++; break; }
+                    if (code == 409 && r.Contains("DUPLICATE_CONTACT")) { dup++; break; }
+                    if (code == 401 || code == 403) throw new Exception(Tr.T("World Radio League : clé API refusée ou révoquée (arrêt)."));
+                    if (code == 429)
+                    {
+                        if (r.IndexOf("daily", StringComparison.OrdinalIgnoreCase) >= 0 || tr >= 2) throw new Exception(Tr.T("World Radio League : quota atteint (") + ok + Tr.T(" envoyés), réessayez plus tard."));
+                        System.Threading.Thread.Sleep(62000); continue;
+                    }
+                    if (code == 409 && tr < 3) { System.Threading.Thread.Sleep(5000); continue; }   // journal verrouillé un instant
+                    if (code >= 500 && tr < 2) { System.Threading.Thread.Sleep(5000); continue; }
+                    if (code == 404 || code == 422 && r.Contains("LOGBOOK_REQUIRED")) throw new Exception(Tr.T("World Radio League : ") + code + " " + Regex.Replace(r, "\\s+", " ").Trim());
+                    bad++; Refused.Add(q.Id); lastErr = code + " " + Regex.Replace(r, "\\s+", " ").Trim(); break;
+                }
+                System.Threading.Thread.Sleep(1100);   // 60 écritures par minute au plus
+            }
+            return Tr.T("World Radio League : ") + ok + Tr.T(" QSO transmis") + (dup > 0 ? ", " + dup + Tr.T(" déjà présents") : "") + (bad > 0 ? ", " + bad + Tr.T(" refusés (") + lastErr + ")" : "") + ".";
+        }
+        // ancien envoi par import ADIF (limité à 20 imports par jour) : conservé, plus utilisé
+        public static string UploadWrlImport(List<Qso> qsos)
         {
             string key = App.Cfg.Get("wrl.key", "").Trim();
             if (key.Length == 0) throw new Exception(Tr.T("World Radio League : clé API à renseigner (Outils > Online services)."));

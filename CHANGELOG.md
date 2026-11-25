@@ -1,6 +1,12 @@
 # Historique des versions
 
 
+## 1.18 — 2026-11-25
+
+**World Radio League** : envoi QSO par QSO (`POST /v1/contacts`, 60 écritures/min, 5 000/jour) au lieu d'un import ADIF par lot (limité à 20 par jour). Doublons comptés comme déjà présents, pause automatique si la limite par minute est atteinte. Les autres envois en ligne ne changent pas.
+
+**Fenêtre d envoi** : progression par lots de 10 pour World Radio League avec le nombre réel envoyé et refusé ; message « rien à envoyer, tous déjà marqués envoyés » au lieu de « 0 / 0 terminé » ; ligne indiquant les QSO ignorés ; dans « Envoyer à tous les logs en ligne », la case « Seulement les xxx QSO sélectionnés » est cochée d office quand des lignes sont sélectionnées.
+
 ## 1.17 — 2026-11-25
 
 **Port COM virtuel (SDRLink, WSJT-X…) — plus de pertes de liaison**

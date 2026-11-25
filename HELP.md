@@ -222,6 +222,12 @@ Deletion is permanent: make an ADIF backup first (Configuration > Backup).
 
 **Logbook: multi-line Comment column.** A long comment wraps at the column width, between words (never inside a word); the contact's row grows. Shrink the column and the text wraps again. The **↔** button limits this column to about 70 characters. Other columns are unchanged.
 
+## 5 duovicies. What's new in 1.18
+
+**World Radio League.** Upload now goes one QSO at a time (`POST /v1/contacts`, 60 per minute, 5,000 per day) instead of a batch ADIF import, which the service limits to 20 per day. Duplicates count as "already present" and are marked sent; a refused QSO is marked No without stopping the upload; automatic pause when the per-minute limit is reached. The other online uploads are unchanged.
+
+**Send window.** For World Radio League: progress in batches of 10, real number sent and number refused. When everything is already marked sent it shows "nothing to send, all already marked sent" (instead of "0 / 0 done") and a line tells how many QSOs are skipped (with an example). In "Send to all online logs", the "Only the xxx selected QSOs" box is ticked automatically when rows are selected.
+
 ## 4 duovicies. What's new in 1.17
 
 **SDRLink link (virtual COM port).** HamRadioLink is no longer blocked when the program on the virtual port stops reading: data is dropped after 500 ms and the radio keeps being read. No more cyclic link losses.

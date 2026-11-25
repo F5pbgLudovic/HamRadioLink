@@ -11,7 +11,7 @@ namespace HamRadioLink.Journal
     {
         public string Key, Name; public Func<List<Qso>, string> Fn; public int Batch, PauseMs; public Func<Qso, bool> Skip; public string Mark;   // Mark : "eqsl" / "lotw" / "clublog" = état « envoyé » à mettre à jour
         public Action<SendSvc, string, List<Qso>> OnFail;   // OnFail(service, message d'erreur, QSO restant à envoyer) : appelé dans le fil de l'interface
-        public List<Qso> Done = new List<Qso>(); public bool Failed; public ProgressBar Bar; public Label Lbl;
+        public List<Qso> Done = new List<Qso>(); public bool Failed; public int Bad; public ProgressBar Bar; public Label Lbl;
     }
 
     // « Envoyer à tous les logs en ligne » : fenêtre NON bloquante qui montre la progression de chaque service ; l'envoi tourne sur un autre fil.
@@ -55,6 +55,7 @@ namespace HamRadioLink.Journal
             {
                 if (cancel) break; SendSvc sv = s; Post(delegate { if (!IsDisposed) sv.Lbl.Text = sv.Name + " : envoi en cours…"; }); Say(s.Name + " : début");
                 List<Qso> mine = s.Skip == null ? qsos : qsos.FindAll(x => !s.Skip(x));
+                if (mine.Count < qsos.Count) { Qso ex0 = qsos.Find(x => s.Skip != null && s.Skip(x)); Say(s.Name + " : " + (qsos.Count - mine.Count) + " QSO ignorés car déjà marqués envoyés sur " + qsos.Count + (ex0 != null ? " (ex. n° " + ex0.Id + ", date " + ex0.S("COL_TIME_ON") + ", indicatif " + ex0.S("COL_CALL") + ")" : "")); }
                 int tot = Math.Max(1, mine.Count); Post(delegate { if (!IsDisposed) { sv.Bar.Maximum = tot; sv.Bar.Value = 0; } });   // la barre de chaque service est sur SES QSO à envoyer
                 int bsz = Math.Max(1, Math.Min(s.Batch, SessionSize));   // un lot ne dépasse jamais une session
                 for (int i = 0; i < mine.Count && !cancel; i += bsz)
@@ -67,12 +68,12 @@ namespace HamRadioLink.Journal
                         if (cancel) break;
                     }
                     List<Qso> part = mine.GetRange(i, Math.Min(bsz, mine.Count - i));
-                    try { string m = s.Fn(part); s.Done.AddRange(part); Say(m); List<Qso> pp = part; Post(delegate { Action<SendSvc, List<Qso>> bd = BatchDone; if (bd != null) bd(sv, pp); }); }
+                    try { string m = s.Fn(part); s.Done.AddRange(part); if (s.Key == "wrl") foreach (Qso rq in part) if (Online.Refused.Contains(rq.Id)) s.Bad++; Say(m); List<Qso> pp = part; Post(delegate { Action<SendSvc, List<Qso>> bd = BatchDone; if (bd != null) bd(sv, pp); }); }
                     catch (Exception ex) { s.Failed = true; Say(s.Name + " : ERREUR : " + ex.Message); string em = ex.Message; List<Qso> rest = mine.GetRange(i, mine.Count - i); Post(delegate { Action<SendSvc, string, List<Qso>> h = sv.OnFail; if (h != null) h(sv, em, rest); }); break; }
-                    int n = s.Done.Count; Post(delegate { if (!IsDisposed) { sv.Bar.Value = Math.Min(sv.Bar.Maximum, n); sv.Lbl.Text = sv.Name + " : " + n + " / " + mine.Count; } });
+                    int n = s.Done.Count; Post(delegate { if (!IsDisposed) { sv.Bar.Value = Math.Min(sv.Bar.Maximum, n); sv.Lbl.Text = sv.Name + " : " + (n - sv.Bad) + " / " + mine.Count + (sv.Bad > 0 ? " (" + sv.Bad + " refusés)" : ""); } });
                 }
-                string state = s.Failed ? Tr.T("arrêté sur erreur") : (cancel ? "interrompu" : "terminé"); int dn = s.Done.Count;
-                Post(delegate { if (!IsDisposed) { sv.Lbl.Text = sv.Name + " : " + state + " (" + dn + " / " + mine.Count + ")"; if (!sv.Failed && !cancel) sv.Bar.Value = sv.Bar.Maximum; } }); Say(s.Name + " : " + state + " (" + dn + " / " + mine.Count + ")");
+                string state = mine.Count == 0 ? Tr.T("rien à envoyer, tous déjà marqués envoyés") : s.Failed ? Tr.T("arrêté sur erreur") : (cancel ? "interrompu" : "terminé"); int dn = s.Done.Count - s.Bad;
+                Post(delegate { if (!IsDisposed) { sv.Lbl.Text = sv.Name + " : " + state + " (" + dn + " / " + mine.Count + (sv.Bad > 0 ? ", " + sv.Bad + " refusés" : "") + ")"; if (!sv.Failed && !cancel) sv.Bar.Value = sv.Bar.Maximum; } }); Say(s.Name + " : " + state + " (" + dn + " / " + mine.Count + ")");
             }
             if (acquired) Release();
             running = false;

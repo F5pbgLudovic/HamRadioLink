@@ -24,7 +24,7 @@ namespace HamRadioLink.Journal
             DateTime d; if (!DateTime.TryParse(App.Cfg.Get("sendall.date", ""), out d)) d = DateTime.Today.AddDays(-7); if (d > DateTime.Today) d = DateTime.Today; dp.Value = d; dp.MaxDate = DateTime.Today;
             Ui.Lbl(this, Tr.T("jusqu'à aujourd'hui"), 356, y, 120); y += 32;
             cSkip = new CheckBox { Text = Tr.T("Ignorer les QSO déjà marqués envoyés à chaque service"), Left = 12, Top = y, Width = 460, Checked = true }; Controls.Add(cSkip); y += 26;
-            cSel = new CheckBox { Text = Tr.T("Seulement les ") + selCount + Tr.T(" QSO sélectionnés (ignorer la date)"), Left = 12, Top = y, Width = 460, Enabled = selCount > 0 }; Controls.Add(cSel); y += 36;
+            cSel = new CheckBox { Text = Tr.T("Seulement les ") + selCount + Tr.T(" QSO sélectionnés (ignorer la date)"), Left = 12, Top = y, Width = 460, Enabled = selCount > 0, Checked = selCount > 0 }; Controls.Add(cSel); y += 36;
             Button ok = Ui.Btn(this, Tr.T("Envoyer"), 290, y, 90, 28, (s, e) => Go()); Ui.Btn(this, Tr.T("Annuler"), 390, y, 90, 28, (s, e) => { DialogResult = DialogResult.Cancel; Close(); });
             ClientSize = new Size(492, y + 42); AcceptButton = ok;
         }

@@ -237,6 +237,12 @@ La suppression est définitive : faites d'abord une sauvegarde ADIF (Configurati
 
 **Journal : colonne Commentaire sur plusieurs lignes.** Un commentaire long passe à la ligne à la largeur de la colonne, entre deux mots (jamais au milieu d'un mot) ; la ligne du contact s'agrandit. Réduisez la colonne : le texte revient à la ligne. Le bouton **↔** limite cette colonne à environ 70 caractères. Les autres colonnes sont inchangées.
 
+## 5 duovicies. Nouveautés de la 1.18
+
+**World Radio League.** L'envoi se fait maintenant QSO par QSO (service `POST /v1/contacts`, 60 par minute, 5 000 par jour) au lieu d'un import ADIF par lot, limité à 20 par jour par le service. Les doublons sont comptés « déjà présents » et marqués envoyés ; un QSO refusé est marqué No sans arrêter l'envoi ; pause automatique si la limite par minute est atteinte. Les autres envois en ligne ne changent pas.
+
+**Fenêtre d'envoi.** Pour World Radio League : progression par lots de 10, nombre réel envoyé et nombre de refusés. Quand tout est déjà marqué envoyé, elle affiche « rien à envoyer, tous déjà marqués envoyés » (au lieu de « 0 / 0 terminé ») et une ligne indique combien de QSO sont ignorés (avec un exemple). Dans « Envoyer à tous les logs en ligne », la case « Seulement les xxx QSO sélectionnés » est cochée d'office quand des lignes sont sélectionnées.
+
 ## 4 duovicies. Nouveautés de la 1.17
 
 **Liaison avec SDRLink (port COM virtuel).** HamRadioLink n'est plus bloqué quand le logiciel branché sur le port virtuel arrête de lire : les données sont abandonnées après 500 ms et la lecture du poste continue. Fin des pertes de liaison cycliques.
