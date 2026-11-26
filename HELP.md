@@ -222,6 +222,13 @@ Deletion is permanent: make an ADIF backup first (Configuration > Backup).
 
 **Logbook: multi-line Comment column.** A long comment wraps at the column width, between words (never inside a word); the contact's row grows. Shrink the column and the text wraps again. The **↔** button limits this column to about 70 characters. Other columns are unchanged.
 
+## 6 duovicies. What's new in 1.20 to 1.22
+
+- **1.21 / 1.22 (command server)**: VFO B mode (`Mode2`); FT-2000: MD03/MD07 behave like the radio's CW key.
+
+- **Hide a log**: View > "Masquer le journal X" (one line per log). One log always stays visible.
+- **HRD DDE server for HDSDR**: Server window > "HRD DDE server" box. In HDSDR: Options > RF Front-End > "controlled by HRD (DDE)" and Options > DDE to HDSDR > HRD format. HDSDR then follows the radio frequency and sends its frequency changes back (mode is followed too; transmit is never commanded).
+
 ## 6 duovicies. What's new in 1.19
 
 **Clean "Incoming" (QRZ.com)**: Tools menu, at the very bottom. Choose the number of days, click "Open QRZ in Edge" (log in if needed), then "Clean the Incoming list": requests whose QSO is older are rejected after confirmation (irreversible).
@@ -247,4 +254,7 @@ Deletion is permanent: make an ADIF backup first (Configuration > Backup).
 **Windows**: full screen on the very first start, then the size and position of the last close (remote and logbook).
 
 **Logbook: reports**: 59+5, 59+10, 59+15 … 59+55, 59+60.
+
+
+
 

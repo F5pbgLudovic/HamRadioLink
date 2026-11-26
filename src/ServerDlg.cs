@@ -8,7 +8,7 @@ namespace HamRadioLink
     // Fenêtre « Serveur de commande » : le premier serveur reste sur le premier poste ; un second serveur (autre port) peut piloter un second poste
     public class ServerDlg : Form
     {
-        CheckBox chOn, chNet, ch2; TextBox tbPort, tb2; DarkCombo cb2; Label lbState;
+        CheckBox chOn, chNet, ch2, chDde; TextBox tbPort, tb2; DarkCombo cb2; Label lbState;
         public static Func<string> State; public static List<string[]> Others = new List<string[]>(), AllRadios = new List<string[]>(); public static string First = ""; DarkCombo cb1; List<string[]> keys1 = new List<string[]>();
         public ServerDlg()
         {
@@ -31,6 +31,7 @@ namespace HamRadioLink
             n2.SetBounds(34, 274, 560, 40); n2.ForeColor = T.Dim; n2.BackColor = Color.Transparent; Controls.Add(n2);
             chNet = new CheckBox(); chNet.Text = "Accessible depuis le réseau local (sinon : cet ordinateur seulement)"; chNet.SetBounds(14, 326, 580, 24); chNet.ForeColor = T.Text; chNet.BackColor = Color.Transparent; chNet.Checked = Cfg.GetBool("srv.net", false); Controls.Add(chNet);
             lbState = new Label(); lbState.SetBounds(14, 366, 592, 90); lbState.ForeColor = T.Cyan; lbState.BackColor = Color.Transparent; lbState.Text = State != null ? State() : ""; Controls.Add(lbState);
+            chDde = new CheckBox(); chDde.Text = "Serveur HRD DDE (HDSDR : RF Front-End « controlled by HRD (DDE) ») - pilote le poste du premier serveur"; chDde.SetBounds(14, 488, 600, 24); chDde.ForeColor = T.Text; chDde.BackColor = Color.Transparent; chDde.Checked = Cfg.GetBool("dde.on", false); Controls.Add(chDde);
             Label lk = new Label(); lk.Text = "Les verrous (clic droit) et la touche Lock protègent seulement l'interface : le logiciel connecté garde la main."; lk.SetBounds(14, 466, 592, 22); lk.ForeColor = T.Dim; lk.BackColor = Color.Transparent; Controls.Add(lk);
             Btn ok = new Btn(); ok.Text = "OK"; ok.Accent = T.Green; ok.SetBounds(400, 516, 100, 30); ok.Click += delegate { Save(); }; Controls.Add(ok);
             Btn ca = new Btn(); ca.Text = "Annuler"; ca.SetBounds(510, 516, 100, 30); ca.Click += delegate { DialogResult = DialogResult.Cancel; Close(); }; Controls.Add(ca);
@@ -45,7 +46,7 @@ namespace HamRadioLink
             if (ch2.Checked && port2 == port) { MessageBox.Show(this, "Les deux serveurs doivent avoir des ports différents.", "Serveur de commande"); return; }
             if (ch2.Checked && cb2.SelectedIndex < 0) { MessageBox.Show(this, "Choisissez le poste du second serveur.", "Serveur de commande"); return; }
             if (cb1.SelectedIndex >= 0 && cb1.SelectedIndex < keys1.Count) { string k1 = keys1[cb1.SelectedIndex][0]; if (ch2.Checked && cb2.SelectedIndex >= 0 && cb2.SelectedIndex < keys.Count && keys[cb2.SelectedIndex][0] == k1) { MessageBox.Show(this, "Les deux serveurs doivent piloter des postes différents.", "Serveur de commande"); return; } Cfg.Set("srv.radio", k1); }
-            Cfg.SetBool("srv.on", chOn.Checked); Cfg.SetInt("srv.port", port); Cfg.SetBool("srv.net", chNet.Checked);
+            Cfg.SetBool("srv.on", chOn.Checked); Cfg.SetBool("dde.on", chDde.Checked); Cfg.SetInt("srv.port", port); Cfg.SetBool("srv.net", chNet.Checked);
             Cfg.SetBool("srv2.on", ch2.Checked); Cfg.SetInt("srv2.port", port2); if (cb2.SelectedIndex >= 0 && cb2.SelectedIndex < keys.Count) Cfg.Set("srv2.radio", keys[cb2.SelectedIndex][0]); Cfg.Save(); DialogResult = DialogResult.OK; Close();
         }
     }

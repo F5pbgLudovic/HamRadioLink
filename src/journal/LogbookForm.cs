@@ -69,6 +69,13 @@ namespace HamRadioLink.Journal
             file.DropDownOpening += delegate { bool emb = App.Cfg.Get("db.mode", "") == "embedded"; ToolStripItem eng = null; foreach (ToolStripItem it in file.DropDownItems) if (it.Text.StartsWith("Moteur MariaDB") || it.Text.StartsWith("MariaDB engine")) eng = it; if (eng != null) eng.Visible = emb; };   // le moteur n'a de réglages que pour le MariaDB intégré
             ToolStripMenuItem edit = M("Edit", M("Add\tCtrl+N", (s, e) => AddQso()), M("View / Edit\tEnter", (s, e) => EditSelected()), M("Delete\tDel", (s, e) => DeleteSelected()), new ToolStripSeparator(), M("Edit selections...", (s, e) => EditSelections()), M("Copy	Ctrl+C", (s, e) => CopyRows()), M("Cut	Ctrl+X", (s, e) => CutRows()), M("Paste	Ctrl+V", (s, e) => PasteRows()));
             ToolStripMenuItem view = M("View", M("Refresh\tF5", (s, e) => Reload()), M("Show all", (s, e) => { where = ""; search.Text = ""; Reload(); }), M("Columns (Layout)...", (s, e) => ChooseColumns()));
+            view.DropDownOpening += (s, e) =>
+            {
+                for (int k = view.DropDownItems.Count - 1; k >= 0; k--) if (view.DropDownItems[k].Tag as string == "hidelog") view.DropDownItems.RemoveAt(k);
+                if (App.Logs.Count < 2) return;
+                ToolStripSeparator sp = new ToolStripSeparator(); sp.Tag = "hidelog"; view.DropDownItems.Add(sp);
+                foreach (LogRef lg in App.Logs.ToArray()) { LogRef x = lg; ToolStripMenuItem mi = new ToolStripMenuItem(Tr.T("Masquer le journal") + " " + x.Name); mi.Tag = "hidelog"; mi.Checked = x.Hidden; mi.Click += (a, b) => HideLog(x, !x.Hidden); view.DropDownItems.Add(mi); }
+            };
             ToolStripMenuItem logb = M("Logbook", M("Awards tracking...", (s, e) => ShowAwards(0)), M("Statistics...", (s, e) => Stats()), M("Find duplicates...", (s, e) => FindDupes()), M(Tr.T("QSL à envoyer (filtre)"), (s, e) => SetFilter("COL_QSL_SENT='Y' AND COL_QSL_RCVD<>'Y'")), M("Backup (ADIF)...", (s, e) => ExportAdif(true)), M("Update countries from QRZ/HamQTH data", (s, e) => UpdateFromCountries()));
             ToolStripMenuItem tools = M("Tools", M(Tr.T("Vérifier les distances"), (s, e) => CheckDistances()), M("Online services...", (s, e) => { if (onlineFrm != null && !onlineFrm.IsDisposed) { onlineFrm.Activate(); return; } onlineFrm = new OnlineForm(); Ui.CenterOn(onlineFrm, this); onlineFrm.Show(this); }), M(Tr.T("Envoi automatique..."), (s, e) => AutoSend.ShowDialog(this)), M(Tr.T("Envoyer à tous les logs en ligne..."), (s, e) => SendAllOnline()), M(Tr.T("Exporter pour LoTW (fichier à importer à la main)..."), (s, e) => ExportLotw()),
                 new ToolStripSeparator(), M("Upload selection to QRZ.com Logbook", (s, e) => SendAllOnline("qrz")),
@@ -147,6 +154,7 @@ namespace HamRadioLink.Journal
             status.Items.AddRange(new ToolStripItem[] { lblFilter, lblDb, lblCount });
 
             logTabs = new LogTabs(); logTabs.ZoomStep += d => { LogZoom.Step("main", d); ApplyZoomMain(); }; logTabs.ZoomReset += () => { LogZoom.ResetAll(); ApplyZoomMain(); strip.ApplyZoom(); frames.ApplyZoom(); }; logTabs.TabSelected += SwitchLog; logTabs.AddClicked += () => NewLog(""); logTabs.RenameRequested += RenameLog; logTabs.RemoveRequested += RemoveLog; logTabs.DeleteRequested += DeleteLog;
+            Shown += (s, e) => { try { BeginInvoke((Action)EnsureVisibleLog); } catch { } };
             strip = new ClusterStrip(); frames = new ClusterFrames();
             strip.Width = Math.Max(120, App.Cfg.GetInt("cl.w", 200)); frames.Height = Math.Max(50, App.Cfg.GetInt("cl.h", 120));
             splitS = new Splitter { Dock = DockStyle.Right, Width = 4, MinSize = 120, MinExtra = 300, BackColor = Color.Black }; splitF = new Splitter { Dock = DockStyle.Bottom, Height = 4, MinSize = 50, MinExtra = 100, BackColor = Color.Black };
@@ -302,6 +310,20 @@ namespace HamRadioLink.Journal
         StatusStrip statusBar; LogTabs logTabs;
 
         // ---------- onglets : plusieurs journaux ----------
+        // Affichage > Masquer le journal X : un onglet masqué disparaît de la barre ; il y a toujours au moins un journal affiché
+        // (si on masque le dernier visible, le premier autre journal créé est démasqué ; si le journal en cours est masqué, on passe au premier visible).
+        void HideLog(LogRef l, bool hide)
+        {
+            l.Hidden = hide;
+            if (hide) { bool any = false; foreach (LogRef x in App.Logs) if (!x.Hidden) any = true; if (!any) foreach (LogRef x in App.Logs) if (x != l) { x.Hidden = false; break; } }
+            EnsureVisibleLog(); if (logTabs != null) logTabs.Invalidate();
+        }
+        void EnsureVisibleLog()
+        {
+            if (App.Logs.Count == 0) return; LogRef first = App.Logs.Find(x => !x.Hidden);
+            if (first == null) { first = App.Logs[0]; first.Hidden = false; }
+            if (App.CurrentLog != null && App.CurrentLog.Hidden) SwitchLog(first);
+        }
         void SwitchLog(LogRef r)
         {
             if (r == App.CurrentLog) return; LogRef before = App.CurrentLog;

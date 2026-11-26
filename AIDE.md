@@ -237,6 +237,13 @@ La suppression est définitive : faites d'abord une sauvegarde ADIF (Configurati
 
 **Journal : colonne Commentaire sur plusieurs lignes.** Un commentaire long passe à la ligne à la largeur de la colonne, entre deux mots (jamais au milieu d'un mot) ; la ligne du contact s'agrandit. Réduisez la colonne : le texte revient à la ligne. Le bouton **↔** limite cette colonne à environ 70 caractères. Les autres colonnes sont inchangées.
 
+## 6 duovicies. Nouveautés de la 1.20 à 1.22
+
+- **1.21 / 1.22 (serveur de commande)** : mode du VFO B (Mode2) ; FT-2000 : MD03/MD07 comme la touche CW du poste.
+
+- **Masquer un journal** : Affichage > « Masquer le journal X » (une ligne par journal). Il reste toujours un journal affiché.
+- **Serveur HRD DDE pour HDSDR** : fenêtre Serveur > case « Serveur HRD DDE ». Dans HDSDR : Options > RF Front-End > « controlled by HRD (DDE) » et Options > DDE to HDSDR > format HRD. HDSDR suit alors la fréquence du poste et la lui renvoie (le mode est suivi aussi ; l'émission n'est jamais commandée).
+
 ## 6 duovicies. Nouveautés de la 1.19
 
 **Nettoyer « Incoming » (QRZ.com)** : Outils, tout en bas. Choisissez le nombre de jours, cliquez « Ouvrir QRZ dans Edge » (connectez-vous si besoin), puis « Nettoyer la liste Incoming » : les demandes dont le QSO est plus ancien sont rejetées après confirmation (irréversible).
@@ -262,4 +269,7 @@ La suppression est définitive : faites d'abord une sauvegarde ADIF (Configurati
 **Fenêtres** : plein écran au premier démarrage, puis taille et position de la dernière fermeture (télécommande et journal).
 
 **Journal : rapports** : 59+5, 59+10, 59+15 … 59+55, 59+60.
+
+
+
 

@@ -39,14 +39,15 @@ items.Clear(); box = null;   // la zone de recherche n'est plus affichée (elle 
         }
         void Draw(PaintEventArgs e)
         {
-            Graphics g = e.Graphics; Color back = Theme.Get("lb.back"); g.Clear(back); Looks.Dark = Theme.IsDark(back); rects.Clear();
+            Graphics g = e.Graphics; Color back = Theme.Get("lb.back"); g.Clear(back); Looks.Dark = Theme.IsDark(back); rects.Clear(); shown.Clear();
             int x = 6; Color tt = Theme.Get("lb.tool.text"), bt = Theme.Get("lb.btn.text");
             using (Font f = new Font(Tr.T("Segoe UI"), 9.5f, FontStyle.Bold))
             {
                 for (int i = 0; i < App.Logs.Count; i++)
                 {
+                    if (App.Logs[i].Hidden && App.Logs[i] != App.CurrentLog) continue; int ri = rects.Count; shown.Add(i);
                     LogRef l = App.Logs[i]; string t = l.Name; int w = TextRenderer.MeasureText(t, f).Width + 30; Rectangle r = new Rectangle(x, 3, w, Height - 6); rects.Add(r);
-                    bool active = l == App.CurrentLog; Color text = Looks.DrawButton(g, r, active ? (Color?)Theme.Get("lb.accent") : null, bt, hot == i || active, active, true, back);
+                    bool active = l == App.CurrentLog; Color text = Looks.DrawButton(g, r, active ? (Color?)Theme.Get("lb.accent") : null, bt, hot == ri || active, active, true, back);
                     TextRenderer.DrawText(g, t, f, r, active ? Theme.Get("lb.accent.text") : text, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding);
                     x += w + 4;
                 }
@@ -83,6 +84,7 @@ items.Clear(); box = null;   // la zone de recherche n'est plus affichée (elle 
             g.SmoothingMode = old;
         }
         int ZAt(Point p) { return zMinus.Contains(p) ? 1 : zPlus.Contains(p) ? 2 : zReset.Contains(p) ? 3 : 0; }
+        List<int> shown = new List<int>();
         int At(Point p) { for (int i = 0; i < rects.Count; i++) if (rects[i].Contains(p)) return i; return plus.Contains(p) ? -1 : -2; }
         int ItemAt(Point p) { for (int i = 0; i < items.Count; i++) if (items[i].Kind == 0 && items[i].R.Contains(p)) return i; return -1; }
         protected override void OnMouseMove(MouseEventArgs e) { int h = At(e.Location), hi = ItemAt(e.Location), zh = ZAt(e.Location); if (h != hot || hi != hotItem || zh != zhot) { hot = h; hotItem = hi; zhot = zh; Invalidate(); } Cursor = h > -2 || hi >= 0 || zh > 0 ? Cursors.Hand : Cursors.Default; }
@@ -93,7 +95,7 @@ items.Clear(); box = null;   // la zone de recherche n'est plus affichée (elle 
             if (ii >= 0 && e.Button == MouseButtons.Left) { items[ii].Src.PerformClick(); return; }
             int i = At(e.Location);
             if (i == -1 && e.Button == MouseButtons.Left) { Action a = AddClicked; if (a != null) a(); return; }
-            if (i < 0) return; LogRef l = App.Logs[i];
+            if (i < 0) return; LogRef l = App.Logs[shown[i]];
             if (e.Button == MouseButtons.Left) { Action<LogRef> h = TabSelected; if (h != null) h(l); }
             else if (e.Button == MouseButtons.Right)
             {

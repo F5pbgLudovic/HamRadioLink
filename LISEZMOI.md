@@ -1,4 +1,4 @@
-# HamRadioLink 1.19 — télécommande de postes radio
+# HamRadioLink 1.22 — télécommande de postes radio
 
 Programme Windows portable (un seul .exe, rien à installer) qui reproduit la face avant d'un poste radio et le pilote par CAT, comme si on était devant.
 Projet indépendant : il ne dépend d aucun autre logiciel de pilotage de poste.
@@ -108,3 +108,4 @@ Vumètres barres/aiguille (clic droit), verrous (clic droit, cadre rouge), fenê
 
 ## Bouton TUNE (1.1)
 En bas à droite de la face avant : un clic émet une tonalité de 1500 Hz sur la carte son d'émission du poste (choisie dans Paramètres ⚙ > Micro vers le poste) avec le PTT par CAT ou le VOX du poste, 5 à 60 s ; second clic = arrêt. Niveau, durée, VOX et couleurs : Paramètres ⚙ > Bouton TUNE. Détail : `AIDE.md` (français), `HELP.md` (English).
+

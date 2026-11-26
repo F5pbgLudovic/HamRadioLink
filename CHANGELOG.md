@@ -1,6 +1,25 @@
 # Historique des versions
 
 
+## 1.22 — 2026-11-26
+
+**Serveur de commande**
+- FT-2000 : MD03; / MD07; se comportent comme la touche CW du poste ; le serveur relit le mode réel 450 ms après et renvoie l'ordre une fois si besoin.
+
+## 1.21 — 2026-11-26
+
+**Serveur de commande**
+- Mode du VFO B : get dropdown-text Mode2, get dropdown-list Mode2, set dropdown Mode2 X (demandé pour ColibrinanoLink).
+
+## 1.20 — 2026-11-26
+
+**Journal**
+- Affichage > « Masquer le journal X » (une ligne par journal) : l'onglet disparaît de la barre ; un journal reste toujours affiché (masquer le dernier visible démasque le premier autre journal créé ; masquer le journal en cours bascule sur le premier visible).
+
+**Serveur de commande**
+- Serveur HRD DDE pour HDSDR (case dans la fenêtre Serveur) : HDSDR (RF Front-End « controlled by HRD (DDE) ») suit le poste (fréquence, mode, émission) et lui renvoie ses changements de fréquence. Service HRD_RADIO_000, sujet HRD_CAT, éléments HRD_HERTZ / HRD_MODE / HRD_TX ; ordres reçus en UTF-16 « freq N ». L'émission n'est jamais commandée par DDE. Testé sur le simulateur FT-2000 seulement.
+- Mode HamRadioLink.exe --ddeprobe : journalise ce qu'un client DDE demande.
+
 ## 1.19 — 2026-11-25
 
 **Journal**
@@ -247,3 +266,6 @@ HamRadioLink 1.0 : télécommande de postes radio (face avant reproduite, pilota
 ### Vérification
 - **Autotest** : 159 229 vérifications (commandes de chaque poste contre un simulateur strict, partage, serveur, TCI sur un vrai WebSocket simulé, anciens Yaesu, verrous, journal, délai TX) ; essai du journal sur base isolée (34 contrôles : WSJT-X, ADIF, fenêtres, thèmes, envois simulés, traitements en arrière-plan).
 - Essayé par l'auteur sur FT-2000 et FTdx10 réels, avec un vrai DX Cluster, de vrais contacts WSJT-X et un vrai journal. **Pas essayé en réel** : les envois vers QRZ.com, Club Log, eQSL et LoTW, les autres postes, un vrai serveur TCI, la création de paires com0com par le programme.
+
+
+

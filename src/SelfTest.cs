@@ -900,6 +900,13 @@ namespace HamRadioLink
             Wait(delegate { return CmdAsk(ns, "get frequency", true) == "7074000"; }, 6000); Check(CmdAsk(ns, "get frequency", true) == "7074000", "Serveur : fréquence relue");
             string f2 = CmdAsk(ns, "get frequencies", true); Check(Regex.IsMatch(f2, @"^\d+-\d+$"), "Serveur : get frequencies (" + f2 + ")");
             Check(CmdAsk(ns, "set dropdown Mode DATA-U 11", true) == "OK", "Serveur : set dropdown Mode DATA-U"); Wait(delegate { return CmdAsk(ns, "get dropdown-text {Mode}", true) == "Mode:DATA-U"; }, 6000); Check(CmdAsk(ns, "get dropdown-text {Mode}", true) == "Mode:DATA-U", "Serveur : mode relu (" + CmdAsk(ns, "get dropdown-text {Mode}", true) + ")");
+            if (rig.Def.Find("md1") != null)
+            {
+                Check(CmdAsk(ns, "get dropdown-list Mode2", true).Contains("USB"), "Serveur : get dropdown-list Mode2");
+                Check(CmdAsk(ns, "set dropdown Mode2 USB 1", true) == "OK", "Serveur : set dropdown Mode2 USB"); Wait(delegate { return CmdAsk(ns, "get dropdown-text Mode2", true) == "Mode2:USB"; }, 6000);
+                Check(CmdAsk(ns, "get dropdown-text Mode2", true) == "Mode2:USB", "Serveur : mode du VFO B relu (" + CmdAsk(ns, "get dropdown-text Mode2", true) + ")");
+                Check(CmdAsk(ns, "get dropdown-text {Mode}", true) == "Mode:DATA-U", "Serveur : le mode du VFO A n'a pas bougé (" + CmdAsk(ns, "get dropdown-text {Mode}", true) + ")");
+            }
             Check(CmdAsk(ns, "get button-select TX", true) == "0", "Serveur : TX relâché"); Check(CmdAsk(ns, "set button-select TX 1", true) == "OK", "Serveur : set button-select TX 1"); Wait(delegate { return rig.Tx; }, 4000); Check(rig.Tx && CmdAsk(ns, "get button-select MOX", true) == "1", "Serveur : émission");
             Check(CmdAsk(ns, "set button-select TX 0", true) == "OK", "Serveur : fin d'émission"); Wait(delegate { return !rig.Tx; }, 4000); Check(!rig.Tx, "Serveur : réception");
             if (d.Find("af") != null)

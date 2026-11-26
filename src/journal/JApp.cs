@@ -15,6 +15,7 @@ namespace HamRadioLink.Journal
     public class LogRef
     {
         public string Name = "", Host = "", User = "", Pass = "", Schema = ""; public int Port;
+        public bool Hidden { get { return App.Cfg.GetBool("log.hidden." + Name, false); } set { App.Cfg.Set("log.hidden." + Name, value); App.Cfg.Save(); } }      // onglet masqué (Affichage > Masquer le journal …)
         public static string FilePath { get { return Path.Combine(App.DataDir, "logs.txt"); } }
         static string Esc(string s) { return (s ?? "").Replace("|", "/").Replace("\r", " ").Replace("\n", " "); }
         public string Serialize() { return string.Join("|", new[] { Esc(Name), Esc(Host), Port.ToString(), Esc(User), Esc(Pass), Esc(Schema) }); }

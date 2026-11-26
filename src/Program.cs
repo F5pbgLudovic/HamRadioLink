@@ -23,6 +23,7 @@ namespace HamRadioLink
             foreach (string a in args) if (a.StartsWith("--menushot=")) { Ftdx10MenuForm.Shot(a.Substring(11)); return; }
             foreach (string a in args) if (a.StartsWith("--metershot=")) { HBigMeter.Shot(a.Substring(12)); return; }
             foreach (string a in args) if (a.StartsWith("--miceqshot=")) { MicEqForm.Shot(a.Substring(12)); return; }
+            foreach (string a in args) if (a == "--ddeprobe") { Application.EnableVisualStyles(); Application.Run(new DdeProbeForm()); return; }
             foreach (string a in args) if (a.StartsWith("--fxtest=")) { AudioFxTest.Run(a.Substring(9)); return; }
             foreach (string a in args) if (a.StartsWith("--clartest=")) { Journal.WsjtListener.Disabled = true; Updater.Disabled = true; Environment.Exit(RadioTest.Clar(a.Substring(11))); return; }
             foreach (string a in args) if (a.StartsWith("--menuscan=")) { Journal.WsjtListener.Disabled = true; Updater.Disabled = true; Environment.Exit(RadioTest.MenuScan(a.Substring(11))); return; }

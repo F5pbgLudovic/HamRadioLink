@@ -24,6 +24,8 @@ namespace HamRadioLink
         public readonly int Port; public int Clients, Commands; public readonly List<string> Bad = new List<string>();
 
         public CmdServer(Rig rig, int port, bool net) : this(delegate { return rig; }, port, net) { }
+        public CmdServer(Func<Rig> getRig) { this.getRig = getRig; }      // sans écoute IP : sert de traducteur de commandes (serveur DDE)
+        public string Exec(string cmd) { return Handle0(cmd); }
         public CmdServer(Func<Rig> getRig, int port, bool net)
         {
             this.getRig = getRig; ls = new TcpListener(net ? IPAddress.Any : IPAddress.Loopback, Math.Max(0, port)); ls.Start(); Port = ((IPEndPoint)ls.LocalEndpoint).Port;
@@ -89,11 +91,13 @@ namespace HamRadioLink
         }
         RadioDef D { get { return rig.Def; } }
         Ctl Mode { get { Ctl c = D.Find("md0"); return c != null && c.K == Kind.Choice && c.ItemList.Length > 0 ? c : null; } }
+        Ctl Mode2 { get { Ctl c = D.Find("md1"); return c != null && c.K == Kind.Choice && c.ItemList.Length > 0 ? c : null; } }     // mode du VFO B / sous-récepteur (postes qui l'ont)
         Ctl Af { get { Ctl c = D.Find("af"); return c != null && c.K == Kind.Knob ? c : null; } }
         Ctl Ptt { get { return D.Find("ptt"); } }
         Ctl Split { get { Ctl c = D.Find("split"); return c != null && c.K == Kind.Toggle ? c : null; } }
         bool Locked(Ctl c) { return c != null && Cfg.GetBool("lock." + D.Key + "." + c.Id, false); }
         static bool IsModeName(string n) { return n.Equals("Mode", StringComparison.OrdinalIgnoreCase) || n.Equals("Main Mode", StringComparison.OrdinalIgnoreCase) || n.Equals("Mode A", StringComparison.OrdinalIgnoreCase); }      // noms de la liste des modes selon le poste / le logiciel client
+        static bool IsMode2Name(string n) { return n.Equals("Mode2", StringComparison.OrdinalIgnoreCase) || n.Equals("Mode B", StringComparison.OrdinalIgnoreCase) || n.Equals("Sub Mode", StringComparison.OrdinalIgnoreCase); }
         static string Clean(string s) { return s.Trim().Trim('{', '}').Replace('~', ' ').Trim(); }
 
         string Handle(string cmd)
@@ -116,10 +120,24 @@ namespace HamRadioLink
                 case "get radio": return ModelName(D);
                 case "get vfo-count": return "1";
                 case "get buttons": { List<string> b = new List<string>(); if (Ptt != null) { b.Add("TX"); b.Add("MOX"); } if (Split != null) b.Add("Split"); return string.Join(",", b.ToArray()); }
-                case "get dropdowns": return Mode != null ? "Mode" : "";
+                case "get dropdowns": return Mode != null ? "Mode" : "";      // Mode2 (VFO B) reste accessible par « get dropdown-text / dropdown-list / set dropdown Mode2 » sans changer cette liste
                 case "get sliders": return Af != null ? "AF gain" : "";
                 case "get frequency": return Freq("fa");
                 case "get frequencies": { Ctl fb = D.Find("fb"); return Freq("fa") + "-" + (fb != null ? Freq("fb") : Freq("fa")); }
+            }
+            if ((m = Regex.Match(cmd, @"^get dropdown-list\s+(.+)$", RegexOptions.IgnoreCase)).Success && IsMode2Name(Clean(m.Groups[1].Value)))
+            {
+                if (Mode2 == null) return "ERROR"; List<string> l2 = new List<string>(); foreach (Item it in Mode2.ItemList) l2.Add(Show(it.Label)); return string.Join(",", l2.ToArray());
+            }
+            if ((m = Regex.Match(cmd, @"^get dropdown-text\s+(.+)$", RegexOptions.IgnoreCase)).Success && IsMode2Name(Clean(m.Groups[1].Value)))
+            {
+                if (Mode2 == null) return "ERROR"; string v2 = rig.Get("md1") ?? "\u0001"; foreach (Item it in Mode2.ItemList) if (it.Match(v2)) return "Mode2:" + Show(it.Label); return "Mode2:";
+            }
+            if ((m = Regex.Match(cmd, @"^set dropdown\s+(\S+)\s+(\S+)(?:\s+(\d+))?$", RegexOptions.IgnoreCase)).Success && IsMode2Name(Clean(m.Groups[1].Value)))
+            {
+                if (Mode2 == null) return "ERROR"; string want2 = Clean(m.Groups[2].Value);
+                foreach (Item it in Mode2.ItemList) if (it.Label == want2 || Show(it.Label) == want2) { rig.Set(Mode2, it.Code); VerifyCw(Mode2, it); return "OK"; }
+                return "ERROR";
             }
             if ((m = Regex.Match(cmd, @"^get dropdown-list\s+(.+)$", RegexOptions.IgnoreCase)).Success)
             {
@@ -146,7 +164,7 @@ namespace HamRadioLink
             if ((m = Regex.Match(cmd, @"^set dropdown\s+(\S+)\s+(\S+)(?:\s+(\d+))?$", RegexOptions.IgnoreCase)).Success)
             {
                 if (!IsModeName(Clean(m.Groups[1].Value)) || Mode == null) return "ERROR"; string want = Clean(m.Groups[2].Value);
-                foreach (Item it in Mode.ItemList) if (it.Label == want || Show(it.Label) == want) { rig.Set(Mode, it.Code); return "OK"; }
+                foreach (Item it in Mode.ItemList) if (it.Label == want || Show(it.Label) == want) { rig.Set(Mode, it.Code); VerifyCw(Mode, it); return "OK"; }
                 return "ERROR";
             }
             if ((m = Regex.Match(cmd, @"^set button-select\s+(\S+)\s+([01])$", RegexOptions.IgnoreCase)).Success)
@@ -161,6 +179,27 @@ namespace HamRadioLink
                 Ctl a = Af; if (a == null) return "ERROR"; int v = int.Parse(m.Groups[3].Value); rig.Set(a, Math.Max(a.Min, Math.Min(a.Max, v)).ToString(CultureInfo.InvariantCulture)); return "OK";
             }
             Bad.Add(cmd); return "ERROR";
+        }
+        // FT-2000 : « MD03; » / « MD07; » se comportent comme la touche CW du poste (déjà en CW ou CW-R, il bascule de l'un à l'autre quel que soit l'ordre ;
+        // depuis un autre mode il prend la variante mémorisée). On relit donc le mode réel et on renvoie l'ordre une fois si le poste est de l'autre côté.
+        void VerifyCw(Ctl c, Item want)
+        {
+            if (c == null || want == null || string.IsNullOrEmpty(c.Read) || want.Label.IndexOf("CW", StringComparison.OrdinalIgnoreCase) < 0) return;
+            ThreadPool.QueueUserWorkItem(delegate(object o)
+            {
+                try
+                {
+                    Thread.Sleep(450); string pre = c.Read.TrimEnd(';'); string r = rig.AskPrefix(c.Read, pre, 900);
+                    if (r == null || r.Length <= pre.Length) return;
+                    string v = r.Substring(pre.Length).TrimEnd(';'); if (want.Match(v)) return;
+                    foreach (Item it in c.ItemList) if (it.Match(v))
+                    {
+                        if (it.Label.IndexOf("CW", StringComparison.OrdinalIgnoreCase) >= 0) { rig.Set(c, want.Code); CatLog.Event("serveur " + Port, "mode CW : le poste a basculé de l'autre côté, ordre renvoyé (" + want.Label + ")"); }
+                        break;
+                    }
+                }
+                catch { }
+            });
         }
         string Freq(string id) { long f = rig.GetL(id); return f.ToString(CultureInfo.InvariantCulture); }
         string SetFreq(string id, string hz)

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -50,7 +50,7 @@ namespace HamRadioLink
 
     public class MainForm : Form
     {
-        public const string Version = "1.19";
+        public const string Version = "1.22";
         const int DesignW = 1860, DesignH = 944; const double Ratio = DesignW / (double)DesignH;
         readonly List<RadioDef> radios = Radios.All(); RadioDef cur; Rig rig = new Rig();      // cur / rig / widgets = poste ACTIF (plusieurs postes peuvent être connectés en même temps)
         readonly Panel stage = new Panel(); readonly ToolTip tip = new ToolTip();
@@ -91,7 +91,7 @@ namespace HamRadioLink
             tip.InitialDelay = 500; tip.ReshowDelay = 200; tip.AutoPopDelay = 12000;
             Resize += delegate { Relayout(); };
             timer.Interval = 30; timer.Tick += OnTick; timer.Start();
-            Load += delegate { Restore(); try { MicRoute.Update(); } catch { } try { RxAudio.StartAll(); } catch { } try { Journal.WsjtListener.Start(); } catch { } Journal.Skin.FrameFix(this); RosGuard.Start(delegate { List<Rig> rl = new List<Rig>(); foreach (Sess z in sess) rl.Add(z.Rig); return rl; }); BeginInvoke((Action)delegate { try { InitLog(); Journal.Hub.Prepare(); } catch { } try { Updater.CheckAtStart(this); } catch { } }); }; FormClosed += delegate { RosGuard.Stop(false); TuneMic.Stop(null); MicRoute.Stop(); if (cmdSrv != null) { try { cmdSrv.Dispose(); } catch { } } if (cmdSrv2 != null) { try { cmdSrv2.Dispose(); } catch { } } }; FormClosing += OnClosing; loading = false;
+            Load += delegate { Restore(); try { MicRoute.Update(); } catch { } try { RxAudio.StartAll(); } catch { } try { Journal.WsjtListener.Start(); } catch { } Journal.Skin.FrameFix(this); RosGuard.Start(delegate { List<Rig> rl = new List<Rig>(); foreach (Sess z in sess) rl.Add(z.Rig); return rl; }); BeginInvoke((Action)delegate { try { InitLog(); Journal.Hub.Prepare(); } catch { } try { Updater.CheckAtStart(this); } catch { } }); }; FormClosed += delegate { RosGuard.Stop(false); if (dde != null) { try { dde.Dispose(); } catch { } } TuneMic.Stop(null); MicRoute.Stop(); if (cmdSrv != null) { try { cmdSrv.Dispose(); } catch { } } if (cmdSrv2 != null) { try { cmdSrv2.Dispose(); } catch { } } }; FormClosing += OnClosing; loading = false;
         }
 
         // ============================================================ en-tête
@@ -657,7 +657,7 @@ namespace HamRadioLink
             Text = Text.Replace(" — VERROUILLÉ", "") + (l ? " — VERROUILLÉ" : "");
         }
         // serveur de commande IP (WSJT-X, JTDX, SDRLink…, port 7809)
-        CmdServer cmdSrv, cmdSrv2; Btn btnSrv, btnLog;
+        CmdServer cmdSrv, cmdSrv2; DdeHrdServer dde; Btn btnSrv, btnLog;
         // Bouton LOG : le journal de trafic (base MariaDB), dans une fenêtre à part ; la fréquence et le mode du poste actuel sont proposés pour un nouveau QSO.
         void ShowLog() { InitLog(); Journal.Hub.Open(this); }
         void InitLog()
@@ -684,6 +684,8 @@ namespace HamRadioLink
         void StartServer()
         {
             if (cmdSrv != null) { cmdSrv.Dispose(); cmdSrv = null; } if (cmdSrv2 != null) { cmdSrv2.Dispose(); cmdSrv2 = null; }
+            if (dde != null) { try { dde.Dispose(); } catch { } dde = null; }
+            if (Cfg.GetBool("dde.on", false)) { try { dde = new DdeHrdServer(delegate { string k1 = Cfg.Get("srv.radio", ""); Sess x = sess.Find(delegate(Sess y) { return y.Def.Key == k1; }); if (x == null && sess.Count > 0) x = sess[0]; return x != null ? x.Rig : null; }); } catch (Exception ex) { MessageBox.Show(this, "Serveur DDE HRD impossible : " + ex.Message, "Serveur de commande"); } }
             if (Cfg.GetBool("srv.on", false) && Cfg.Get("srv.radio", "").Length == 0 && sess.Count > 0) { Cfg.Set("srv.radio", sess[0].Def.Key); Cfg.Save(); }      // le premier serveur est lié à UN poste, mémorisé
             if (btnSrv != null) { btnSrv.Checked = false; btnSrv.Invalidate(); }
             try
@@ -846,3 +848,4 @@ namespace HamRadioLink
         public void ShotEditor(string path) { if (shotEd != null) using (Bitmap b = new Bitmap(shotEd.Width, shotEd.Height)) { shotEd.DrawToBitmap(b, new Rectangle(0, 0, b.Width, b.Height)); b.Save(path + ".editor.png", System.Drawing.Imaging.ImageFormat.Png); } }
     }
 }
+
