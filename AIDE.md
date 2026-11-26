@@ -237,7 +237,9 @@ La suppression est définitive : faites d'abord une sauvegarde ADIF (Configurati
 
 **Journal : colonne Commentaire sur plusieurs lignes.** Un commentaire long passe à la ligne à la largeur de la colonne, entre deux mots (jamais au milieu d'un mot) ; la ligne du contact s'agrandit. Réduisez la colonne : le texte revient à la ligne. Le bouton **↔** limite cette colonne à environ 70 caractères. Les autres colonnes sont inchangées.
 
-## 6 duovicies. Nouveautés de la 1.20 à 1.22
+## 6 duovicies. Nouveautés de la 1.20 à 1.23
+
+- **1.23 (mise à jour)** : le téléchargement ne bloque plus la fenêtre (tâche de fond). Si la mise à jour échoue, télécharger HamRadioLink.exe sur la page des versions GitHub et remplacer l'ancien (le dossier data reste).
 
 - **1.21 / 1.22 (serveur de commande)** : mode du VFO B (Mode2) ; FT-2000 : MD03/MD07 comme la touche CW du poste.
 

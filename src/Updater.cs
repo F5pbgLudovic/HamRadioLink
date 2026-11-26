@@ -84,7 +84,7 @@ namespace HamRadioLink
                     ManualResetEvent done = new ManualResetEvent(false); Exception fail = null;
                     if (progress != null) w.DownloadProgressChanged += delegate(object s, DownloadProgressChangedEventArgs e) { progress(e.ProgressPercentage); };
                     w.DownloadFileCompleted += delegate(object s, System.ComponentModel.AsyncCompletedEventArgs e) { fail = e.Error; done.Set(); };
-                    w.DownloadFileAsync(new Uri(i.Url), dst); while (!done.WaitOne(40)) Application.DoEvents();
+                    w.DownloadFileAsync(new Uri(i.Url), dst); done.WaitOne();   // appelé hors du fil de l'interface : rien ne se bloque, aucune boucle DoEvents
                     if (fail != null) throw fail;
                 }
                 FileInfo f = new FileInfo(dst); byte[] head = new byte[2]; using (FileStream fs = File.OpenRead(dst)) fs.Read(head, 0, 2);
@@ -189,8 +189,16 @@ namespace HamRadioLink
             string err; string exe = Application.ExecutablePath; string tmp = null;
             using (ProgressForm pf = new ProgressForm("Téléchargement de la version " + i.Version + "…"))
             {
-                pf.Show(owner); Application.DoEvents();
-                tmp = Download(i, Path.GetDirectoryName(exe), delegate(int p) { pf.Set(p); Application.DoEvents(); }, out err);
+                string derr = null, dtmp = null; string ddir = Path.GetDirectoryName(exe);
+                pf.Shown += delegate
+                {
+                    Thread th = new Thread(delegate()
+                    {
+                        string e2; dtmp = Download(i, ddir, delegate(int p) { try { pf.BeginInvoke((Action)delegate { pf.Set(p); }); } catch { } }, out e2); derr = e2;
+                        try { pf.BeginInvoke((Action)delegate { pf.Close(); }); } catch { }
+                    }); th.IsBackground = true; th.Start();
+                };
+                pf.ShowDialog(owner); tmp = dtmp; err = derr;
             }
             if (tmp == null) { MessageBox.Show(owner, err, "Mise à jour"); return; }
             string bkExe; if (!Apply(exe, tmp, MainForm.Version, del, true, out bkExe, out err)) { MessageBox.Show(owner, err, "Mise à jour"); try { File.Delete(tmp); } catch { } return; }

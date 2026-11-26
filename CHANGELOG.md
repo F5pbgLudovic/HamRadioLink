@@ -1,6 +1,11 @@
 # Historique des versions
 
 
+## 1.23 — 2026-11-26
+
+**Mise à jour**
+- Le téléchargement se fait en tâche de fond (plus de boucle DoEvents) : la fenêtre ne se fige plus. Cause de l'erreur Windows « page de garde pour la pile » vue en 1.9 -> 1.22 non établie ; à surveiller.
+
 ## 1.22 — 2026-11-26
 
 **Serveur de commande**

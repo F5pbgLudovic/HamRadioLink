@@ -222,7 +222,9 @@ Deletion is permanent: make an ADIF backup first (Configuration > Backup).
 
 **Logbook: multi-line Comment column.** A long comment wraps at the column width, between words (never inside a word); the contact's row grows. Shrink the column and the text wraps again. The **↔** button limits this column to about 70 characters. Other columns are unchanged.
 
-## 6 duovicies. What's new in 1.20 to 1.22
+## 6 duovicies. What's new in 1.20 to 1.23
+
+- **1.23 (update)**: the download no longer freezes the window (background task). If the update fails, download HamRadioLink.exe from the GitHub releases page and replace the old one (the data folder is kept).
 
 - **1.21 / 1.22 (command server)**: VFO B mode (`Mode2`); FT-2000: MD03/MD07 behave like the radio's CW key.
 
