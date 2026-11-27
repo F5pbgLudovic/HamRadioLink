@@ -237,8 +237,9 @@ La suppression est définitive : faites d'abord une sauvegarde ADIF (Configurati
 
 **Journal : colonne Commentaire sur plusieurs lignes.** Un commentaire long passe à la ligne à la largeur de la colonne, entre deux mots (jamais au milieu d'un mot) ; la ligne du contact s'agrandit. Réduisez la colonne : le texte revient à la ligne. Le bouton **↔** limite cette colonne à environ 70 caractères. Les autres colonnes sont inchangées.
 
-## 6 duovicies. Nouveautés de la 1.20 à 1.24
+## 6 duovicies. Nouveautés de la 1.20 à 1.25
 
+- **1.25 (fenêtre)** : la face avant peut être réduite jusqu à 220 px de large, tous les éléments gardant leurs proportions.
 - **1.24 (volumes, FTdx10, étalonnage)** : clic gauche sur un bouton de volume (AF, AF SUB, VOLUME) = coupe ce bouton (MUTE), nouveau clic = rétablit. FTdx10 : bouton LEVEL du scope (-30 à +30 dB) et bouton SCOPE (CENTER / CURSOR / FIX : clic gauche suivant, clic droit précédent) ; aiguilles ALC et VDD du grand S-mètre calées sur les barres. Les fenêtres d'étalonnage ne bloquent plus la fenêtre principale (PTT possible).
 
 - **1.23 (mise à jour)** : le téléchargement ne bloque plus la fenêtre (tâche de fond). Si la mise à jour échoue, télécharger HamRadioLink.exe sur la page des versions GitHub et remplacer l'ancien (le dossier data reste).

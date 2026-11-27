@@ -50,7 +50,7 @@ namespace HamRadioLink
 
     public class MainForm : Form
     {
-        public const string Version = "1.24";
+        public const string Version = "1.25";
         const int DesignW = 1860, DesignH = 944; const double Ratio = DesignW / (double)DesignH;
         readonly List<RadioDef> radios = Radios.All(); RadioDef cur; Rig rig = new Rig();      // cur / rig / widgets = poste ACTIF (plusieurs postes peuvent être connectés en même temps)
         readonly Panel stage = new Panel(); readonly ToolTip tip = new ToolTip();
@@ -612,10 +612,11 @@ namespace HamRadioLink
             }
             stage.Bounds = new Rectangle((cw - sw) / 2, (ch - sh) / 2, sw, sh); stage.ResumeLayout(true); Invalidate(true);
         }
+        const int MinW = 220;   // largeur mini de la face avant : tout se réduit proportionnellement
         Size FitClient(int w)
         {
             Rectangle wa = Screen.FromControl(this).WorkingArea; Size nc = new Size(Width - ClientSize.Width, Height - ClientSize.Height);
-            int maxW = wa.Width - nc.Width, maxH = wa.Height - nc.Height; if (w > maxW) w = maxW; if ((int)(w / Ratio) > maxH) w = (int)(maxH * Ratio); if (w < 900) w = 900;
+            int maxW = wa.Width - nc.Width, maxH = wa.Height - nc.Height; if (w > maxW) w = maxW; if ((int)(w / Ratio) > maxH) w = (int)(maxH * Ratio); if (w < MinW) w = MinW;
             return new Size(w, (int)Math.Round(w / Ratio));
         }
         [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -627,7 +628,7 @@ namespace HamRadioLink
                 RECT r = (RECT)System.Runtime.InteropServices.Marshal.PtrToStructure(m.LParam, typeof(RECT)); int edge = m.WParam.ToInt32();
                 int ncw = Width - ClientSize.Width, nch = Height - ClientSize.Height; int cw = r.Right - r.Left - ncw, ch = r.Bottom - r.Top - nch;
                 if (edge == 3 || edge == 6) cw = (int)Math.Round(ch * Ratio); else ch = (int)Math.Round(cw / Ratio);
-                if (cw < 900) { cw = 900; ch = (int)Math.Round(cw / Ratio); }
+                if (cw < MinW) { cw = MinW; ch = (int)Math.Round(cw / Ratio); }
                 if (edge == 1 || edge == 4 || edge == 7) r.Left = r.Right - (cw + ncw); else r.Right = r.Left + cw + ncw;
                 if (edge == 3 || edge == 4 || edge == 5) r.Top = r.Bottom - (ch + nch); else r.Bottom = r.Top + ch + nch;
                 System.Runtime.InteropServices.Marshal.StructureToPtr(r, m.LParam, false); m.Result = (IntPtr)1; return;
@@ -640,8 +641,8 @@ namespace HamRadioLink
         {
             ShareOpts.MigrateGlobal(Cfg.Get("radio", ""));
             LoadLink();
-            int w = Cfg.GetInt("w", 0); if (w < 900) w = (int)Math.Round(DesignW * T.Dpi / 96f * 0.9);
-            Size nc = new Size(Width - ClientSize.Width, Height - ClientSize.Height); MinimumSize = new Size(nc.Width + 900, nc.Height + (int)Math.Round(900 / Ratio));
+            int w = Cfg.GetInt("w", 0); if (w < MinW) w = (int)Math.Round(DesignW * T.Dpi / 96f * 0.9);
+            Size nc = new Size(Width - ClientSize.Width, Height - ClientSize.Height); MinimumSize = new Size(nc.Width + MinW, nc.Height + (int)Math.Round(MinW / Ratio));
             ClientSize = FitClient(w); CenterToScreen(); UpdateCiv(); Relayout(); StartServer(); AutoConnect();
         }
         // verrou général : tout le programme est bloqué sauf la touche Lock (rouge quand verrouillé)

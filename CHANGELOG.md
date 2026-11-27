@@ -1,6 +1,10 @@
 # Historique des versions
 
 
+## 1.25 — 2026-11-27
+
+- **Fenêtre** : Fenêtre principale réductible jusqu à 220 px de large (au lieu de 900), tous les éléments gardant leurs proportions.
+
 ## 1.24 — 2026-11-27
 
 **Boutons de volume**
