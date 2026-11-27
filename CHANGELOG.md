@@ -1,9 +1,13 @@
 # Historique des versions
 
 
+## 1.26 — 2026-11-27
+
+- **TUNE (FT-2000)** : EXT-GND PA (menu 146, sortie PTT vers l ampli) est coupé avant le TUNE puis rétabli à la fin ou à l arrêt ; sans effet sur les autres postes (aucun réglage équivalent dans leurs menus CAT, FTdx10 compris).
+
 ## 1.25 — 2026-11-27
 
-- **Fenêtre** : Fenêtre principale réductible jusqu à 220 px de large (au lieu de 900), tous les éléments gardant leurs proportions.
+- **Fenêtre** : principale réductible jusqu à 220 px de large (au lieu de 900), tous les éléments gardant leurs proportions.
 
 ## 1.24 — 2026-11-27
 

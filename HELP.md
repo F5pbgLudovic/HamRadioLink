@@ -222,8 +222,9 @@ Deletion is permanent: make an ADIF backup first (Configuration > Backup).
 
 **Logbook: multi-line Comment column.** A long comment wraps at the column width, between words (never inside a word); the contact's row grows. Shrink the column and the text wraps again. The **↔** button limits this column to about 70 characters. Other columns are unchanged.
 
-## 6 duovicies. What's new in 1.20 to 1.25
+## 6 duovicies. What's new in 1.20 to 1.26
 
+- **1.26 (FT-2000 TUNE)**: EXT-GND PA (menu 146, PTT output to the amplifier) is switched off during TUNE then restored; other radios have no such setting.
 - **1.25 (window)**: the front panel can shrink down to 220 px wide, every element keeping its proportions.
 - **1.24 (volumes, FTdx10, calibration)**: left click on a volume knob (AF, AF SUB, VOLUME) mutes that knob ("MUTE"), click again restores it. FTdx10: scope LEVEL knob (-30 to +30 dB) and SCOPE button (CENTER / CURSOR / FIX: left click next, right click previous); ALC and VDD needles of the big meter now follow the bars. Calibration windows no longer block the main window (PTT possible).
 

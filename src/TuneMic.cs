@@ -12,7 +12,10 @@ namespace HamRadioLink
         static TuneTone tone; static Rig rig; static Ctl ptt; static bool owned; static DateTime until; static Timer tm;
         public static int Level { get { return Math.Max(1, Math.Min(100, Cfg.GetInt("tune.niveau", 15))); } }
         public static int Seconds { get { return Math.Max(5, Math.Min(60, Cfg.GetInt("tune.duree", 10))); } }
-        static bool? forceVox; static bool safe; static Ctl pwr; static string pwrOrig;
+        static bool? forceVox; static bool safe; static Ctl pwr; static string pwrOrig; static Ctl gnd;
+        // EXT-GND PA (FT-2000 menu 146) : sortie PTT vers l ampli coupée pendant le TUNE, remise ensuite
+        static void GndOff(Rig r) { gnd = null; try { Ctl g = r.Def.Find("extgnd"); string o = g != null && r.Link != null ? r.Get(g.Id) : null; if (g != null && o == g.OnSend) { gnd = g; r.SetNow(g, g.OffSend); pending = true; CatLog.Event("tune", "TUNE : EXT-GND PA coupé"); } } catch { gnd = null; } }
+        static void GndBack() { try { if (gnd != null && rig != null && rig.Link != null) { rig.SetNow(gnd, gnd.OnSend); CatLog.Event("tune", "TUNE : EXT-GND PA rétabli"); } } catch { } gnd = null; }
         public static bool Vox { get { return forceVox.HasValue ? forceVox.Value : Cfg.GetBool("tune.vox", true); } }
         // Test de la puissance de sécurité (Paramètres > Alerte ROS) : TUNE 1500 Hz avec la puissance réduite au % réglé, en PTT ou en VOX ; la puissance d'origine est remise à la fin
         public static void StartSafe(Rig r, bool vox) { if (tone != null) { Stop("TUNE arrêté"); return; } safe = true; forceVox = vox; Start(r); if (tone == null) { safe = false; forceVox = null; } }
@@ -29,7 +32,7 @@ namespace HamRadioLink
 
         public static void Toggle(Rig r)
         {
-            if (pending) { pending = false; try { if (pwr != null && rig != null && rig.Link != null) rig.SetNow(pwr, pwrOrig); } catch { } pwr = null; Fire(); return; }
+            if (pending) { pending = false; try { if (pwr != null && rig != null && rig.Link != null) rig.SetNow(pwr, pwrOrig); } catch { } pwr = null; GndBack(); Fire(); return; }
             if (tone != null) { bool same = rig == r; Stop("TUNE arrêté"); if (same) return; }
             Start(r);
         }
@@ -56,6 +59,7 @@ namespace HamRadioLink
                 Ctl pc = RosGuard.PowerCtl(r); string o = pc != null && r.Link != null ? r.Get(pc.Id) : null; int ov;
                 if (pc != null && o != null && int.TryParse(o, out ov)) { int w = Math.Max(pc.Min, Math.Min(pc.Max, Cfg.GetInt("tune.pwr", 10))); pwr = pc; pwrOrig = o; r.SetNow(pc, w.ToString()); CatLog.Event("tune", "TUNE : puissance " + o + " -> " + w + " (remise après)"); pending = true; }
             }
+            GndOff(r);
             if (pending) { Timer d = new Timer(); d.Interval = 700; d.Tick += delegate { d.Stop(); d.Dispose(); if (pending && rig == r) { pending = false; Go(r); } }; d.Start(); Fire(); return; }
             Go(r);
         }
@@ -86,7 +90,7 @@ namespace HamRadioLink
             try { t.Stop(); } catch { }
             try { if (owned && ptt != null && rig != null && rig.Link != null) { rig.Set(ptt, ptt.OffSend); rig.PttButtonStop(); } } catch { }
             try { if (pwr != null && rig != null && rig.Link != null) rig.SetNow(pwr, pwrOrig); } catch { }
-            pwr = null; safe = false; forceVox = null; owned = false; if (why != null) CatLog.Event("tune", why); Fire();
+            pwr = null; GndBack(); safe = false; forceVox = null; owned = false; if (why != null) CatLog.Event("tune", why); Fire();
         }
     }
 }
