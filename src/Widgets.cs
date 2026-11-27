@@ -45,7 +45,7 @@ namespace HamRadioLink
         bool locked; public bool Locked { get { return locked; } set { if (locked != value) { locked = value; Invalidate(); } } }
         // FT-991A DF5DP : sur CTCSS ENC, FREQ CTCSS et CODE DCS, le clic droit ouvre la liste de toutes les valeurs au lieu de verrouiller
         bool DropOnRight { get { return Def.K == Kind.Choice && Rig != null && Rig.Def != null && Rig.Def.Key == "ft991a-df5dp" && (Def.Id == "ctcss" || Def.Id == "ctone" || Def.Id == "dcsc"); } }
-        protected bool StepLike { get { return Def.K == Kind.Choice && Def.Id == "step"; } }   // bouton PAS : clic gauche = valeur suivante, clic droit = précédente, Ctrl + clic droit = verrou
+        protected bool StepLike { get { return Def.K == Kind.Choice && (Def.Id == "step" || Def.Id == "scopem"); } }   // bouton PAS : clic gauche = valeur suivante, clic droit = précédente, Ctrl + clic droit = verrou
         protected bool LeftDrop { get { return Def.K == Kind.Choice && Def.Id == "md1" && Rig != null && Rig.Def != null && Rig.Def.Key == "ftdx10"; } }   // mode du second VFO : clic gauche = liste déroulante
         bool Lockable { get { return Def.K == Kind.Toggle || Def.K == Kind.Action || Def.K == Kind.Knob || Def.K == Kind.Choice || Def.K == Kind.Chain || Def.K == Kind.Dsp || Def.K == Kind.Freq || Def.K == Kind.Dial; } }
         // essais automatiques : simulent un clic ou une molette sur l'élément (Ctrl simulé par CtrlOverride)
@@ -269,6 +269,11 @@ namespace HamRadioLink
             {
                 if (!inside || (e.Button != MouseButtons.Left && e.Button != MouseButtons.Right)) return;
                 Item[] it = Def.ItemList; if (it.Length == 0) return; int cur = Cur(it);
+                if (Def.Id == "scopem")   // scope FTdx10 : CENTER / CURSOR / FIX en gardant l'aspect (3DSS ou W/F L, N, S) ; clic gauche = suivant, clic droit = précédent
+                {
+                    int sv = 0; if (cur >= 0) try { sv = Convert.ToInt32(it[cur].Code, 16); } catch { sv = 0; } int dir = e.Button == MouseButtons.Right ? 2 : 1;
+                    int nv = sv < 3 ? (sv + dir) % 3 : 3 + (((sv - 3) / 3 + dir) % 3) * 3 + (sv - 3) % 3; Rig.Set(Def, nv.ToString("X")); return;
+                }
                 if (StepLike && e.Button == MouseButtons.Right) { Rig.Set(Def, it[cur <= 0 ? it.Length - 1 : cur - 1].Code); return; }   // sens inverse
                 if (e.Button == MouseButtons.Right || (e.Button == MouseButtons.Left && LeftDrop))
                 {
@@ -419,7 +424,7 @@ namespace HamRadioLink
             Ctl rx = Rig.Def.Find("clarrx"), tx = Rig.Def.Find("clartx"); if (rx == null || tx == null) return; bool rxOn = Rig.IsOn(rx), txOn = Rig.IsOn(tx);
             if (Def.Id == "clartxk") { if (!txOn) Rig.Set(tx, tx.OnSend); if (rxOn) Rig.Set(rx, rx.OffSend); } else { if (!rxOn) Rig.Set(rx, rx.OnSend); if (txOn) Rig.Set(tx, tx.OffSend); }
         }
-        void User(int v) { v = Clamp(v); if (v == val) return; val = v; Invalidate(); if (Ready) { if (Ftdx10Clar) Rig.ClarMove(Def.Id == "clartxk", v); else Rig.Set(Def, v.ToString()); } }
+        void User(int v) { v = Clamp(v); if (v == val) return; AfMute.Forget(Rig, Def.Id); val = v; Invalidate(); if (Ready) { if (Ftdx10Clar) Rig.ClarMove(Def.Id == "clartxk", v); else Rig.Set(Def, v.ToString()); } }
         protected override void Down(MouseEventArgs e) { Focus(); if (e.Button == MouseButtons.Left) { dragging = true; dragY = e.Y; dragV = val; Capture = true; } }
         bool Fine { get { return (Def.Id == "clar" || Def.Id == "clartxk") && Def.Fmt == "hz" && Def.Step >= 1; } }   // CLAR : un cran de souris (3 pixels, 1 cran de molette) = un pas de 10 Hz
         protected override void Moving(MouseEventArgs e)
@@ -427,7 +432,7 @@ namespace HamRadioLink
             if (!dragging) return; if (Fine) { int nst = (int)((dragY - e.Y) / (((Control.ModifierKeys & Keys.Shift) != 0 ? 12.0 : 3.0) * T.Scale)); User(dragV + nst * Math.Max(1, Def.Step)); return; } double sens = (Control.ModifierKeys & Keys.Shift) != 0 ? 0.25 : 1.0;
             User(dragV + (int)((dragY - e.Y) * sens * (Mx - Def.Min) / (150.0 * T.Scale)));
         }
-        protected override void Up(MouseEventArgs e) { dragging = false; Capture = false; }
+        protected override void Up(MouseEventArgs e) { bool click = dragging && e.Button == MouseButtons.Left && val == dragV && Math.Abs(e.Y - dragY) < 3 * T.Scale; dragging = false; Capture = false; if (click && Ready && AfMute.IsVolume(Def.Id)) AfMute.Toggle(Rig, Def.Id); }
         protected override void DblClick(MouseEventArgs e) { if (Def.Min < 0 && Def.Max > 0) User(0); }
         int lastWh, fastWh;   // molette rapide sur CLAR : le pas passe à 100 Hz, il revient à 10 Hz dès que la molette ralentit
         protected override void Wheel(MouseEventArgs e) { if (Fine) { int now = Environment.TickCount; fastWh = now - lastWh < 150 ? fastWh + 1 : 0; lastWh = now; int st = fastWh >= 2 ? Math.Max(100, Def.Step) : Math.Max(1, Def.Step); User(val + (e.Delta > 0 ? 1 : -1) * st); return; } int s = Math.Max(Math.Max(1, Def.Step), (int)Math.Round((Mx - Def.Min) * WheelPct / 100.0)); if ((Control.ModifierKeys & Keys.Shift) != 0) s = Math.Max(Math.Max(1, Def.Step), s / 4); User(val + (e.Delta > 0 ? s : -s)); }
@@ -451,7 +456,7 @@ namespace HamRadioLink
             using (StringFormat sf = new StringFormat())
             {
                 sf.Alignment = StringAlignment.Center; bool have = Ready && St(Def.Id) != null;
-                using (Brush b = new SolidBrush(have ? T.Text : T.Dim)) g.DrawString(have ? FmtVal(Def, val, Rig) : "—", T.Fn("Segoe UI Semibold", 8.5f), b, new RectangleF(0, Height - 28 * k, Width, 14 * k), sf);
+                using (Brush b = new SolidBrush(have ? T.Text : T.Dim)) g.DrawString(have ? (AfMute.Is(Rig, Def.Id) ? "MUTE" : FmtVal(Def, val, Rig)) : "—", T.Fn("Segoe UI Semibold", 8.5f), b, new RectangleF(0, Height - 28 * k, Width, 14 * k), sf);
                 using (Brush b = new SolidBrush(T.Dim)) g.DrawString(Def.Label, T.Fn("Segoe UI", 7.5f), b, new RectangleF(0, Height - 15 * k, Width, 14 * k), sf);
             }
         }
@@ -743,6 +748,23 @@ namespace HamRadioLink
             bool sel = (e.State & DrawItemState.Selected) != 0 && (e.State & DrawItemState.ComboBoxEdit) == 0;
             using (Brush b = new SolidBrush(sel ? Color.FromArgb(58, 78, 110) : Color.FromArgb(30, 37, 49))) e.Graphics.FillRectangle(b, e.Bounds);
             if (e.Index >= 0) using (Brush b = new SolidBrush(T.Text)) e.Graphics.DrawString(GetItemText(Items[e.Index]), Font, b, e.Bounds.X + 3, e.Bounds.Y + 2);
+        }
+    }
+    // Clic gauche sur un bouton de volume (AF, AF SUB, VOLUME TCI) : coupe CE bouton seulement (le volume du poste, ou celui de l'écoute sur le PC pour AF) ;
+    // un nouveau clic rétablit la valeur d'avant. Valeur gardée dans settings.ini (afmute.<poste>.<bouton>) : le rétablissement marche aussi après un redémarrage.
+    public static class AfMute
+    {
+        static readonly string[] Ids = { "af", "afb", "vol" };
+        public static bool IsVolume(string id) { return Array.IndexOf(Ids, id) >= 0; }
+        static string Key(Rig r, string id) { return "afmute." + r.Def.Key + "." + id; }
+        public static bool Is(Rig r, string id) { return r != null && r.Def != null && IsVolume(id) && Cfg.Get(Key(r, id), "").Length > 0; }
+        public static void Forget(Rig r, string id) { if (Is(r, id)) { Cfg.Set(Key(r, id), ""); Cfg.Save(); } }
+        public static void Toggle(Rig r, string id)
+        {
+            if (r == null || r.Def == null || !IsVolume(id)) return; string key = Key(r, id), st = Cfg.Get(key, ""); Ctl c = r.Def.Find(id); if (c == null || c.K != Kind.Knob) return;
+            if (st.Length > 0) { Cfg.Set(key, ""); Cfg.Save(); r.Set(c, st); CatLog.Event(r.Def.Key, "volume " + id + " rétabli (" + st + ")"); return; }
+            string v = r.Get(id); if (v == null) return;
+            Cfg.Set(key, v); Cfg.Save(); r.Set(c, c.Min.ToString()); CatLog.Event(r.Def.Key, "volume " + id + " coupé (" + v + ")");
         }
     }
 }

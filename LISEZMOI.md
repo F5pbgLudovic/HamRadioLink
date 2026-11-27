@@ -1,4 +1,4 @@
-# HamRadioLink 1.23 — télécommande de postes radio
+# HamRadioLink 1.24 — télécommande de postes radio
 
 Programme Windows portable (un seul .exe, rien à installer) qui reproduit la face avant d'un poste radio et le pilote par CAT, comme si on était devant.
 Projet indépendant : il ne dépend d aucun autre logiciel de pilotage de poste.

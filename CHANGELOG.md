@@ -1,6 +1,18 @@
 # Historique des versions
 
 
+## 1.24 — 2026-11-27
+
+**Boutons de volume**
+- Clic gauche (sans glisser) sur AF, AF SUB ou VOLUME (TCI) : coupe ce bouton seulement (« MUTE » affiché) ; nouveau clic = valeur d'avant. Pour AF avec écoute sur le PC, c'est le volume de l'écoute qui est coupé. Valeur gardée dans settings.ini (afmute.<poste>.<bouton>).
+
+**FTdx10**
+- Bouton LEVEL du scope (-30 à +30 dB, SS04) à droite de DNR niv. ; bouton SCOPE CENTER / CURSOR / FIX (SS06, clic gauche suivant, clic droit précédent, aspect 3DSS ou W/F conservé) sous CLAR RX. Essai sur poste réel à faire.
+- S-mètre à aiguille : l'aiguille ALC suit la barre (0 à gauche, 50 = limite blanc/bleu, 100 à droite) ; l'aiguille VDD suit la barre (13,8 V sur le repère).
+
+**Fenêtres**
+- Les fenêtres d'étalonnage (Po, vumètres, ROS, boutons) ne bloquent plus la fenêtre principale : on peut faire un PTT pendant l'étalonnage.
+
 ## 1.23 — 2026-11-26
 
 **Mise à jour**

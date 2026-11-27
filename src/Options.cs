@@ -183,7 +183,7 @@ namespace HamRadioLink
                 if (rig.Link == null) { MessageBox.Show(this, "Connectez d'abord le poste.", "Étalonnage"); return; }
                 MeterCal.SetPMax(key, (int)pm.Value);
                 if (MessageBox.Show(this, "L'étalonnage va demander " + string.Join(", ", MeterCal.Steps((int)pm.Value).ConvertAll<string>(delegate(int w) { return w + " W"; }).ToArray()) + ".\nVous réglez la puissance du poste et vous émettez une porteuse à chaque palier ; l'antenne doit être adaptée (ou une charge fictive). Continuer ?", "Étalonnage du wattmètre", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK) return;
-                using (CalDlg d = new CalDlg(rig)) d.ShowDialog(this); show();
+                { CalDlg d = new CalDlg(rig); d.FormClosed += delegate { show(); }; d.Show(this); }
             };
             clr.Click += delegate { MeterCal.SavePoints(key, new List<double[]>()); show(); };
             show(); if (!MeterCal.Has(rig.Def, "po")) { cal.Enabled = false; pfn.Enabled = false; clr.Enabled = false; }
@@ -201,7 +201,7 @@ namespace HamRadioLink
                 b.Click += delegate
                 {
                     if (rig.Link == null) { MessageBox.Show(this, "Connectez d'abord le poste.", "Étalonnage"); return; }
-                    using (MeterTestDlg d = new MeterTestDlg(rig, mid)) d.ShowDialog(this); show();
+                    { MeterTestDlg d = new MeterTestDlg(rig, mid); d.FormClosed += delegate { show(); }; d.Show(this); }
                 };
                 c.Click += delegate { MeterCal.SavePoints(key, mid, new List<double[]>()); show(); }; show(); y += 40;
             }
@@ -222,7 +222,7 @@ namespace HamRadioLink
                 {
                     if (rig.Link == null) { MessageBox.Show(this, "Connectez d'abord le poste.", "Étalonnage"); return; }
                     if (id == "rfpwr" && MessageBox.Show(this, "L'étalonnage de RF PWR demande " + string.Join(", ", MeterCal.Steps(MeterCal.PMax(key)).ConvertAll<string>(delegate(int w) { return w + " W"; }).ToArray()) + " (puissance max : " + MeterCal.PMax(key) + " W, réglable dans « Réglage S-mètre puissance »).\nVous réglez le bouton RF PWR du poste sur chaque valeur ; il n'y a pas d'émission. Continuer ?", "Étalonnage RF PWR", MessageBoxButtons.OKCancel, MessageBoxIcon.Question) != DialogResult.OK) return;
-                    using (KnobCalDlg d = new KnobCalDlg(rig, id)) d.ShowDialog(this); show();
+                    { KnobCalDlg d = new KnobCalDlg(rig, id); d.FormClosed += delegate { show(); }; d.Show(this); }
                 };
                 c.Click += delegate { MeterCal.SavePoints(key, id, new List<double[]>()); show(); }; show(); y += 40;
             }
@@ -257,7 +257,7 @@ namespace HamRadioLink
             Label cst = Lbl("", 6, 520, 250); Button cbtn = Mk("Étalonner le ROS…", 262, 514, 190), cclr = Mk("Effacer", 460, 514, 110);
             Ctl swc = rig != null && rig.Def != null ? rig.Def.Find("swr") : null; bool hasSwr = swc != null && swc.HasCat; string rk = rig != null && rig.Def != null ? rig.Def.Key : "";
             Action cshow = delegate { if (!hasSwr) { cst.Text = "ce poste ne donne pas le ROS"; cbtn.Enabled = cclr.Enabled = false; return; } int n = MeterCal.Points(rk, "swr").Count; cst.Text = n == 0 ? "échelle d'origine" : "étalonné (" + n + " point" + (n > 1 ? "s" : "") + ")"; cclr.Enabled = n > 0; };
-            cbtn.Click += delegate { if (rig.Link == null) { MessageBox.Show(this, "Connectez d'abord le poste.", "Étalonnage du ROS"); return; } using (SwrCalDlg d = new SwrCalDlg(rig)) d.ShowDialog(this); cshow(); };
+            cbtn.Click += delegate { if (rig.Link == null) { MessageBox.Show(this, "Connectez d'abord le poste.", "Étalonnage du ROS"); return; } { SwrCalDlg d = new SwrCalDlg(rig); d.FormClosed += delegate { cshow(); }; d.Show(this); } };
             cclr.Click += delegate { MeterCal.SavePoints(rk, "swr", new List<double[]>()); cshow(); };
             cshow();
         }

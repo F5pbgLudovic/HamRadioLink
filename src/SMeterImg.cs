@@ -86,6 +86,17 @@ namespace HamRadioLink
             if (i < 0) i = Math.Max(0, Math.Min(fns.Count - 1, Cfg.GetInt("bigmeter.fn." + Rig.Def.Key, cur)));
             bool tx = Rig.Tx; double nv = tx ? Norm(fns[i].Id, St(fns[i].Id)) : Norm(SId, St(SId)); if (tx && fns[i].Id == "po") { Ctl pc = Rig.Def.Find("po"); int rp; if (pc != null && int.TryParse(St("po") ?? "", out rp)) { int pm = MeterCal.PMax(Rig.Def.Key); nv = Math.Sqrt(Math.Max(0, Math.Min(1, MeterCal.Watts(MeterCal.Points(Rig.Def.Key), pm, rp * 255.0 / (pc.Max > 0 ? pc.Max : 255)) / pm))); } }   /* aiguille = racine carrée de la puissance en watts / puissance max (échelle de l image) */
             if (tx && fns[i].Id == "vdd" && Vdd200) { Sc vs = MeterCal.Scale(Rig.Def, Rig.Def.Find("vdd")); int rv; if (vs != null && int.TryParse(St("vdd") ?? "", out rv)) nv = Math.Min(1, 0.854 * vs.Frac(rv)); }
+            // FTdx10 : l'aiguille suit la position du vumètre à barres (échelle étalonnée), pas la lecture brute
+            if (tx && Rig.Def.Key == "ftdx10" && (fns[i].Id == "alc" || (fns[i].Id == "vdd" && !Vdd200)))
+            {
+                Sc ns = MeterCal.Scale(Rig.Def, Rig.Def.Find(fns[i].Id)); int rn;
+                if (ns != null && int.TryParse(St(fns[i].Id) ?? "", out rn))
+                {
+                    double f = Math.Max(0, Math.Min(1, ns.Frac(rn)));
+                    if (fns[i].Id == "alc") nv = f <= 0.5 ? f * (0.546 / 0.5) : 0.546 + (f - 0.5) * (0.454 / 0.5);   // barres 0 = tout à gauche, 50 = limite blanc / bleu de l'image (0,546 de la course), 100 = tout à droite
+                    else nv = Math.Min(1, f * (0.854 / (13.8 / 15.0)));   // repère 13.8 V de l'image à 0,854 de la course ; barres à 13,8 V sur 15 V pleine échelle
+                }
+            }
             double nval = val + (nv - val) * (nv > val ? 0.7 : 0.35); if (Math.Abs(nval - nv) < 0.003) nval = nv;
             string ln = BigMeterCfg.Line(Rig, SId); if (ln != line) { line = ln; Invalidate(); } if (Math.Abs(nval - val) > 0.0005 || i != cur || fns[i].Name != curName) { val = nval; cur = i; curName = fns[i].Name; Invalidate(); }
         }
